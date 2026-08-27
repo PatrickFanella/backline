@@ -658,3 +658,7 @@ This project follows a [Code of Conduct](./CODE_OF_CONDUCT.md) to ensure a welco
 ---
 
 Made with presence paranoia and healthy curiosity.
+
+## License
+
+Licensed under `GPL-3.0-or-later`. See [LICENSE](LICENSE).
