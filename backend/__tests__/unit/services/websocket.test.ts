@@ -3,8 +3,14 @@ import { AddressInfo } from 'net';
 
 import ioClient from 'socket.io-client';
 
+import { authorizeGuild } from '../../../src/guilds/authorization';
 import { WebSocketService } from '../../../src/services/websocket';
 import { generateAccessToken } from '../../../src/utils/auth';
+
+jest.mock('../../../src/guilds/authorization', () => ({
+    authorizeGuild: jest.fn(),
+}));
+jest.mock('../../../src/utils/redis', () => ({ getRedisClient: () => null }));
 
 type ClientSocket = any;
 
@@ -14,31 +20,26 @@ describe('WebSocketService', () => {
     let clientSocket: ClientSocket;
     let serverPort: number;
 
-    beforeAll((done) => {
-        // Create HTTP server
+    beforeEach((done) => {
+        (authorizeGuild as jest.Mock).mockResolvedValue(true);
         httpServer = new HttpServer();
-        httpServer.listen(0, () => {
+        websocketService = new WebSocketService();
+        websocketService.setupWebSocket(httpServer);
+        httpServer.listen(0, '127.0.0.1', () => {
             serverPort = (httpServer.address() as AddressInfo).port;
             done();
         });
     });
 
-    afterAll((done) => {
-        httpServer.close(() => {
-            done();
-        });
-    });
-
-    beforeEach(() => {
-        websocketService = new WebSocketService();
-        websocketService.setupWebSocket(httpServer);
-    });
-
     afterEach(async () => {
-        if (clientSocket) {
-            clientSocket.disconnect();
-        }
-        websocketService.close();
+        clientSocket?.disconnect();
+        const io = websocketService.getIO();
+        if (io)
+            await new Promise<void>((resolve) => {
+                void io.close(() => {
+                    resolve();
+                });
+            });
     });
 
     describe('setupWebSocket', () => {
@@ -57,7 +58,7 @@ describe('WebSocketService', () => {
                 access: true,
             });
 
-            clientSocket = ioClient(`http://localhost:${serverPort}`, {
+            clientSocket = ioClient(`http://127.0.0.1:${serverPort}`, {
                 auth: { token },
                 transports: ['websocket'],
             });
@@ -73,7 +74,7 @@ describe('WebSocketService', () => {
         });
 
         it('should reject unauthenticated connections', (done) => {
-            clientSocket = ioClient(`http://localhost:${serverPort}`, {
+            clientSocket = ioClient(`http://127.0.0.1:${serverPort}`, {
                 auth: { token: null },
                 transports: ['websocket'],
             });
@@ -89,7 +90,7 @@ describe('WebSocketService', () => {
         });
 
         it('should reject invalid tokens', (done) => {
-            clientSocket = ioClient(`http://localhost:${serverPort}`, {
+            clientSocket = ioClient(`http://127.0.0.1:${serverPort}`, {
                 auth: { token: 'invalid-token' },
                 transports: ['websocket'],
             });
@@ -117,7 +118,7 @@ describe('WebSocketService', () => {
                 access: true,
             });
 
-            clientSocket = ioClient(`http://localhost:${serverPort}`, {
+            clientSocket = ioClient(`http://127.0.0.1:${serverPort}`, {
                 auth: { token },
                 transports: ['websocket'],
             });
@@ -127,8 +128,42 @@ describe('WebSocketService', () => {
             });
         });
 
+        it('denies subscriptions to another server', (done) => {
+            (authorizeGuild as jest.Mock).mockResolvedValue(false);
+            clientSocket.once('error', (data: { message: string }) => {
+                expect(data.message).toContain('access required');
+                done();
+            });
+            clientSocket.emit('subscribe:guild', '987654321');
+        });
+
+        it('withholds events and leaves the room after access revocation', (done) => {
+            let received = false;
+            clientSocket.on('message:new', () => {
+                received = true;
+            });
+            clientSocket.once('subscription:ready', () => {
+                (authorizeGuild as jest.Mock).mockResolvedValue(false);
+                clientSocket.once('error', (data: { message: string }) => {
+                    expect(data.message).toContain('revoked');
+                    expect(received).toBe(false);
+                    const sockets = websocketService.getIO()!.sockets.sockets;
+                    expect(
+                        [...sockets.values()].every(
+                            (socket) => !socket.rooms.has('guild:123456789')
+                        )
+                    ).toBe(true);
+                    done();
+                });
+                websocketService.emitToRoom('guild:123456789', 'message:new', {
+                    private: true,
+                });
+            });
+            clientSocket.emit('subscribe:guild', '123456789');
+        });
+
         it('should allow subscribing to analytics room', (done) => {
-            const guildId = 'test-guild-123';
+            const guildId = '123456789';
 
             clientSocket.emit('subscribe:analytics', guildId);
 
@@ -152,7 +187,7 @@ describe('WebSocketService', () => {
         });
 
         it('should allow subscribing to guild room', (done) => {
-            const guildId = 'test-guild-123';
+            const guildId = '123456789';
 
             clientSocket.emit('subscribe:guild', guildId);
 
@@ -180,7 +215,7 @@ describe('WebSocketService', () => {
         });
 
         it('should allow unsubscribing from analytics room', (done) => {
-            const guildId = 'test-guild-123';
+            const guildId = '123456789';
 
             clientSocket.emit('subscribe:analytics', guildId);
 
@@ -210,7 +245,7 @@ describe('WebSocketService', () => {
 
     describe('Event emissions', () => {
         it('should emit new message events', (done) => {
-            const guildId = 'test-guild-123';
+            const guildId = '123456789';
             const token = generateAccessToken({
                 userId: 'test-user',
                 discordId: '123456789',
@@ -219,7 +254,7 @@ describe('WebSocketService', () => {
                 access: true,
             });
 
-            clientSocket = ioClient(`http://localhost:${serverPort}`, {
+            clientSocket = ioClient(`http://127.0.0.1:${serverPort}`, {
                 auth: { token },
                 transports: ['websocket'],
             });
@@ -250,7 +285,7 @@ describe('WebSocketService', () => {
         });
 
         it('should emit multi-client alerts', (done) => {
-            const guildId = 'test-guild-123';
+            const guildId = '123456789';
             const token = generateAccessToken({
                 userId: 'test-user',
                 discordId: '123456789',
@@ -259,7 +294,7 @@ describe('WebSocketService', () => {
                 access: true,
             });
 
-            clientSocket = ioClient(`http://localhost:${serverPort}`, {
+            clientSocket = ioClient(`http://127.0.0.1:${serverPort}`, {
                 auth: { token },
                 transports: ['websocket'],
             });
@@ -289,7 +324,7 @@ describe('WebSocketService', () => {
         });
 
         it('should emit role change events', (done) => {
-            const guildId = 'test-guild-123';
+            const guildId = '123456789';
             const token = generateAccessToken({
                 userId: 'test-user',
                 discordId: '123456789',
@@ -298,7 +333,7 @@ describe('WebSocketService', () => {
                 access: true,
             });
 
-            clientSocket = ioClient(`http://localhost:${serverPort}`, {
+            clientSocket = ioClient(`http://127.0.0.1:${serverPort}`, {
                 auth: { token },
                 transports: ['websocket'],
             });
@@ -328,7 +363,7 @@ describe('WebSocketService', () => {
         });
 
         it('should emit user join events', (done) => {
-            const guildId = 'test-guild-123';
+            const guildId = '123456789';
             const token = generateAccessToken({
                 userId: 'test-user',
                 discordId: '123456789',
@@ -337,7 +372,7 @@ describe('WebSocketService', () => {
                 access: true,
             });
 
-            clientSocket = ioClient(`http://localhost:${serverPort}`, {
+            clientSocket = ioClient(`http://127.0.0.1:${serverPort}`, {
                 auth: { token },
                 transports: ['websocket'],
             });

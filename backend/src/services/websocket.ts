@@ -3,6 +3,7 @@ import { Server as HttpServer } from 'http';
 import { createAdapter } from '@socket.io/redis-adapter';
 import { Server as SocketServer, Socket } from 'socket.io';
 
+import { authorizeGuild } from '../guilds/authorization';
 import { AuthPayload, verifyAccessToken } from '../utils/auth';
 import { env } from '../utils/env';
 import { getRedisClient } from '../utils/redis';
@@ -64,6 +65,8 @@ export class WebSocketService {
                 }
 
                 const user = verifyAccessToken(token);
+                if (user.role === 'BANNED')
+                    return next(new Error('Account is banned'));
                 (socket.data as SocketData).user = user;
                 next();
             } catch (_err) {
@@ -91,15 +94,27 @@ export class WebSocketService {
 
         // Subscribe to analytics for a specific guild
         socket.on('subscribe:analytics', (guildId: string) => {
-            if (typeof guildId !== 'string' || !guildId) {
-                void socket.emit('error', { message: 'Invalid guild ID' });
-                return;
-            }
-
-            void socket.join(`analytics:${guildId}`);
-            console.log(
-                `[WebSocket] User ${sanitizeForLog(user.discordId)} subscribed to analytics:${sanitizeForLog(guildId)}`
-            );
+            void (async () => {
+                try {
+                    if (
+                        typeof guildId !== 'string' ||
+                        !(await authorizeGuild(user.userId, guildId))
+                    ) {
+                        socket.emit('error', {
+                            message: 'Server management access required',
+                        });
+                        return;
+                    }
+                    await socket.join(`analytics:${guildId}`);
+                    socket.emit('subscription:ready', {
+                        room: `analytics:${guildId}`,
+                    });
+                } catch {
+                    socket.emit('error', {
+                        message: 'Server authorization unavailable',
+                    });
+                }
+            })();
         });
 
         // Unsubscribe from analytics
@@ -116,15 +131,27 @@ export class WebSocketService {
 
         // Subscribe to guild events
         socket.on('subscribe:guild', (guildId: string) => {
-            if (typeof guildId !== 'string' || !guildId) {
-                void socket.emit('error', { message: 'Invalid guild ID' });
-                return;
-            }
-
-            void socket.join(`guild:${guildId}`);
-            console.log(
-                `[WebSocket] User ${sanitizeForLog(user.discordId)} subscribed to guild:${sanitizeForLog(guildId)}`
-            );
+            void (async () => {
+                try {
+                    if (
+                        typeof guildId !== 'string' ||
+                        !(await authorizeGuild(user.userId, guildId))
+                    ) {
+                        socket.emit('error', {
+                            message: 'Server management access required',
+                        });
+                        return;
+                    }
+                    await socket.join(`guild:${guildId}`);
+                    socket.emit('subscription:ready', {
+                        room: `guild:${guildId}`,
+                    });
+                } catch {
+                    socket.emit('error', {
+                        message: 'Server authorization unavailable',
+                    });
+                }
+            })();
         });
 
         // Unsubscribe from guild events
@@ -164,7 +191,34 @@ export class WebSocketService {
             return;
         }
 
-        this.io.to(room).emit(event, data);
+        const io = this.io;
+        void (async () => {
+            const match = /^(?:analytics|guild):(\d+)$/.exec(room);
+            if (!match) return;
+            try {
+                const sockets = await io.in(room).fetchSockets();
+                await Promise.all(
+                    sockets.map(async (socket) => {
+                        const user = (socket.data as SocketData).user;
+                        if (
+                            user &&
+                            (await authorizeGuild(user.userId, match[1]))
+                        ) {
+                            socket.emit(event, data);
+                        } else {
+                            socket.leave(room);
+                            socket.emit('error', {
+                                message: 'Server access revoked',
+                            });
+                        }
+                    })
+                );
+            } catch {
+                console.warn(
+                    'Server event delivery skipped: authorization unavailable'
+                );
+            }
+        })();
     }
 
     /**

@@ -10,7 +10,7 @@ import {
 } from '../analytics';
 import {
     excludeBannedUsers,
-    requireAuth,
+    requireAuthOrApiKey,
     validateGuild,
     analyticsLimiter,
 } from '../middleware';
@@ -19,7 +19,7 @@ const router = Router();
 
 // Apply analytics-specific rate limiting
 router.use(analyticsLimiter);
-router.use(requireAuth);
+router.use(requireAuthOrApiKey);
 router.use(validateGuild);
 
 /**

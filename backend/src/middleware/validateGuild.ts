@@ -1,30 +1,38 @@
 import { RequestHandler } from 'express';
 
+import { authorizeGuild } from '../guilds/authorization';
 import { env } from '../utils/env';
 
-// Add a minimal type for the env shape used here and assert once.
-type EnvVars = {
-    DISCORD_GUILD_ID?: string;
-    BOT_GUILD_IDS: string[];
-};
-
-export const validateGuild: RequestHandler = (req, res, next) => {
-    const { DISCORD_GUILD_ID, BOT_GUILD_IDS } = env as unknown as EnvVars;
-
-    const queryGuildId =
-        typeof req.query.guildId === 'string' ? req.query.guildId : undefined;
-    const guildId = queryGuildId ?? DISCORD_GUILD_ID;
-
-    if (!guildId) {
-        res.status(400).json({ error: 'Guild ID is required' });
+export const validateGuild: RequestHandler = async (req, res, next) => {
+    if (
+        req.query.guildId !== undefined &&
+        typeof req.query.guildId !== 'string'
+    ) {
+        res.status(400).json({ error: 'A valid guild ID is required' });
         return;
     }
-
-    if (!BOT_GUILD_IDS.includes(guildId)) {
-        res.status(403).json({ error: 'Guild not authorized' });
+    const guildId =
+        typeof req.query.guildId === 'string'
+            ? req.query.guildId
+            : env.DISCORD_GUILD_ID;
+    if (!guildId || !/^\d+$/.test(guildId)) {
+        res.status(400).json({ error: 'A valid guild ID is required' });
         return;
     }
-
-    req.guildId = guildId;
-    next();
+    if (!req.user) {
+        res.status(401).json({ error: 'Authentication required' });
+        return;
+    }
+    try {
+        if (!(await authorizeGuild(req.user.userId, guildId))) {
+            res.status(403).json({
+                error: 'Server management access required',
+            });
+            return;
+        }
+        req.guildId = guildId;
+        next();
+    } catch {
+        res.status(503).json({ error: 'Server authorization unavailable' });
+    }
 };

@@ -14,9 +14,12 @@ export default function AuthCallback() {
         if (hasRun.current) return;
         hasRun.current = true;
 
-        const code = new URLSearchParams(window.location.search).get('code');
+        const params = new URLSearchParams(window.location.search);
+        const code = params.get('code');
+        const state = params.get('state');
+        window.history.replaceState(null, '', window.location.pathname);
 
-        api.get(`/auth/discord?code=${code}`)
+        api.get('/auth/discord', { params: { code, state } })
             .then((res) => {
                 setToken(res.data.accessToken);
                 navigate('/', { replace: true }); // ✅ clear ?code=

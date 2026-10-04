@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 import { db } from '../db';
 
-const discordGuildSchema = z.object({
+export const discordGuildSchema = z.object({
     id: z.string().regex(/^\d+$/),
     name: z.string(),
     icon: z.string().nullable(),

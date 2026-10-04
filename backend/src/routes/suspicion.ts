@@ -5,6 +5,7 @@ import { excludeBannedUsers, requireAuth, validateGuild } from '../middleware';
 import { apiLimiter } from '../middleware/rateLimiter';
 
 const router = Router();
+router.use(requireAuth);
 router.use(validateGuild);
 router.use(apiLimiter);
 
