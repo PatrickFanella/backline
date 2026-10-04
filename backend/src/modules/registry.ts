@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 import { GatewayIntentBits, PermissionFlagsBits } from 'discord.js';
 import { z } from 'zod';
 
@@ -6,6 +7,7 @@ import {
     auditConfig,
     onboardingConfig,
     selfRolesConfig,
+    ticketConfig,
 } from '../community/config';
 import { db } from '../db';
 import { env } from '../utils/env';
@@ -68,6 +70,54 @@ export class ModuleRegistry {
         });
         if (!installation?.active)
             throw new Error('Bot installation unavailable');
+        if (moduleId === 'tickets') {
+            if (ticketConfig.parse(parsed).staffRoles.includes(guildId))
+                throw new Error('Everyone cannot be ticket staff');
+            await db.$transaction(async (tx) => {
+                await tx.$queryRaw(
+                    Prisma.sql`SELECT pg_advisory_xact_lock(hashtext(${guildId})::bigint)::text`
+                );
+                const previous = await tx.guildModuleConfig.findUnique({
+                    where: { guildId_moduleId: { guildId, moduleId } },
+                });
+                if (
+                    previous &&
+                    JSON.stringify(
+                        ticketConfig.parse(previous.config).staffRoles
+                    ) !==
+                        JSON.stringify(ticketConfig.parse(parsed).staffRoles) &&
+                    (await tx.supportTicket.count({
+                        where: {
+                            guildId,
+                            state: { in: ['OPEN', 'CLOSED', 'CREATING'] },
+                        },
+                    }))
+                )
+                    throw new Error(
+                        'Expire existing tickets before changing staff roles'
+                    );
+                if (!ticketConfig.parse(parsed).retainContent)
+                    await tx.ticketTranscript.deleteMany({
+                        where: { guildId, containsContent: true },
+                    });
+                await tx.guildModuleConfig.upsert({
+                    where: { guildId_moduleId: { guildId, moduleId } },
+                    create: {
+                        guildId,
+                        moduleId,
+                        enabled,
+                        config: validated,
+                        version: definition.version,
+                    },
+                    update: {
+                        enabled,
+                        config: validated,
+                        version: definition.version,
+                    },
+                });
+            });
+            return;
+        }
         await db.guildModuleConfig.upsert({
             where: { guildId_moduleId: { guildId, moduleId } },
             create: {
@@ -119,6 +169,27 @@ export class ModuleRegistry {
 }
 
 export const moduleRegistry = new ModuleRegistry();
+moduleRegistry.register({
+    id: 'tickets',
+    description:
+        'Private support channels, participants, claims and bounded transcripts.',
+    version: 1,
+    schema: ticketConfig,
+    permissions: [],
+    intents: [],
+    commands: ['ticket', 'ticket-panel'],
+    pendingJobPolicy: 'cancel',
+    actionPermissions: {
+        create: [
+            PermissionFlagsBits.ManageChannels,
+            PermissionFlagsBits.ManageRoles,
+        ],
+        transcript: [
+            PermissionFlagsBits.ViewChannel,
+            PermissionFlagsBits.ReadMessageHistory,
+        ],
+    },
+});
 moduleRegistry.register({
     id: 'activity',
     description: 'Collect observed member activity for server reports.',

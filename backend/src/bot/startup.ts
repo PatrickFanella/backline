@@ -94,7 +94,10 @@ export async function startBot(): Promise<Client> {
                     );
                 console.log('Bot ready');
                 if (env.BOT_RUN_JOBS) {
-                    const stop = startJobPolling(createBotWorker(client));
+                    const stop = startJobPolling(
+                        createBotWorker(client),
+                        client
+                    );
                     client.once('invalidated', () => {
                         void stop();
                     });

@@ -5,6 +5,7 @@ import AntiSpamConfig from '../components/AntiSpamConfig';
 import OnboardingConfig from '../components/OnboardingConfig';
 import SelfRolesConfig from '../components/SelfRolesConfig';
 import ServerModuleConfig from '../components/ServerModuleConfig';
+import TicketConfig from '../components/TicketConfig';
 import { ThemeToggle } from '../components/ui/ThemeToggle';
 import api from '../lib/api';
 import { useGuild } from '../store/guild';
@@ -210,6 +211,31 @@ export default function Servers() {
                                             enable its Discord intents and
                                             restart the bot.
                                         </p>
+                                    )}
+                                    {module.id === 'tickets' && (
+                                        <TicketConfig
+                                            key={`${guildId}:tickets:${JSON.stringify(module.settings.config)}`}
+                                            guildId={guildId}
+                                            enabled={module.settings.enabled}
+                                            config={module.settings.config}
+                                            onBusy={(value) =>
+                                                setBusy(
+                                                    value ? module.id : null
+                                                )
+                                            }
+                                            onSaved={async () => {
+                                                const current =
+                                                    generation.current;
+                                                const response = await api.get<
+                                                    Module[]
+                                                >(`/guilds/${guildId}/modules`);
+                                                if (
+                                                    current ===
+                                                    generation.current
+                                                )
+                                                    setModules(response.data);
+                                            }}
+                                        />
                                     )}
                                     {module.id === 'onboarding' && (
                                         <OnboardingConfig

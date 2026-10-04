@@ -1,6 +1,20 @@
 import { z } from 'zod';
 
 export const id = z.string().regex(/^\d{17,20}$/);
+export const ticketConfig = z
+    .object({
+        categoryId: id.optional(),
+        panelChannelId: id.optional(),
+        staffRoles: z.array(id).max(10).default([]),
+        retentionDays: z.number().int().min(1).max(90).default(7),
+        retainContent: z.boolean().default(false),
+        maxOpen: z.number().int().min(1).max(100).default(25),
+    })
+    .strict()
+    .refine(
+        (value) => new Set(value.staffRoles).size === value.staffRoles.length,
+        'Duplicate staff roles'
+    );
 export const auditKinds = [
     'member-join',
     'member-leave',

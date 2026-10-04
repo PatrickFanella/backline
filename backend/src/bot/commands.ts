@@ -9,6 +9,7 @@ import {
 
 import { acknowledgeRules } from '../community/onboarding';
 import { rolePanelCommand, routeSelfRoles } from '../community/selfRoles';
+import { routeTickets, ticketCommands } from '../community/tickets';
 import { db } from '../db';
 import { moderationCommands, routeModeration } from '../moderation/commands';
 import { moduleRegistry } from '../modules/registry';
@@ -92,6 +93,7 @@ export async function routeInteraction(
             return;
         }
         if (await acknowledgeRules(interaction)) return;
+        if (await routeTickets(interaction)) return;
         if (await routeSelfRoles(interaction)) return;
         if (!interaction.isChatInputCommand()) {
             await interaction.editReply(
@@ -148,6 +150,23 @@ export async function routeInteraction(
                 }
                 const moduleId = interaction.options.getString('module', true);
                 const enabled = interaction.options.getBoolean('enabled', true);
+                if (moduleId === 'tickets') {
+                    const actor = await interaction.guild.members.fetch({
+                        user: interaction.user.id,
+                        force: true,
+                    });
+                    if (
+                        !actor.permissions.has([
+                            PermissionFlagsBits.ManageChannels,
+                            PermissionFlagsBits.ManageRoles,
+                        ])
+                    ) {
+                        await interaction.editReply(
+                            'Current Manage Channels and Manage Roles permissions are required for ticket configuration.'
+                        );
+                        return;
+                    }
+                }
                 const module = moduleRegistry.get(moduleId);
                 if (
                     enabled &&
@@ -241,6 +260,7 @@ export async function registerGuildCommands(
             ...coreCommands,
             ...moderationCommands,
             rolePanelCommand,
+            ...ticketCommands,
         ])
             await guild.commands.create(command);
     }

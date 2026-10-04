@@ -154,6 +154,30 @@ router.put('/guilds/:guildId/modules/:moduleId', async (req, res) => {
         return;
     }
     try {
+        if (req.params.moduleId === 'tickets') {
+            const member = await db.guild.findUnique({
+                where: {
+                    userId_guildId: {
+                        userId: req.user!.userId,
+                        guildId: req.params.guildId,
+                    },
+                },
+            });
+            const required =
+                PermissionFlagsBits.ManageChannels |
+                PermissionFlagsBits.ManageRoles;
+            if (
+                !member ||
+                (!member.owner &&
+                    !(member.permissions & PermissionFlagsBits.Administrator) &&
+                    (member.permissions & required) !== required)
+            ) {
+                res.status(403).json({
+                    error: 'Current Manage Channels and Manage Roles permissions are required for ticket configuration',
+                });
+                return;
+            }
+        }
         if (
             (req.params.moduleId === 'onboarding' &&
                 onboardingConfig.parse(body.data.config).joinRoles.length) ||
