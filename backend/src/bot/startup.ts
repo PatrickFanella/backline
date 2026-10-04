@@ -2,6 +2,7 @@ import path from 'path';
 
 import { Client, Partials } from 'discord.js';
 
+import { radioRuntime } from '../audio/radio';
 import { registerAntiSpamEvents } from '../community/antiSpam';
 import { registerAuditEvents } from '../community/audit';
 import { registerOnboardingEvents } from '../community/onboarding';
@@ -93,6 +94,7 @@ export async function startBot(): Promise<Client> {
                         )
                     );
                 console.log('Bot ready');
+                if (env.BOT_VOICE_INTENT) await radioRuntime.recover(guildIds);
                 if (env.BOT_RUN_JOBS) {
                     const stop = startJobPolling(
                         createBotWorker(client),
@@ -103,7 +105,15 @@ export async function startBot(): Promise<Client> {
                     });
                     const destroy = client.destroy.bind(client);
                     client.destroy = async () => {
+                        await radioRuntime.shutdown();
                         await stop();
+                        await destroy();
+                    };
+                }
+                if (!env.BOT_RUN_JOBS) {
+                    const destroy = client.destroy.bind(client);
+                    client.destroy = async () => {
+                        await radioRuntime.shutdown();
                         await destroy();
                     };
                 }
