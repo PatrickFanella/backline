@@ -3,13 +3,13 @@
  */
 
 import * as db from '../../src/db';
-import * as redis from '../../src/utils/redis';
 import {
     getSystemHealth,
     getConnectionPoolStats,
     getConnectionPoolAlerts,
     isConnectionPoolOverloaded,
 } from '../../src/utils/connectionPoolMonitor';
+import * as redis from '../../src/utils/redis';
 
 // Mock dependencies
 jest.mock('../../src/db', () => ({
@@ -46,10 +46,16 @@ describe('Connection Pool Monitor', () => {
                 isShuttingDown: false,
             };
 
-            const mockRedisMetrics = {
+            const mockRedisMetrics: Awaited<
+                ReturnType<typeof redis.getRedisMetrics>
+            > = {
                 available: true,
                 connected: true,
                 status: 'ready',
+                totalConnectionsReceived: '1',
+                totalCommandsProcessed: '1',
+                instantaneousOpsPerSec: '1',
+                usedMemory: '1M',
             };
 
             jest.spyOn(db, 'checkDatabaseHealth').mockResolvedValue(
@@ -90,7 +96,9 @@ describe('Connection Pool Monitor', () => {
                 error: 'Connection failed',
             };
 
-            const mockRedisMetrics = {
+            const mockRedisMetrics: Awaited<
+                ReturnType<typeof redis.getRedisMetrics>
+            > = {
                 available: false,
                 connected: false,
             };
@@ -129,7 +137,9 @@ describe('Connection Pool Monitor', () => {
                 isShuttingDown: false,
             };
 
-            const mockRedisMetrics = {
+            const mockRedisMetrics: Awaited<
+                ReturnType<typeof redis.getRedisMetrics>
+            > = {
                 available: false,
                 connected: false,
             };
@@ -165,10 +175,16 @@ describe('Connection Pool Monitor', () => {
                 isShuttingDown: false,
             };
 
-            const mockRedisMetrics = {
+            const mockRedisMetrics: Awaited<
+                ReturnType<typeof redis.getRedisMetrics>
+            > = {
                 available: true,
                 connected: true,
                 status: 'ready',
+                totalConnectionsReceived: '1',
+                totalCommandsProcessed: '1',
+                instantaneousOpsPerSec: '1',
+                usedMemory: '1M',
             };
 
             jest.spyOn(db, 'getConnectionPoolMetrics').mockResolvedValue(
@@ -199,7 +215,9 @@ describe('Connection Pool Monitor', () => {
                 error: 'Connection failed',
             };
 
-            const mockRedisMetrics = {
+            const mockRedisMetrics: Awaited<
+                ReturnType<typeof redis.getRedisMetrics>
+            > = {
                 available: false,
                 connected: false,
             };
@@ -230,7 +248,9 @@ describe('Connection Pool Monitor', () => {
                 isShuttingDown: false,
             };
 
-            const mockRedisMetrics = {
+            const mockRedisMetrics: Awaited<
+                ReturnType<typeof redis.getRedisMetrics>
+            > = {
                 available: true,
                 connected: true,
             };
@@ -260,7 +280,9 @@ describe('Connection Pool Monitor', () => {
                 isShuttingDown: false,
             };
 
-            const mockRedisMetrics = {
+            const mockRedisMetrics: Awaited<
+                ReturnType<typeof redis.getRedisMetrics>
+            > = {
                 available: true,
                 connected: true,
             };
@@ -290,7 +312,9 @@ describe('Connection Pool Monitor', () => {
                 isShuttingDown: false,
             };
 
-            const mockRedisMetrics = {
+            const mockRedisMetrics: Awaited<
+                ReturnType<typeof redis.getRedisMetrics>
+            > = {
                 available: true,
                 connected: true,
             };
@@ -320,7 +344,9 @@ describe('Connection Pool Monitor', () => {
                 isShuttingDown: false,
             };
 
-            const mockRedisMetrics = {
+            const mockRedisMetrics: Awaited<
+                ReturnType<typeof redis.getRedisMetrics>
+            > = {
                 available: false,
                 connected: false,
             };
@@ -351,7 +377,9 @@ describe('Connection Pool Monitor', () => {
                 isShuttingDown: false,
             };
 
-            const mockRedisMetrics = {
+            const mockRedisMetrics: Awaited<
+                ReturnType<typeof redis.getRedisMetrics>
+            > = {
                 available: true,
                 connected: true,
             };
@@ -379,7 +407,9 @@ describe('Connection Pool Monitor', () => {
                 isShuttingDown: false,
             };
 
-            const mockRedisMetrics = {
+            const mockRedisMetrics: Awaited<
+                ReturnType<typeof redis.getRedisMetrics>
+            > = {
                 available: true,
                 connected: true,
             };
@@ -407,7 +437,9 @@ describe('Connection Pool Monitor', () => {
                 isShuttingDown: false,
             };
 
-            const mockRedisMetrics = {
+            const mockRedisMetrics: Awaited<
+                ReturnType<typeof redis.getRedisMetrics>
+            > = {
                 available: true,
                 connected: true,
             };

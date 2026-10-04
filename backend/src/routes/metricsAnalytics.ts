@@ -4,7 +4,9 @@
  */
 
 import { Router, Request, Response } from 'express';
+import { z } from 'zod';
 
+import { requireAuth, requirePermission } from '../middleware';
 import {
     getAnalyticsSummary,
     getFeatureUsageStats,
@@ -14,9 +16,15 @@ import {
     trackEvent,
     AnalyticsEventType,
 } from '../services/analytics';
-import { requireAuth, requirePermission } from '../middleware';
 
 const router = Router();
+const eventSchema = z.object({
+    eventType: z.enum(AnalyticsEventType),
+    eventName: z.string().min(1).max(200),
+    properties: z.record(z.string(), z.json()).optional(),
+    pathname: z.string().max(2000).optional(),
+    referrer: z.string().max(2000).optional(),
+});
 
 // All analytics routes require authentication
 router.use(requireAuth);
@@ -71,7 +79,7 @@ router.use(requireAuth);
 router.get(
     '/summary',
     requirePermission('analytics.view'),
-    async (req: Request, res: Response) => {
+    async (req: Request, res: Response): Promise<void> => {
         try {
             const startDate = req.query.startDate
                 ? new Date(req.query.startDate as string)
@@ -150,7 +158,7 @@ router.get(
 router.get(
     '/features',
     requirePermission('analytics.view'),
-    async (req: Request, res: Response) => {
+    async (req: Request, res: Response): Promise<void> => {
         try {
             const startDate = req.query.startDate
                 ? new Date(req.query.startDate as string)
@@ -183,7 +191,7 @@ router.get(
 router.get(
     '/activity',
     requirePermission('analytics.view'),
-    async (req: Request, res: Response) => {
+    async (req: Request, res: Response): Promise<void> => {
         try {
             const startDate = req.query.startDate
                 ? new Date(req.query.startDate as string)
@@ -220,7 +228,7 @@ router.get(
 router.get(
     '/performance',
     requirePermission('analytics.view'),
-    async (req: Request, res: Response) => {
+    async (req: Request, res: Response): Promise<void> => {
         try {
             const metricType =
                 (req.query.type as string) ||
@@ -263,31 +271,34 @@ router.get(
  * POST /api/metrics/event
  * Track a custom analytics event (from frontend)
  */
-router.post('/event', async (req: Request, res: Response) => {
+router.post('/event', async (req: Request, res: Response): Promise<void> => {
     try {
-        const { eventType, eventName, properties } = req.body;
-
-        if (!eventType || !eventName) {
-            return res.status(400).json({
+        const parsed = eventSchema.safeParse(req.body);
+        if (!parsed.success) {
+            res.status(400).json({
                 success: false,
                 error: 'eventType and eventName are required',
             });
+            return;
         }
+        const { eventType, eventName, properties, pathname, referrer } =
+            parsed.data;
 
-        const consentGiven = req.cookies?.analyticsConsent === 'true';
+        const cookies: unknown = req.cookies;
+        const consentGiven = z
+            .object({ analyticsConsent: z.literal('true') })
+            .safeParse(cookies).success;
 
         await trackEvent({
-            userId: req.user?.id,
-            sessionId:
-                (req as any).sessionID ||
-                (req.headers['x-session-id'] as string),
-            eventType: eventType as AnalyticsEventType,
+            userId: req.user?.userId,
+            sessionId: req.get('x-session-id'),
+            eventType,
             eventName,
             properties,
             ipAddress: req.ip,
             userAgent: req.headers['user-agent'],
-            pathname: req.body.pathname,
-            referrer: req.body.referrer,
+            pathname,
+            referrer,
             consentGiven,
         });
 
@@ -311,7 +322,7 @@ router.post('/event', async (req: Request, res: Response) => {
 router.get(
     '/dashboard',
     requirePermission('analytics.view'),
-    async (req: Request, res: Response) => {
+    async (req: Request, res: Response): Promise<void> => {
         try {
             const now = new Date();
             const last7Days = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);

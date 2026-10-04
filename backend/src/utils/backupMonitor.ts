@@ -1,6 +1,9 @@
+import { Prisma } from '@prisma/client';
+
 import { db } from '../db';
 
 import { sendAlert } from './alertSystem';
+import { toInputJson } from './prismaJson';
 
 export interface BackupHealthCheckResult {
     healthy: boolean;
@@ -236,8 +239,8 @@ export async function logBackupComplete(
             s3LocationSecondary: details.s3LocationSecondary,
             errorMessage: details.errorMessage,
             metadata: details.metadata
-                ? (details.metadata as unknown as import('@prisma/client').Prisma.JsonValue)
-                : null,
+                ? toInputJson(details.metadata)
+                : Prisma.DbNull,
             duration,
             completedAt: new Date(),
         },
@@ -271,9 +274,7 @@ export async function markBackupVerified(
         data: {
             status: 'VERIFIED',
             verifiedAt: new Date(),
-            metadata: metadata
-                ? (metadata as unknown as import('@prisma/client').Prisma.JsonValue)
-                : null,
+            metadata: metadata ? toInputJson(metadata) : Prisma.DbNull,
         },
     });
 }
