@@ -81,7 +81,8 @@ When rate limited, you'll receive a \`429 Too Many Requests\` response with a \`
                         authorizationCode: {
                             authorizationUrl:
                                 'https://discord.com/oauth2/authorize',
-                            tokenUrl: 'https://discord.com/api/oauth2/token',
+                            tokenUrl:
+                                'https://discord.com/api/v10/oauth2/token',
                             scopes: {
                                 identify: 'Read user profile',
                                 guilds: 'Read user guilds',
@@ -481,8 +482,7 @@ When rate limited, you'll receive a \`429 Too Many Requests\` response with a \`
             },
             {
                 name: 'Admin Privacy',
-                description:
-                    'Administrative privacy controls and audit logs',
+                description: 'Administrative privacy controls and audit logs',
             },
             {
                 name: 'Admin',

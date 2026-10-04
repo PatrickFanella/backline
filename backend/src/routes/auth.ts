@@ -118,7 +118,7 @@ router.get(
                 return;
             }
             const tokenRes = await axios.post(
-                'https://discord.com/api/oauth2/token',
+                'https://discord.com/api/v10/oauth2/token',
                 new URLSearchParams({
                     client_id: env.DISCORD_CLIENT_ID,
                     client_secret: env.DISCORD_CLIENT_SECRET,
@@ -158,7 +158,7 @@ router.get(
             }
 
             const userRes = await axios.get(
-                'https://discord.com/api/users/@me',
+                'https://discord.com/api/v10/users/@me',
                 {
                     headers: { Authorization: `Bearer ${access_token}` },
                 }
@@ -249,7 +249,7 @@ router.get(
             }
 
             const guildsRes = await axios.get(
-                'https://discord.com/api/users/@me/guilds',
+                'https://discord.com/api/v10/users/@me/guilds',
                 {
                     headers: { Authorization: `Bearer ${access_token}` },
                 }
