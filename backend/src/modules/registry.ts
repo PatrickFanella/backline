@@ -2,6 +2,7 @@ import { Prisma } from '@prisma/client';
 import { GatewayIntentBits, PermissionFlagsBits } from 'discord.js';
 import { z } from 'zod';
 
+import { audioConfig } from '../audio/config';
 import {
     antiSpamConfig,
     auditConfig,
@@ -170,6 +171,19 @@ export class ModuleRegistry {
 
 export const moduleRegistry = new ModuleRegistry();
 moduleRegistry.register({
+    id: 'audio',
+    description: 'Play approved SomaFM radio stations in your voice channel.',
+    version: 1,
+    schema: audioConfig,
+    permissions: [],
+    intents: [GatewayIntentBits.GuildVoiceStates],
+    commands: ['radio'],
+    pendingJobPolicy: 'cancel',
+    actionPermissions: {
+        play: [PermissionFlagsBits.Connect, PermissionFlagsBits.Speak],
+    },
+});
+moduleRegistry.register({
     id: 'tickets',
     description:
         'Private support channels, participants, claims and bounded transcripts.',
@@ -245,6 +259,7 @@ export function configuredIntents(): GatewayIntentBits[] {
     if (env.BOT_ACTIVITY_INTENTS)
         intents.push(...moduleRegistry.get('activity').intents);
     if (env.BOT_MEMBER_INTENTS) intents.push(GatewayIntentBits.GuildMembers);
+    if (env.BOT_VOICE_INTENT) intents.push(GatewayIntentBits.GuildVoiceStates);
     if (env.BOT_MESSAGE_INTENTS) intents.push(GatewayIntentBits.GuildMessages);
     if (env.BOT_MESSAGE_CONTENT_INTENT)
         intents.push(GatewayIntentBits.MessageContent);

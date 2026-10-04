@@ -59,6 +59,10 @@ const envSchema = z.object({
         .string()
         .default('true')
         .transform((value) => value === 'true'),
+    BOT_VOICE_INTENT: z
+        .string()
+        .default('false')
+        .transform((value) => value === 'true'),
     BOT_ACTIVITY_INTENTS: z
         .string()
         .default('false')

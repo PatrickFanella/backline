@@ -7,6 +7,7 @@ import {
     SlashCommandBuilder,
 } from 'discord.js';
 
+import { radioCommand, routeRadio } from '../audio/radio';
 import { acknowledgeRules } from '../community/onboarding';
 import { rolePanelCommand, routeSelfRoles } from '../community/selfRoles';
 import { routeTickets, ticketCommands } from '../community/tickets';
@@ -94,6 +95,7 @@ export async function routeInteraction(
         }
         if (await acknowledgeRules(interaction)) return;
         if (await routeTickets(interaction)) return;
+        if (await routeRadio(interaction)) return;
         if (await routeSelfRoles(interaction)) return;
         if (!interaction.isChatInputCommand()) {
             await interaction.editReply(
@@ -261,6 +263,7 @@ export async function registerGuildCommands(
             ...moderationCommands,
             rolePanelCommand,
             ...ticketCommands,
+            radioCommand,
         ])
             await guild.commands.create(command);
     }

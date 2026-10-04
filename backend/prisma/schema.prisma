@@ -910,3 +910,18 @@ model TicketTranscript {
   expiresAt DateTime @db.Timestamptz
   @@index([expiresAt])
 }
+
+model VoicePlayback {
+  id String @id @default(uuid())
+  guildId String
+  channelId String
+  requesterId String
+  stationId String
+  state String @default("STARTING")
+  detail String?
+  startedAt DateTime @default(now()) @db.Timestamptz
+  finishedAt DateTime? @db.Timestamptz
+  playbackMs Int @default(0)
+  daveProtocol Int?
+  @@index([guildId, startedAt])
+}

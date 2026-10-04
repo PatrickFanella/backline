@@ -1,5 +1,6 @@
 import { Client } from 'discord.js';
 
+import { radioRuntime } from '../audio/radio';
 import { antiSpamHandler, recoverSpamDecisions } from '../community/antiSpam';
 import {
     auditHandler,
@@ -147,6 +148,7 @@ export function startJobPolling(
                 await recoverJourneys();
                 await expireRoleChoices();
                 if (client) await expireTickets(client);
+                await radioRuntime.expireHistory();
                 await recoverSpamDecisions();
                 lastExpiry = Date.now();
             }
