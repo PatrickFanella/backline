@@ -5,6 +5,7 @@ import axios from 'axios';
 import express from 'express';
 
 import { db } from '../db';
+import { syncGuildMemberships } from '../guilds/installations';
 import {
     requireAdmin,
     requireAuth,
@@ -268,19 +269,7 @@ router.get(
                     ? allGuilds.filter((g: any) => botGuildIds.includes(g.id))
                     : allGuilds;
 
-            await db.guild.deleteMany({ where: { userId: dbUser.id } });
-            for (const g of guilds) {
-                await db.guild.create({
-                    data: {
-                        guildId: g.id,
-                        name: g.name,
-                        icon: g.icon,
-                        owner: g.owner,
-                        permissions: g.permissions,
-                        userId: dbUser.id,
-                    },
-                });
-            }
+            await syncGuildMemberships(dbUser.id, guilds);
 
             // Generate access token (15 minutes)
             const accessToken = generateAccessToken({

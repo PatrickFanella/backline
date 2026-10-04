@@ -33,12 +33,14 @@ async function getClientDriftFlagsUncached(_guildId: string, _since?: Date) {
 
     const past = await db.presenceEvent.findMany({
         where: {
+            guildId: _guildId,
             createdAt: { gte: twoWeeksAgo, lt: oneWeekAgo },
         },
     });
 
     const recent = await db.presenceEvent.findMany({
         where: {
+            guildId: _guildId,
             createdAt: { gte: oneWeekAgo },
         },
     });
