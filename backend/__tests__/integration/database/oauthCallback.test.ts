@@ -91,6 +91,19 @@ databaseTests('Discord OAuth callback and session persistence', () => {
             expect.any(URLSearchParams),
             expect.any(Object)
         );
+        const session = await agent
+            .get('/auth/me')
+            .set('Authorization', `Bearer ${result.body.accessToken}`)
+            .expect(200);
+        expect(session.body.discordId).toBe(discordId);
+        expect(session.body.guilds).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    guildId,
+                    permissions: '9007199254740993',
+                }),
+            ])
+        );
         await agent
             .get('/auth/discord')
             .query({ code: 'fixture-authorization-code', state })
