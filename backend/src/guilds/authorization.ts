@@ -86,6 +86,20 @@ export async function authorizeGuild(
         where: { guildId },
     });
     if (!installation?.active) return false;
+    if (!(await refreshCurrentMemberships(userId))) return false;
+    const membership = await db.guild.findUnique({
+        where: { userId_guildId: { userId, guildId } },
+    });
+    return (
+        !!membership &&
+        canManageGuild({
+            owner: membership.owner,
+            permissions: membership.permissions.toString(),
+        })
+    );
+}
+
+async function refreshCurrentMemberships(userId: string): Promise<boolean> {
     let refresh = pending.get(userId);
     if (!refresh) {
         refresh = refreshMemberships(userId);
@@ -97,15 +111,29 @@ export async function authorizeGuild(
     } finally {
         if (pending.get(userId) === refresh) pending.delete(userId);
     }
-    if (!refreshed) return false;
-    const membership = await db.guild.findUnique({
-        where: { userId_guildId: { userId, guildId } },
+    return refreshed;
+}
+
+export async function listManagedGuilds(userId: string) {
+    if (!(await refreshCurrentMemberships(userId)))
+        throw new Error('Discord authorization unavailable');
+    const memberships = await db.guild.findMany({
+        where: { userId, installation: { active: true } },
+        orderBy: { name: 'asc' },
     });
-    return (
-        !!membership &&
-        canManageGuild({
-            owner: membership.owner,
-            permissions: membership.permissions.toString(),
-        })
-    );
+    return memberships
+        .filter(
+            (member) =>
+                (!env.BOT_GUILD_IDS.length ||
+                    env.BOT_GUILD_IDS.includes(member.guildId)) &&
+                canManageGuild({
+                    owner: member.owner,
+                    permissions: member.permissions.toString(),
+                })
+        )
+        .map((member) => ({
+            id: member.guildId,
+            name: member.name,
+            icon: member.icon,
+        }));
 }
