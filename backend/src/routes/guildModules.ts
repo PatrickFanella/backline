@@ -2,10 +2,21 @@ import { Router } from 'express';
 import { z } from 'zod';
 
 import { db } from '../db';
+import { listManagedGuilds } from '../guilds/authorization';
 import { requireAuthOrApiKey, requireGuildAccess } from '../middleware';
 import { moduleRegistry } from '../modules/registry';
+import { env } from '../utils/env';
 
 const router = Router();
+router.get('/guilds', requireAuthOrApiKey, async (req, res) => {
+    try {
+        res.json(await listManagedGuilds(req.user!.userId));
+    } catch {
+        res.status(503).json({
+            error: 'Current Discord server authorization unavailable. Sign in again or retry.',
+        });
+    }
+});
 const updateSchema = z.object({
     enabled: z.boolean(),
     config: z.unknown().default({}),
@@ -24,6 +35,8 @@ router.get('/guilds/:guildId/modules', async (req, res) => {
                 permissions: module.permissions.map(String),
                 intents: module.intents,
                 pendingJobPolicy: module.pendingJobPolicy,
+                operatorReady:
+                    module.id !== 'activity' || env.BOT_ACTIVITY_INTENTS,
                 settings: settings.find(
                     (row) => row.moduleId === module.id
                 ) ?? { enabled: false, config: {} },

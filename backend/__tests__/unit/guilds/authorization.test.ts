@@ -4,6 +4,7 @@ import { db } from '../../../src/db';
 import {
     authorizeGuild,
     canManageGuild,
+    listManagedGuilds,
 } from '../../../src/guilds/authorization';
 import { syncGuildMemberships } from '../../../src/guilds/installations';
 
@@ -15,7 +16,7 @@ jest.mock('../../../src/guilds/installations', () => ({
 jest.mock('../../../src/db', () => ({
     db: {
         user: { findUnique: jest.fn(), update: jest.fn() },
-        guild: { findUnique: jest.fn() },
+        guild: { findUnique: jest.fn(), findMany: jest.fn() },
         guildInstallation: { findUnique: jest.fn() },
     },
 }));
@@ -87,6 +88,39 @@ describe('server authorization', () => {
     it('denies banned users regardless of stale token role', async () => {
         (db.user.findUnique as jest.Mock).mockResolvedValue({ role: 'BANNED' });
         expect(await authorizeGuild('user', '123456789')).toBe(false);
+    });
+    it('lists only current management memberships in installed pilot servers', async () => {
+        (db.guild.findMany as jest.Mock).mockResolvedValue([
+            {
+                guildId: '123456789',
+                name: 'A',
+                icon: null,
+                owner: false,
+                permissions: BigInt(32),
+            },
+            {
+                guildId: '987654321',
+                name: 'B',
+                icon: null,
+                owner: false,
+                permissions: BigInt(0),
+            },
+            {
+                guildId: '333333333',
+                name: 'Outside pilot',
+                icon: null,
+                owner: true,
+                permissions: BigInt(8),
+            },
+        ]);
+        expect(await listManagedGuilds('user')).toEqual([
+            { id: '123456789', name: 'A', icon: null },
+        ]);
+        expect(db.guild.findMany).toHaveBeenCalledWith(
+            expect.objectContaining({
+                where: { userId: 'user', installation: { active: true } },
+            })
+        );
     });
     it('shares concurrent refresh token rotation', async () => {
         (db.user.findUnique as jest.Mock).mockResolvedValue({
