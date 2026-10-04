@@ -103,6 +103,40 @@ describe('core command routing', () => {
             {}
         );
     });
+    it('explains an unset audit destination without attempting enablement', async () => {
+        const fixture = interaction('settings');
+        fixture.options.getString = () => 'audit-log';
+        fixture.options.getBoolean = () => true;
+        (db.guildModuleConfig.findUnique as jest.Mock).mockResolvedValue(null);
+        await routeInteraction(fixture as unknown as Interaction);
+        expect(moduleRegistry.configure).not.toHaveBeenCalled();
+        expect(fixture.editReply).toHaveBeenCalledWith(
+            expect.stringContaining('save the audit channel')
+        );
+    });
+    it('names missing intents before enabling a module', async () => {
+        const fixture = interaction('settings');
+        fixture.options.getBoolean = () => true;
+        fixture.client.options.intents.has = () => false;
+        await routeInteraction(fixture as unknown as Interaction);
+        expect(moduleRegistry.configure).not.toHaveBeenCalled();
+        expect(fixture.editReply).toHaveBeenCalledWith(
+            expect.stringContaining('GuildPresences')
+        );
+    });
+    it('names per-action permission gaps and empty onboarding configuration in setup', async () => {
+        const fixture = interaction('setup');
+        fixture.guild.members.fetchMe.mockResolvedValue({
+            permissions: { has: () => false },
+        });
+        await routeInteraction(fixture as unknown as Interaction);
+        const response = fixture.editReply.mock.calls[0][0];
+        expect(JSON.stringify(response)).toContain('ModerateMembers');
+        expect(JSON.stringify(response)).toContain(
+            'no onboarding actions are configured'
+        );
+        expect(JSON.stringify(response).length).toBeLessThan(6000);
+    });
     it('rejects direct-message commands', async () => {
         const fixture = interaction();
         fixture.inGuild = () => false;

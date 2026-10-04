@@ -2,12 +2,18 @@ import {
     ChatInputCommandInteraction,
     Client,
     Interaction,
+    GatewayIntentBits,
     MessageFlags,
     PermissionFlagsBits,
     SlashCommandBuilder,
 } from 'discord.js';
 
 import { radioCommand, routeRadio } from '../audio/radio';
+import {
+    auditConfig,
+    onboardingConfig,
+    selfRolesConfig,
+} from '../community/config';
 import { acknowledgeRules } from '../community/onboarding';
 import { rolePanelCommand, routeSelfRoles } from '../community/selfRoles';
 import { routeTickets, ticketCommands } from '../community/tickets';
@@ -15,6 +21,46 @@ import { db } from '../db';
 import { moderationCommands, routeModeration } from '../moderation/commands';
 import { moduleRegistry } from '../modules/registry';
 import { env } from '../utils/env';
+
+function permissionNames(values: bigint[]): string {
+    return values
+        .map(
+            (value) =>
+                Object.entries(PermissionFlagsBits).find(
+                    ([, bit]) => bit === value
+                )?.[0] ?? String(value)
+        )
+        .join(', ');
+}
+function intentNames(values: GatewayIntentBits[]): string {
+    return values
+        .map(
+            (value) =>
+                Object.entries(GatewayIntentBits).find(
+                    ([, bit]) => bit === value
+                )?.[0] ?? String(value)
+        )
+        .join(', ');
+}
+function configurationNote(moduleId: string, config: unknown): string {
+    if (moduleId === 'audit-log' && !auditConfig.parse(config).channelId)
+        return 'Choose an audit destination channel in the dashboard before enabling.';
+    if (moduleId === 'onboarding') {
+        const saved = onboardingConfig.parse(config);
+        if (
+            !saved.channelId &&
+            !saved.departureChannelId &&
+            !saved.joinRoles.length
+        )
+            return 'Choose welcome/departure channels or join roles in the dashboard; no onboarding actions are configured.';
+    }
+    if (moduleId === 'self-roles') {
+        const saved = selfRolesConfig.parse(config);
+        if (!saved.channelId || !saved.roles.length)
+            return 'Choose a panel channel and role choices in the dashboard before publishing.';
+    }
+    return '';
+}
 
 export const coreCommands = [
     new SlashCommandBuilder()
@@ -120,6 +166,9 @@ export async function routeInteraction(
                 const bot = await interaction.guild.members.fetchMe({
                     force: true,
                 });
+                const settings = await db.guildModuleConfig.findMany({
+                    where: { guildId: interaction.guildId },
+                });
                 const diagnostics = moduleRegistry.list().map((module) => {
                     const permissions = module.permissions.filter(
                         (permission) => !bot.permissions.has(permission)
@@ -131,16 +180,51 @@ export async function routeInteraction(
                     const actions = Object.entries(
                         module.actionPermissions ?? {}
                     )
-                        .map(
-                            ([action, required]) =>
-                                `${action}: ${required.filter((permission) => !bot.permissions.has(permission)).length} missing permissions`
-                        )
-                        .join('; ');
-                    return `${module.id}: ${permissions.length} missing bot permissions; ${intents.length} missing Gateway intents${intents.length ? ' (operator must enable required intents and restart)' : ''}${actions ? ' — ' + actions : ''}`;
+                        .map(([action, required]) => {
+                            const missing = required.filter(
+                                (permission) => !bot.permissions.has(permission)
+                            );
+                            return missing.length
+                                ? `${action}: ${permissionNames(missing)}`
+                                : '';
+                        })
+                        .filter(Boolean);
+                    const saved = settings.find(
+                        (row) => row.moduleId === module.id
+                    );
+                    const note = configurationNote(
+                        module.id,
+                        saved?.config ?? {}
+                    );
+                    return {
+                        name: `${module.id} — ${saved?.enabled ? 'enabled' : 'disabled'}`,
+                        value:
+                            [
+                                permissions.length
+                                    ? `Missing bot permissions: ${permissionNames(permissions)}`
+                                    : '',
+                                intents.length
+                                    ? `Missing Gateway intents: ${intentNames(intents)}. Operator must enable these and restart.`
+                                    : '',
+                                actions.length
+                                    ? `Action permissions missing: ${actions.join('; ')}`
+                                    : '',
+                                note,
+                            ]
+                                .filter(Boolean)
+                                .join('\n') ||
+                            'Required permissions and Gateway intents are available.',
+                    };
                 });
-                await interaction.editReply(
-                    `Server setup is ready. Use /settings to opt into modules.\n${diagnostics.join('\n')}`
-                );
+                await interaction.editReply({
+                    embeds: [
+                        {
+                            title: 'Server setup diagnostics',
+                            description: `Use /settings to opt into modules. Configure channels and roles at ${env.FRONTEND_URL}/servers. Channel permissions and role hierarchy are checked again when an action runs.`,
+                            fields: diagnostics,
+                        },
+                    ],
+                });
                 break;
             }
             case 'settings': {
@@ -170,29 +254,39 @@ export async function routeInteraction(
                     }
                 }
                 const module = moduleRegistry.get(moduleId);
-                if (
-                    enabled &&
-                    module.intents.some(
-                        (intent) =>
-                            !interaction.client.options.intents.has(intent)
-                    )
-                ) {
+                const missingIntents = module.intents.filter(
+                    (intent) => !interaction.client.options.intents.has(intent)
+                );
+                if (enabled && missingIntents.length) {
                     await interaction.editReply(
-                        'The bot is missing required Gateway intents. Ask the operator to enable them and restart before enabling this module.'
+                        `Missing Gateway intents: ${intentNames(missingIntents)}. Ask the operator to enable these and restart, then retry /settings.`
                     );
                     return;
                 }
                 const bot = await interaction.guild.members.fetchMe({
                     force: true,
                 });
-                if (
-                    enabled &&
-                    module.permissions.some(
-                        (permission) => !bot.permissions.has(permission)
-                    )
-                ) {
+                const missingPermissions = module.permissions.filter(
+                    (permission) => !bot.permissions.has(permission)
+                );
+                if (enabled && missingPermissions.length) {
                     await interaction.editReply(
-                        'The bot is missing required server permissions. Check /setup.'
+                        `Missing bot permissions: ${permissionNames(missingPermissions)}. Update the bot role and channel permissions, then retry /settings.`
+                    );
+                    return;
+                }
+                const saved = await db.guildModuleConfig.findUnique({
+                    where: {
+                        guildId_moduleId: {
+                            guildId: interaction.guildId,
+                            moduleId,
+                        },
+                    },
+                });
+                const note = configurationNote(moduleId, saved?.config ?? {});
+                if (enabled && moduleId === 'audit-log' && note) {
+                    await interaction.editReply(
+                        `${note} Open ${env.FRONTEND_URL}/servers, save the audit channel, then retry /settings.`
                     );
                     return;
                 }
@@ -200,19 +294,10 @@ export async function routeInteraction(
                     interaction.guildId,
                     moduleId,
                     enabled,
-                    (
-                        await db.guildModuleConfig.findUnique({
-                            where: {
-                                guildId_moduleId: {
-                                    guildId: interaction.guildId,
-                                    moduleId,
-                                },
-                            },
-                        })
-                    )?.config ?? {}
+                    saved?.config ?? {}
                 );
                 await interaction.editReply(
-                    `${moduleId} ${enabled ? 'enabled' : 'disabled'} for this server.`
+                    `${moduleId} ${enabled ? 'enabled' : 'disabled'} for this server.${enabled && note ? ` ${note}` : ''}`
                 );
                 break;
             }
