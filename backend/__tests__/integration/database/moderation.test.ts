@@ -38,7 +38,7 @@ databaseTests('moderation delivery and case persistence', () => {
     };
     const guild = {
         ownerId: 'owner',
-        members: { fetch: jest.fn(), fetchMe: jest.fn() },
+        members: { fetch: jest.fn(), fetchMe: jest.fn(), unban: jest.fn() },
         channels: { fetch: jest.fn() },
         bans: { fetch: jest.fn() },
     };
@@ -138,6 +138,45 @@ databaseTests('moderation delivery and case persistence', () => {
             requested: 3,
             skipped: 2,
         });
+    });
+    it('does not unban based on a cached ban that is absent from Discord', async () => {
+        guild.bans.fetch.mockImplementation((options: { force?: boolean }) => {
+            if (options.force)
+                return Promise.reject(new Error('Current ban absent'));
+            return Promise.resolve({ user: { id: targetId } });
+        });
+        const record = await performModeration(
+            client as unknown as Client,
+            guildId,
+            'actor',
+            'stale-ban',
+            {
+                action: 'unban',
+                targetId,
+                reason: 'fixture',
+            }
+        );
+        expect(record.state).toBe('FAILED');
+        expect(guild.members.unban).not.toHaveBeenCalled();
+    });
+    it('unbans after verifying the current ban and does not replay a delivered action', async () => {
+        guild.bans.fetch.mockResolvedValue({ user: { id: targetId } });
+        guild.members.unban.mockResolvedValue(targetId);
+        const run = () =>
+            performModeration(
+                client as unknown as Client,
+                guildId,
+                'actor',
+                'current-ban',
+                {
+                    action: 'unban',
+                    targetId,
+                    reason: 'fixture',
+                }
+            );
+        expect((await run()).state).toBe('DELIVERED');
+        expect((await run()).state).toBe('DELIVERED');
+        expect(guild.members.unban).toHaveBeenCalledTimes(1);
     });
     it('bounds destructive inputs', () => {
         expect(

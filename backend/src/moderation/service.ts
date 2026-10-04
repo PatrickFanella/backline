@@ -151,7 +151,7 @@ export async function performModeration(
                 skipped: messages.size - deleted.size,
             };
         } else if (input.action === 'unban') {
-            await guild.bans.fetch(input.targetId!);
+            await guild.bans.fetch({ user: input.targetId!, force: true });
             mutationStarted = true;
             await guild.members.unban(input.targetId!, reason);
             outcome = { unbanned: input.targetId! };
