@@ -122,3 +122,14 @@ moduleRegistry.register({
     commands: [],
     pendingJobPolicy: 'cancel',
 });
+
+moduleRegistry.register({
+    id: 'moderation',
+    description: 'Moderate members and retain server case history.',
+    version: 1,
+    schema: z.object({}).strict(),
+    permissions: [],
+    intents: [],
+    commands: ['warn', 'timeout', 'kick', 'ban', 'unban', 'purge', 'cases'],
+    pendingJobPolicy: 'cancel',
+});

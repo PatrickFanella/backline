@@ -8,6 +8,7 @@ import {
 } from 'discord.js';
 
 import { db } from '../db';
+import { moderationCommands, routeModeration } from '../moderation/commands';
 import { moduleRegistry } from '../modules/registry';
 
 export const coreCommands = [
@@ -89,10 +90,11 @@ export async function routeInteraction(
             );
             return;
         }
+        if (await routeModeration(interaction)) return;
         switch (interaction.commandName) {
             case 'help':
                 await interaction.editReply(
-                    '/help — commands\n/setup — server diagnostics\n/settings module enabled — configure a module\n/status — current module status\nSettings require current Manage Server permission. Activity collection is opt-in.'
+                    '/help — commands\n/setup — server diagnostics\n/settings module enabled — configure a module\n/status — current module status\n/warn /timeout /kick /ban /unban /purge /cases — opt-in moderation\nSettings require current Manage Server permission. Activity collection is opt-in.'
                 );
                 break;
             case 'setup': {
@@ -209,7 +211,7 @@ export async function registerGuildCommands(
 ): Promise<void> {
     for (const guildId of guildIds) {
         const guild = await client.guilds.fetch(guildId);
-        for (const command of coreCommands)
+        for (const command of [...coreCommands, ...moderationCommands])
             await guild.commands.create(command);
     }
 }

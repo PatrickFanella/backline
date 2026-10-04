@@ -750,3 +750,23 @@ model JobAttempt {
 
   @@unique([jobId, number])
 }
+
+model ModerationCase {
+  id String @id @default(uuid())
+  guildId String
+  requestId String
+  actorId String
+  targetId String?
+  channelId String?
+  action String
+  reason String
+  state String @default("PENDING")
+  detail String?
+  outcome Json? @db.JsonB
+  createdAt DateTime @default(now()) @db.Timestamptz
+  completedAt DateTime? @db.Timestamptz
+
+  @@unique([guildId, requestId])
+  @@index([guildId, createdAt])
+  @@index([guildId, targetId])
+}

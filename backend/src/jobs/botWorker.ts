@@ -2,13 +2,77 @@ import { Client } from 'discord.js';
 
 import { db } from '../db';
 import { authorizeGuild } from '../guilds/authorization';
+import { performModeration } from '../moderation/service';
 import { moduleRegistry } from '../modules/registry';
 
-import { JobWorker } from './store';
+import { JobWorker, JobHandler } from './store';
 
 export function createBotWorker(client: Client): JobWorker {
     return new JobWorker(
-        new Map([
+        new Map<string, JobHandler>([
+            [
+                'moderation',
+                {
+                    authorize: (job) =>
+                        authorizeGuild(job.actorId, job.guildId),
+                    execute: async (job) => {
+                        const actor = await db.user.findUnique({
+                            where: { id: job.actorId },
+                        });
+                        if (!actor)
+                            return {
+                                state: 'CANCELLED',
+                                reason: 'Actor unavailable',
+                            };
+                        const record = await performModeration(
+                            client,
+                            job.guildId,
+                            actor.discordId,
+                            job.id,
+                            job.payload
+                        );
+                        return record.state === 'DELIVERED'
+                            ? {
+                                  state: 'DELIVERED',
+                                  result: {
+                                      caseId: record.id,
+                                      outcome: record.outcome,
+                                  },
+                              }
+                            : {
+                                  state:
+                                      record.state === 'UNCERTAIN' ||
+                                      record.state === 'PENDING'
+                                          ? 'RECONCILE'
+                                          : 'FAILED',
+                                  reason:
+                                      record.detail ?? 'Action not delivered',
+                              };
+                    },
+                    reconcile: async (job) => {
+                        const record = await db.moderationCase.findUnique({
+                            where: {
+                                guildId_requestId: {
+                                    guildId: job.guildId,
+                                    requestId: job.id,
+                                },
+                            },
+                        });
+                        return record?.state === 'DELIVERED'
+                            ? {
+                                  state: 'DELIVERED',
+                                  result: {
+                                      caseId: record.id,
+                                      outcome: record.outcome,
+                                  },
+                              }
+                            : {
+                                  state: 'RECONCILE',
+                                  reason: 'Manual outcome investigation required',
+                              };
+                    },
+                },
+            ],
             [
                 'server-status',
                 {

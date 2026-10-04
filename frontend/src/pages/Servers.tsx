@@ -236,6 +236,7 @@ export default function Servers() {
                     </section>
                 )}
                 <footer className="flex flex-wrap gap-5 text-ctp-blue">
+                    {guildId && <Link to="/moderation">Moderation cases</Link>}
                     {guildId && (
                         <Link to="/observed-activity">
                             Observed activity reports

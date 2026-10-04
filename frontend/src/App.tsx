@@ -20,6 +20,7 @@ import {
     UserTimeline,
 } from './pages';
 import MetricsDashboard from './pages/MetricsDashboard';
+import Moderation from './pages/Moderation';
 import RuleEditor from './pages/RuleEditor';
 import Rules from './pages/Rules';
 import Servers from './pages/Servers';
@@ -46,6 +47,7 @@ function AppContent() {
 
                 <Route element={<RequireAuth />}>
                     <Route path="/" element={<Servers />} />
+                    <Route path="/moderation" element={<Moderation />} />
                     <Route path="/observed-activity" element={<Dashboard />} />
                     <Route path="/analytics" element={<Analytics />} />
                     <Route
