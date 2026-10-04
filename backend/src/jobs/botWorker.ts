@@ -1,5 +1,10 @@
 import { Client } from 'discord.js';
 
+import {
+    auditHandler,
+    expireAuditContent,
+    recoverAuditEvents,
+} from '../community/audit';
 import { db } from '../db';
 import { authorizeGuild } from '../guilds/authorization';
 import { performModeration } from '../moderation/service';
@@ -10,6 +15,7 @@ import { JobWorker, JobHandler } from './store';
 export function createBotWorker(client: Client): JobWorker {
     return new JobWorker(
         new Map<string, JobHandler>([
+            ['audit-log', auditHandler(client)],
             [
                 'moderation',
                 {
@@ -120,9 +126,15 @@ export function createBotWorker(client: Client): JobWorker {
 
 export function startJobPolling(worker: JobWorker): () => Promise<void> {
     let active: Promise<unknown> | undefined;
+    let lastExpiry = 0;
     const interval = setInterval(() => {
         if (active) return;
         active = (async () => {
+            if (Date.now() - lastExpiry > 60000) {
+                await expireAuditContent();
+                await recoverAuditEvents();
+                lastExpiry = Date.now();
+            }
             const held = await db.durableJob.findMany({
                 where: { state: 'RECONCILE', kind: 'server-status' },
                 take: 10,

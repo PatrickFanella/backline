@@ -1,6 +1,7 @@
 import { GatewayIntentBits, PermissionFlagsBits } from 'discord.js';
 import { z } from 'zod';
 
+import { auditConfig } from '../community/config';
 import { db } from '../db';
 import { env } from '../utils/env';
 import { toInputJson } from '../utils/prismaJson';
@@ -46,6 +47,15 @@ export class ModuleRegistry {
             throw new Error('Server excluded by operator');
         if (enabled && moduleId === 'activity' && !env.BOT_ACTIVITY_INTENTS)
             throw new Error('Activity Gateway intents unavailable');
+        if (enabled && !moduleOperatorReady(definition))
+            throw new Error('Required Gateway intents unavailable');
+        const parsed = definition.schema.parse(config);
+        if (
+            enabled &&
+            moduleId === 'audit-log' &&
+            !auditConfig.parse(parsed).channelId
+        )
+            throw new Error('Audit channel required');
         const validated = toInputJson(definition.schema.parse(config));
         const installation = await db.guildInstallation.findUnique({
             where: { guildId },
@@ -63,6 +73,12 @@ export class ModuleRegistry {
             },
             update: { enabled, config: validated, version: definition.version },
         });
+        if (
+            moduleId === 'audit-log' &&
+            !auditConfig.parse(parsed).retainContent
+        ) {
+            await db.$executeRaw`UPDATE "ServerAuditEvent" SET "data" = "data" - 'content' - 'before' - 'after' WHERE "guildId" = ${guildId}`;
+        }
     }
     async enabled(guildId: string, moduleId: string): Promise<boolean> {
         const definition = this.get(moduleId);
@@ -78,6 +94,7 @@ export class ModuleRegistry {
         return (
             !!settings?.enabled &&
             settings.version === definition.version &&
+            moduleOperatorReady(definition) &&
             definition.schema.safeParse(settings.config).success
         );
     }
@@ -131,5 +148,31 @@ moduleRegistry.register({
     permissions: [],
     intents: [],
     commands: ['warn', 'timeout', 'kick', 'ban', 'unban', 'purge', 'cases'],
+    pendingJobPolicy: 'cancel',
+});
+
+export function configuredIntents(): GatewayIntentBits[] {
+    const intents = [GatewayIntentBits.Guilds];
+    if (env.BOT_ACTIVITY_INTENTS)
+        intents.push(...moduleRegistry.get('activity').intents);
+    if (env.BOT_MEMBER_INTENTS) intents.push(GatewayIntentBits.GuildMembers);
+    if (env.BOT_MESSAGE_INTENTS) intents.push(GatewayIntentBits.GuildMessages);
+    if (env.BOT_MESSAGE_CONTENT_INTENT)
+        intents.push(GatewayIntentBits.MessageContent);
+    return [...new Set(intents)];
+}
+export function moduleOperatorReady(module: ModuleDefinition): boolean {
+    const intents = configuredIntents();
+    return module.intents.every((intent) => intents.includes(intent));
+}
+moduleRegistry.register({
+    id: 'audit-log',
+    description:
+        'Send selected member, message and role events to a server log channel.',
+    version: 1,
+    schema: auditConfig,
+    permissions: [],
+    intents: [GatewayIntentBits.GuildMembers, GatewayIntentBits.GuildMessages],
+    commands: [],
     pendingJobPolicy: 'cancel',
 });

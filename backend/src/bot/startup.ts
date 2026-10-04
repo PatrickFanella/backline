@@ -1,11 +1,12 @@
 import path from 'path';
 
-import { Client, GatewayIntentBits } from 'discord.js';
+import { Client, Partials } from 'discord.js';
 
+import { registerAuditEvents } from '../community/audit';
 import { db } from '../db';
 import { recordInstallation } from '../guilds/installations';
 import { createBotWorker, startJobPolling } from '../jobs/botWorker';
-import { moduleRegistry } from '../modules/registry';
+import { configuredIntents, moduleRegistry } from '../modules/registry';
 import { pluginManager } from '../plugins';
 import { PluginHookType } from '../plugins/types';
 import { env } from '../utils/env';
@@ -14,10 +15,11 @@ import { registerCollectors } from './collectors';
 import { registerGuildCommands, routeInteraction } from './commands';
 
 export async function startBot(): Promise<Client> {
-    const intents = [GatewayIntentBits.Guilds];
-    if (env.BOT_ACTIVITY_INTENTS)
-        intents.push(...moduleRegistry.get('activity').intents);
-    const client = new Client({ intents });
+    const client = new Client({
+        intents: configuredIntents(),
+        partials: [Partials.Message, Partials.Channel, Partials.GuildMember],
+    });
+    registerAuditEvents(client);
     registerCollectors(client);
     client.on('interactionCreate', (interaction) => {
         void routeInteraction(interaction);

@@ -8,6 +8,7 @@ import {
 } from 'discord.js';
 import { z } from 'zod';
 
+import { recordAudit } from '../community/audit';
 import { db } from '../db';
 import { moduleRegistry } from '../modules/registry';
 
@@ -195,10 +196,25 @@ export async function performModeration(
                     break;
             }
         }
-        return await db.moderationCase.update({
+        const delivered = await db.moderationCase.update({
             where: { id },
             data: { state: 'DELIVERED', outcome, completedAt: new Date() },
         });
+        await recordAudit({
+            guildId,
+            eventKey: `moderation:${id}`,
+            kind: 'moderation',
+            subjectId: input.targetId,
+            channelId: input.channelId,
+            data: {
+                caseId: id,
+                actorId,
+                action: input.action,
+                reason: input.reason,
+                outcome: z.json().parse(outcome),
+            },
+        }).catch(() => console.warn('Moderation audit capture failed'));
+        return delivered;
     } catch (error) {
         const denied = error instanceof Denied;
         // A definite Discord 4xx rejection has no delivered action. Transport errors remain uncertain.
