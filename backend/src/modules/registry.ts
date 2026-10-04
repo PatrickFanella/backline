@@ -19,6 +19,7 @@ export interface ModuleDefinition {
     permissions: bigint[];
     intents: GatewayIntentBits[];
     commands: string[];
+    actionPermissions?: Record<string, bigint[]>;
     pendingJobPolicy: 'cancel';
 }
 
@@ -147,6 +148,18 @@ moduleRegistry.register({
 
 moduleRegistry.register({
     id: 'moderation',
+    actionPermissions: {
+        warn: [PermissionFlagsBits.ModerateMembers],
+        timeout: [PermissionFlagsBits.ModerateMembers],
+        kick: [PermissionFlagsBits.KickMembers],
+        ban: [PermissionFlagsBits.BanMembers],
+        unban: [PermissionFlagsBits.BanMembers],
+        purge: [
+            PermissionFlagsBits.ManageMessages,
+            PermissionFlagsBits.ViewChannel,
+            PermissionFlagsBits.ReadMessageHistory,
+        ],
+    },
     description: 'Moderate members and retain server case history.',
     version: 1,
     schema: z.object({}).strict(),
@@ -172,6 +185,12 @@ export function moduleOperatorReady(module: ModuleDefinition): boolean {
 }
 moduleRegistry.register({
     id: 'audit-log',
+    actionPermissions: {
+        send: [
+            PermissionFlagsBits.ViewChannel,
+            PermissionFlagsBits.SendMessages,
+        ],
+    },
     description:
         'Send selected member, message and role events to a server log channel.',
     version: 1,
@@ -184,6 +203,14 @@ moduleRegistry.register({
 
 moduleRegistry.register({
     id: 'onboarding',
+    actionPermissions: {
+        messages: [
+            PermissionFlagsBits.ViewChannel,
+            PermissionFlagsBits.SendMessages,
+            PermissionFlagsBits.EmbedLinks,
+        ],
+        joinRoles: [PermissionFlagsBits.ManageRoles],
+    },
     description:
         'Welcome members, assign eligible join roles and collect rules acknowledgment.',
     version: 1,
@@ -196,6 +223,13 @@ moduleRegistry.register({
 
 moduleRegistry.register({
     id: 'self-roles',
+    actionPermissions: {
+        assignRoles: [PermissionFlagsBits.ManageRoles],
+        publish: [
+            PermissionFlagsBits.ViewChannel,
+            PermissionFlagsBits.SendMessages,
+        ],
+    },
     description: 'Offer eligible roles through buttons or a selection menu.',
     version: 1,
     schema: selfRolesConfig,
@@ -207,6 +241,7 @@ moduleRegistry.register({
 
 moduleRegistry.register({
     id: 'anti-spam',
+    actionPermissions: { timeouts: [PermissionFlagsBits.ModerateMembers] },
     description:
         'Observe message floods, prohibited content and join bursts; optionally enforce timeouts.',
     version: 1,

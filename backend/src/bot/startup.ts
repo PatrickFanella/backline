@@ -29,9 +29,16 @@ export async function startBot(): Promise<Client> {
         void routeInteraction(interaction);
     });
     client.on('guildCreate', (guild) => {
-        void recordInstallation(guild).catch(() =>
-            console.warn('Installation recording failed')
-        );
+        // Initial Gateway discovery is handled once by clientReady.
+        if (!client.isReady()) return;
+        void (async () => {
+            await recordInstallation(guild);
+            if (
+                !env.BOT_GUILD_IDS.length ||
+                env.BOT_GUILD_IDS.includes(guild.id)
+            )
+                await registerGuildCommands(client, [guild.id]);
+        })().catch(() => console.warn('Installation provisioning failed'));
     });
     client.on('guildDelete', (guild) => {
         void recordInstallation(guild, false).catch(() =>
@@ -42,25 +49,34 @@ export async function startBot(): Promise<Client> {
         client.once('clientReady', () => {
             void (async () => {
                 const guildIds = client.guilds.cache.map((guild) => guild.id);
-                await db.guildInstallation.updateMany({
-                    where: { active: true, guildId: { notIn: guildIds } },
-                    data: { active: false },
+                const known = await db.guildInstallation.findMany({
+                    where: { active: true },
                 });
+                for (const missing of known.filter(
+                    (row) => !guildIds.includes(row.guildId)
+                ))
+                    await recordInstallation(
+                        {
+                            id: missing.guildId,
+                            name: missing.name,
+                            icon: missing.icon,
+                        },
+                        false
+                    );
                 await Promise.all(
                     client.guilds.cache.map((guild) =>
                         recordInstallation(guild)
                     )
                 );
-                // Registration is explicit so a restart cannot overwrite an existing command deployment.
-                if (env.BOT_REGISTER_COMMANDS)
-                    await registerGuildCommands(
-                        client,
-                        guildIds.filter(
-                            (id) =>
-                                !env.BOT_GUILD_IDS.length ||
-                                env.BOT_GUILD_IDS.includes(id)
-                        )
-                    );
+                const needsCommands = guildIds.filter(
+                    (id) =>
+                        (env.BOT_REGISTER_COMMANDS ||
+                            !known.some((row) => row.guildId === id)) &&
+                        (!env.BOT_GUILD_IDS.length ||
+                            env.BOT_GUILD_IDS.includes(id))
+                );
+                if (needsCommands.length)
+                    await registerGuildCommands(client, needsCommands);
                 await pluginManager.initialize(
                     {
                         pluginDir: path.join(__dirname, '../../plugins'),
