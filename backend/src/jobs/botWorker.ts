@@ -8,6 +8,7 @@ import {
 } from '../community/audit';
 import { onboardingHandler, recoverJourneys } from '../community/onboarding';
 import { expireRoleChoices } from '../community/selfRoles';
+import { expireTickets } from '../community/tickets';
 import { db } from '../db';
 import { authorizeGuild } from '../guilds/authorization';
 import { performModeration } from '../moderation/service';
@@ -131,7 +132,10 @@ export function createBotWorker(client: Client): JobWorker {
     );
 }
 
-export function startJobPolling(worker: JobWorker): () => Promise<void> {
+export function startJobPolling(
+    worker: JobWorker,
+    client?: Client
+): () => Promise<void> {
     let active: Promise<unknown> | undefined;
     let lastExpiry = 0;
     const interval = setInterval(() => {
@@ -142,6 +146,7 @@ export function startJobPolling(worker: JobWorker): () => Promise<void> {
                 await recoverAuditEvents();
                 await recoverJourneys();
                 await expireRoleChoices();
+                if (client) await expireTickets(client);
                 await recoverSpamDecisions();
                 lastExpiry = Date.now();
             }

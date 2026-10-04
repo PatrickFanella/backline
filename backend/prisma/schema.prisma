@@ -871,3 +871,42 @@ model RaidState {
   guildId String @id
   until DateTime @db.Timestamptz
 }
+
+model SupportTicket {
+  id String @id @default(uuid())
+  guildId String
+  openerId String
+  channelId String? @unique
+  participants Json @db.JsonB
+  staffRoles Json @db.JsonB
+  state String @default("CREATING")
+  claimedBy String?
+  heldActionId String?
+  createdAt DateTime @default(now()) @db.Timestamptz
+  closedAt DateTime? @db.Timestamptz
+  expiresAt DateTime? @db.Timestamptz
+  @@index([guildId, openerId, state])
+  @@index([expiresAt])
+}
+model TicketAction {
+  id String @id @default(uuid())
+  guildId String
+  ticketId String
+  requestId String
+  actorId String
+  kind String
+  state String @default("PENDING")
+  detail String?
+  createdAt DateTime @default(now()) @db.Timestamptz
+  @@unique([guildId, requestId])
+  @@index([ticketId, createdAt])
+}
+model TicketTranscript {
+  ticketId String @id
+  guildId String
+  body Json @db.JsonB
+  truncated Boolean
+  containsContent Boolean @default(false)
+  expiresAt DateTime @db.Timestamptz
+  @@index([expiresAt])
+}
