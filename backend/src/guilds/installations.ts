@@ -53,14 +53,52 @@ export async function recordInstallation(
     guild: { id: string; name: string; icon: string | null },
     active = true
 ): Promise<void> {
-    await db.guildInstallation.upsert({
-        where: { guildId: guild.id },
-        create: {
-            guildId: guild.id,
-            name: guild.name,
-            icon: guild.icon,
-            active,
-        },
-        update: { name: guild.name, icon: guild.icon, active },
+    await db.$transaction(async (tx) => {
+        await tx.guildInstallation.upsert({
+            where: { guildId: guild.id },
+            create: {
+                guildId: guild.id,
+                name: guild.name,
+                icon: guild.icon,
+                active,
+            },
+            update: { name: guild.name, icon: guild.icon, active },
+        });
+        if (!active) {
+            await tx.guildModuleConfig.updateMany({
+                where: { guildId: guild.id },
+                data: { enabled: false },
+            });
+            await tx.durableJob.updateMany({
+                where: { guildId: guild.id, state: 'PENDING' },
+                data: { state: 'CANCELLED', lastError: 'Bot uninstalled' },
+            });
+            const leased = await tx.durableJob.findMany({
+                where: { guildId: guild.id, state: 'LEASED' },
+            });
+            for (const job of leased) {
+                await tx.durableJob.updateMany({
+                    where: { id: job.id, state: 'LEASED' },
+                    data: {
+                        state: 'RECONCILE',
+                        lastError: 'Bot uninstalled during delivery',
+                        leaseOwner: null,
+                        leaseUntil: null,
+                    },
+                });
+                await tx.jobAttempt.updateMany({
+                    where: {
+                        jobId: job.id,
+                        number: job.attempts,
+                        outcome: 'RUNNING',
+                    },
+                    data: {
+                        outcome: 'UNCERTAIN',
+                        detail: 'Bot uninstalled during delivery',
+                        finishedAt: new Date(),
+                    },
+                });
+            }
+        }
     });
 }

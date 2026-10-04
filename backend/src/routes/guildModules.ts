@@ -127,6 +127,14 @@ router.get('/guilds/:guildId/modules', async (req, res) => {
                 description: module.description,
                 version: module.version,
                 permissions: module.permissions.map(String),
+                actionPermissions: Object.fromEntries(
+                    Object.entries(module.actionPermissions ?? {}).map(
+                        ([action, permissions]) => [
+                            action,
+                            permissions.map(String),
+                        ]
+                    )
+                ),
                 intents: module.intents,
                 pendingJobPolicy: module.pendingJobPolicy,
                 operatorReady: moduleOperatorReady(module),

@@ -119,7 +119,15 @@ export async function routeInteraction(
                         (intent) =>
                             !interaction.client.options.intents.has(intent)
                     );
-                    return `${module.id}: ${permissions.length} missing bot permissions; ${intents.length} missing Gateway intents${intents.length ? ' (operator must enable activity intents and restart)' : ''}`;
+                    const actions = Object.entries(
+                        module.actionPermissions ?? {}
+                    )
+                        .map(
+                            ([action, required]) =>
+                                `${action}: ${required.filter((permission) => !bot.permissions.has(permission)).length} missing permissions`
+                        )
+                        .join('; ');
+                    return `${module.id}: ${permissions.length} missing bot permissions; ${intents.length} missing Gateway intents${intents.length ? ' (operator must enable required intents and restart)' : ''}${actions ? ' — ' + actions : ''}`;
                 });
                 await interaction.editReply(
                     `Server setup is ready. Use /settings to opt into modules.\n${diagnostics.join('\n')}`
