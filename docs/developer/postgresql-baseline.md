@@ -32,3 +32,11 @@ The PostgreSQL-generated Prisma client cannot read SQLite by changing its URL. T
 ## Reproducible migration check
 
 Provide `BASELINE_FRESH_DATABASE_URL` and `BASELINE_EXISTING_DATABASE_URL` for two distinct empty disposable databases. Run `rtk node scripts/check-postgresql-baseline.mjs`. The check migrates and seeds a fresh database, creates an existing-schema fixture without migration history, adopts the baseline and verifies that the fixture's row, clients and timestamp are unchanged. This check deliberately leaves its disposable databases intact for inspection; it never resets or drops a database.
+
+## Server isolation upgrade
+
+The next additive migration introduces `GuildInstallation`, per-server module configuration, and multiple user/server memberships. Existing `Guild` rows are copied into installation records before the foreign key is added. Installation records start inactive until the bot confirms its presence; an OAuth membership does not prove the bot is installed. Removing one user's membership leaves other administrators intact.
+
+New presence events carry `guildId`. Existing unattributed rows retain `NULL` and remain outside server reports. Presence aggregation, client drift, activity analysis, and timelines filter by server. The application preserves account-wide privacy exports and deletion requests as account-wide operations.
+
+The baseline check also verifies preservation of an existing membership through the additive migration. With a migrated disposable database, run `RUN_DATABASE_TESTS=true` and `DATABASE_URL` through the private environment, then execute `rtk npm test --prefix backend -- --runInBand __tests__/integration/database/guildIsolation.test.ts`. This test exercises two administrators, membership removal, two-server presence counts and exclusion of legacy events against PostgreSQL.

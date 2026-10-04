@@ -52,7 +52,7 @@ async function getLurkerFlagsUncached(guildId: string, since?: Date) {
     FROM (
       SELECT "userId", "username", COUNT(*) as presence_count
       FROM "PresenceEvent"
-      WHERE "createdAt" >= ${sinceDate}::timestamptz
+      WHERE "guildId" = ${guildId} AND "createdAt" >= ${sinceDate}::timestamptz
       GROUP BY "userId", "username"
     ) p
     LEFT JOIN (
@@ -85,6 +85,7 @@ async function getLurkerFlagsUncached(guildId: string, since?: Date) {
 export async function getLurkerFlagsLegacy(guildId: string, since?: Date) {
     const presence = await db.presenceEvent.findMany({
         where: {
+            guildId,
             ...(since && { createdAt: { gte: since } }),
         },
     });

@@ -73,11 +73,6 @@ export async function getUserTimeline(
         },
     };
 
-    const baseFilter = {
-        userId,
-        ...dateFilter,
-    };
-
     const guildFilter = {
         userId,
         guildId,
@@ -88,8 +83,18 @@ export async function getUserTimeline(
     const searchFilter = search
         ? {
               OR: [
-                  { username: { contains: search, mode: 'insensitive' as const } },
-                  { channel: { contains: search, mode: 'insensitive' as const } },
+                  {
+                      username: {
+                          contains: search,
+                          mode: 'insensitive' as const,
+                      },
+                  },
+                  {
+                      channel: {
+                          contains: search,
+                          mode: 'insensitive' as const,
+                      },
+                  },
               ],
           }
         : {};
@@ -97,9 +102,24 @@ export async function getUserTimeline(
     const messageSearchFilter = search
         ? {
               OR: [
-                  { username: { contains: search, mode: 'insensitive' as const } },
-                  { channel: { contains: search, mode: 'insensitive' as const } },
-                  { content: { contains: search, mode: 'insensitive' as const } },
+                  {
+                      username: {
+                          contains: search,
+                          mode: 'insensitive' as const,
+                      },
+                  },
+                  {
+                      channel: {
+                          contains: search,
+                          mode: 'insensitive' as const,
+                      },
+                  },
+                  {
+                      content: {
+                          contains: search,
+                          mode: 'insensitive' as const,
+                      },
+                  },
               ],
           }
         : {};
@@ -117,8 +137,10 @@ export async function getUserTimeline(
         eventTypes.includes('presence')
             ? prisma.presenceEvent.findMany({
                   where: {
-                      ...baseFilter,
-                      ...(search && { username: { contains: search, mode: 'insensitive' } }),
+                      ...guildFilter,
+                      ...(search && {
+                          username: { contains: search, mode: 'insensitive' },
+                      }),
                   },
                   orderBy: { createdAt: 'desc' },
                   take: fetchLimit,
@@ -148,7 +170,9 @@ export async function getUserTimeline(
             ? prisma.roleChangeEvent.findMany({
                   where: {
                       ...guildFilter,
-                      ...(search && { username: { contains: search, mode: 'insensitive' } }),
+                      ...(search && {
+                          username: { contains: search, mode: 'insensitive' },
+                      }),
                   },
                   orderBy: { createdAt: 'desc' },
                   take: fetchLimit,
@@ -158,7 +182,9 @@ export async function getUserTimeline(
             ? prisma.joinEvent.findMany({
                   where: {
                       ...guildFilter,
-                      ...(search && { username: { contains: search, mode: 'insensitive' } }),
+                      ...(search && {
+                          username: { contains: search, mode: 'insensitive' },
+                      }),
                   },
                   orderBy: { createdAt: 'desc' },
                   take: fetchLimit,
@@ -370,11 +396,6 @@ async function getApproximateEventCount(
         ...(endDate && { lte: endDate }),
     };
 
-    const baseFilter = {
-        userId,
-        ...(Object.keys(dateFilter).length > 0 && { createdAt: dateFilter }),
-    };
-
     const guildFilter = {
         userId,
         guildId,
@@ -384,7 +405,7 @@ async function getApproximateEventCount(
     // Count events in parallel
     const counts = await Promise.all([
         eventTypes.includes('presence')
-            ? prisma.presenceEvent.count({ where: baseFilter })
+            ? prisma.presenceEvent.count({ where: guildFilter })
             : Promise.resolve(0),
         eventTypes.includes('message')
             ? prisma.messageEvent.count({ where: guildFilter })

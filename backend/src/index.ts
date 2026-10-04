@@ -10,6 +10,7 @@ import {
     getSuspicionScores,
 } from './analytics';
 import { db } from './db';
+import { recordInstallation } from './guilds/installations';
 import { cacheInvalidation } from './services/cacheInvalidation';
 import { env } from './utils/env';
 import { sanitizeForLog } from './utils/security';
@@ -26,6 +27,9 @@ const client = new Client({
         GatewayIntentBits.GuildMessageTyping,
     ],
 });
+
+client.on('guildCreate', (guild) => recordInstallation(guild));
+client.on('guildDelete', (guild) => recordInstallation(guild, false));
 
 client.on('presenceUpdate', async (oldPresence, newPresence) => {
     const user = newPresence?.user;
@@ -47,6 +51,7 @@ client.on('presenceUpdate', async (oldPresence, newPresence) => {
                 userId: user.id,
                 username: user.username,
                 clients: platforms,
+                guildId,
             },
         });
 
@@ -235,6 +240,9 @@ client.on('guildMemberUpdate', async (oldMember, newMember) => {
 
 client.once('ready', async () => {
     console.log(`✅ Logged in as ${sanitizeForLog(client.user?.username)}`);
+    await Promise.all(
+        client.guilds.cache.map((guild) => recordInstallation(guild))
+    );
     const guilds = client.guilds.cache.map((g) => g.id);
     const since = new Date(Date.now() - 1000 * 60 * 60 * 24 * 7); // past 7d
 

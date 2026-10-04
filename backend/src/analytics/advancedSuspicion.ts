@@ -120,6 +120,7 @@ async function getUserActivityData(
     const presenceCount = await db.presenceEvent.count({
         where: {
             userId,
+            guildId,
             createdAt: { gte: since },
         },
     });
@@ -263,6 +264,7 @@ async function calculateMultiClientFrequency(
     const presenceEvents = await db.presenceEvent.findMany({
         where: {
             userId,
+            guildId,
             createdAt: { gte: since },
         },
         select: {
