@@ -163,4 +163,49 @@ describe('server setup', () => {
             })
         );
     });
+    it('saves role options and exclusivity policy for the selected server', async () => {
+        const selfRoles = {
+            ...module,
+            id: 'self-roles',
+            description: 'Self-service roles',
+        };
+        vi.mocked(api.get).mockImplementation(async (url) => ({
+            data:
+                url === '/guilds'
+                    ? [{ id: 'A', name: 'Server A', icon: null }]
+                    : [selfRoles],
+        }));
+        open();
+        fireEvent.change(
+            await screen.findByLabelText('Role panel channel ID'),
+            { target: { value: '666666666666666666' } }
+        );
+        fireEvent.click(screen.getByText('Add role option'));
+        fireEvent.change(screen.getByLabelText('Role ID'), {
+            target: { value: '777777777777777777' },
+        });
+        fireEvent.change(screen.getByLabelText('Label'), {
+            target: { value: 'Color' },
+        });
+        fireEvent.change(screen.getByLabelText('Exclusive group (optional)'), {
+            target: { value: 'color' },
+        });
+        fireEvent.click(screen.getByText('Save role settings'));
+        await screen.findByText('Role settings saved for this server.');
+        expect(api.put).toHaveBeenCalledWith(
+            '/guilds/A/modules/self-roles',
+            expect.objectContaining({
+                config: expect.objectContaining({
+                    roles: [
+                        {
+                            roleId: '777777777777777777',
+                            label: 'Color',
+                            group: 'color',
+                            requires: [],
+                        },
+                    ],
+                }),
+            })
+        );
+    });
 });

@@ -15,6 +15,7 @@ function interaction(commandName = 'help') {
     return {
         isRepliable: () => true,
         isButton: () => false,
+        isMessageComponent: () => false,
         inGuild: () => true,
         isChatInputCommand: () => true,
         guildId: 'A',

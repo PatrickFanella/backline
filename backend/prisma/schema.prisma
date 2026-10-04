@@ -811,3 +811,32 @@ model MemberJourney {
   @@index([guildId, userId, createdAt])
   @@index([expiresAt])
 }
+
+model RolePanel {
+  id String @id @default(uuid())
+  guildId String
+  configHash String
+  channelId String
+  messageId String?
+  state String @default("PENDING")
+  createdAt DateTime @default(now()) @db.Timestamptz
+  @@unique([guildId, configHash])
+}
+model RoleChoice {
+  id String @id @default(uuid())
+  guildId String
+  userId String
+  requestId String
+  state String @default("PENDING")
+  detail String?
+  outcome Json? @db.JsonB
+  createdAt DateTime @default(now()) @db.Timestamptz
+  @@unique([guildId, requestId])
+  @@index([guildId, userId, createdAt])
+}
+model RoleChoiceLock {
+  guildId String
+  userId String
+  actionId String @unique
+  @@id([guildId, userId])
+}

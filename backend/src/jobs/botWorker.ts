@@ -6,6 +6,7 @@ import {
     recoverAuditEvents,
 } from '../community/audit';
 import { onboardingHandler, recoverJourneys } from '../community/onboarding';
+import { expireRoleChoices } from '../community/selfRoles';
 import { db } from '../db';
 import { authorizeGuild } from '../guilds/authorization';
 import { performModeration } from '../moderation/service';
@@ -138,6 +139,7 @@ export function startJobPolling(worker: JobWorker): () => Promise<void> {
                 await expireAuditContent();
                 await recoverAuditEvents();
                 await recoverJourneys();
+                await expireRoleChoices();
                 lastExpiry = Date.now();
             }
             const held = await db.durableJob.findMany({

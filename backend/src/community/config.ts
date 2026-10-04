@@ -38,3 +38,30 @@ export const onboardingConfig = z
         (data) => !data.requireRules || (!!data.channelId && !!data.rules),
         'Rules acknowledgment requires a channel and rules'
     );
+
+export const selfRolesConfig = z
+    .object({
+        channelId: id.optional(),
+        title: z.string().min(1).max(100).default('Choose your roles'),
+        style: z.enum(['buttons', 'select']).default('buttons'),
+        roles: z
+            .array(
+                z
+                    .object({
+                        roleId: id,
+                        label: z.string().min(1).max(80),
+                        group: z.string().max(40).optional(),
+                        requires: z.array(id).max(10).default([]),
+                    })
+                    .strict()
+            )
+            .max(20)
+            .default([]),
+    })
+    .strict()
+    .refine(
+        (data) =>
+            new Set(data.roles.map((role) => role.roleId)).size ===
+            data.roles.length,
+        'Duplicate roles'
+    );
