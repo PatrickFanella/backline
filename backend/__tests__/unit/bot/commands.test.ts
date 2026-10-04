@@ -18,7 +18,7 @@ function interaction(commandName = 'help') {
         isMessageComponent: () => false,
         inGuild: () => true,
         isChatInputCommand: () => true,
-        guildId: 'A',
+        guildId: '123456789',
         user: { id: 'manager' },
         commandName,
         guild: {
@@ -97,7 +97,7 @@ describe('core command routing', () => {
             interaction('settings') as unknown as Interaction
         );
         expect(moduleRegistry.configure).toHaveBeenCalledWith(
-            'A',
+            '123456789',
             'activity',
             false,
             {}
@@ -109,6 +109,15 @@ describe('core command routing', () => {
         await routeInteraction(fixture as unknown as Interaction);
         expect(fixture.reply).toHaveBeenCalled();
         expect(db.guildInstallation.findUnique).not.toHaveBeenCalled();
+    });
+    it('rejects an installed server outside the operator allowlist', async () => {
+        const fixture = interaction();
+        fixture.guildId = '999999999';
+        await routeInteraction(fixture as unknown as Interaction);
+        expect(fixture.editReply).toHaveBeenCalledWith(
+            'This server installation is unavailable.'
+        );
+        expect(fixture.guild.members.fetch).not.toHaveBeenCalled();
     });
     it('explains unknown components', async () => {
         const fixture = interaction();
