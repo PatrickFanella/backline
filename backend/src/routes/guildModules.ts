@@ -2,7 +2,11 @@ import { PermissionFlagsBits } from 'discord.js';
 import { Router } from 'express';
 import { z } from 'zod';
 
-import { onboardingConfig, selfRolesConfig } from '../community/config';
+import {
+    onboardingConfig,
+    selfRolesConfig,
+    antiSpamConfig,
+} from '../community/config';
 import { db } from '../db';
 import { listManagedGuilds } from '../guilds/authorization';
 import { requireAuthOrApiKey, requireGuildAccess } from '../middleware';
@@ -23,6 +27,47 @@ const updateSchema = z.object({
     config: z.unknown().default({}),
 });
 router.use('/guilds/:guildId/modules', requireAuthOrApiKey, requireGuildAccess);
+router.get('/guilds/:guildId/modules/anti-spam/history', async (req, res) => {
+    try {
+        const decisions = await db.spamDecision.findMany({
+            where: { guildId: req.params.guildId },
+            orderBy: { createdAt: 'desc' },
+            take: 100,
+        });
+        const jobs = await db.durableJob.findMany({
+            where: {
+                guildId: req.params.guildId,
+                id: {
+                    in: decisions.flatMap((decision) =>
+                        decision.jobId ? [decision.jobId] : []
+                    ),
+                },
+            },
+            select: { id: true, state: true, lastError: true },
+        });
+        res.json({
+            decisions: decisions.map((decision) => ({
+                ...decision,
+                delivery: jobs.find((job) => job.id === decision.jobId) ?? null,
+            })),
+            raid: await db.raidState.findUnique({
+                where: { guildId: req.params.guildId },
+            }),
+        });
+    } catch {
+        res.status(503).json({ error: 'Anti-spam history unavailable' });
+    }
+});
+router.delete('/guilds/:guildId/modules/anti-spam/raid', async (req, res) => {
+    try {
+        await db.raidState.deleteMany({
+            where: { guildId: req.params.guildId },
+        });
+        res.json({ success: true });
+    } catch {
+        res.status(503).json({ error: 'Raid controls unavailable' });
+    }
+});
 router.get('/guilds/:guildId/modules/self-roles/history', async (req, res) => {
     try {
         res.json(
@@ -126,6 +171,33 @@ router.put('/guilds/:guildId/modules/:moduleId', async (req, res) => {
             ) {
                 res.status(403).json({
                     error: 'Current Manage Roles permission is required to configure role assignments',
+                });
+                return;
+            }
+        }
+        if (
+            req.params.moduleId === 'anti-spam' &&
+            !antiSpamConfig.parse(body.data.config).observeOnly
+        ) {
+            const membership = await db.guild.findUnique({
+                where: {
+                    userId_guildId: {
+                        userId: req.user!.userId,
+                        guildId: req.params.guildId,
+                    },
+                },
+            });
+            if (
+                !membership ||
+                (!membership.owner &&
+                    !(
+                        membership.permissions &
+                        (PermissionFlagsBits.ModerateMembers |
+                            PermissionFlagsBits.Administrator)
+                    ))
+            ) {
+                res.status(403).json({
+                    error: 'Current Moderate Members permission is required to enable enforcement',
                 });
                 return;
             }

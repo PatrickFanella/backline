@@ -208,4 +208,34 @@ describe('server setup', () => {
             })
         );
     });
+    it('saves anti-spam in observation by default', async () => {
+        const antiSpam = {
+            ...module,
+            id: 'anti-spam',
+            description: 'Spam decisions',
+        };
+        vi.mocked(api.get).mockImplementation(async (url) => ({
+            data:
+                url === '/guilds'
+                    ? [{ id: 'A', name: 'Server A', icon: null }]
+                    : [antiSpam],
+        }));
+        open();
+        expect(
+            await screen.findByLabelText(
+                'Observe only; record decisions without timing out members'
+            )
+        ).toBeChecked();
+        fireEvent.click(screen.getByText('Save anti-spam policy'));
+        await screen.findByText('Anti-spam policy saved for this server.');
+        expect(api.put).toHaveBeenCalledWith(
+            '/guilds/A/modules/anti-spam',
+            expect.objectContaining({
+                config: expect.objectContaining({
+                    observeOnly: true,
+                    messageLimit: 6,
+                }),
+            })
+        );
+    });
 });

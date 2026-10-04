@@ -840,3 +840,34 @@ model RoleChoiceLock {
   actionId String @unique
   @@id([guildId, userId])
 }
+
+model SpamSample {
+  id String @id @default(uuid())
+  guildId String
+  eventId String
+  userId String
+  type String
+  occurredAt DateTime @db.Timestamptz
+  @@unique([guildId, eventId])
+  @@index([guildId, type, userId, occurredAt])
+  @@index([occurredAt])
+}
+model SpamDecision {
+  id String @id @default(uuid())
+  guildId String
+  eventId String
+  userId String
+  reasons Json @db.JsonB
+  policyHash String
+  channelId String?
+  mode String
+  state String @default("OBSERVED")
+  jobId String?
+  createdAt DateTime @default(now()) @db.Timestamptz
+  @@unique([guildId, eventId])
+  @@index([guildId, createdAt])
+}
+model RaidState {
+  guildId String @id
+  until DateTime @db.Timestamptz
+}

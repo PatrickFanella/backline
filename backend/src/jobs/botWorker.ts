@@ -1,5 +1,6 @@
 import { Client } from 'discord.js';
 
+import { antiSpamHandler, recoverSpamDecisions } from '../community/antiSpam';
 import {
     auditHandler,
     expireAuditContent,
@@ -18,6 +19,7 @@ export function createBotWorker(client: Client): JobWorker {
     return new JobWorker(
         new Map<string, JobHandler>([
             ['audit-log', auditHandler(client)],
+            ['anti-spam', antiSpamHandler(client)],
             ['onboarding-join', onboardingHandler(client, 'join')],
             ['onboarding-departure', onboardingHandler(client, 'departure')],
             ['onboarding-roles', onboardingHandler(client, 'roles')],
@@ -140,6 +142,7 @@ export function startJobPolling(worker: JobWorker): () => Promise<void> {
                 await recoverAuditEvents();
                 await recoverJourneys();
                 await expireRoleChoices();
+                await recoverSpamDecisions();
                 lastExpiry = Date.now();
             }
             const held = await db.durableJob.findMany({
