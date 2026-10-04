@@ -701,3 +701,12 @@ model RuleTemplate {
   @@index([category])
   @@index([usageCount(sort: Desc)])
 }
+
+// Only hashes are stored; deletion atomically consumes a browser-bound login nonce.
+model OAuthState {
+  stateHash String @id
+  browserHash String
+  expiresAt DateTime @db.Timestamptz
+
+  @@index([expiresAt])
+}

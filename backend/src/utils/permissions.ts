@@ -74,16 +74,4 @@ export async function getUserPermissions(userId: string): Promise<string[]> {
 /**
  * Check if a user has access to a specific guild
  */
-export async function checkGuildAccess(
-    userId: string,
-    guildId: string
-): Promise<boolean> {
-    const guild = await db.guild.findFirst({
-        where: {
-            guildId,
-            userId,
-        },
-    });
-
-    return guild !== null;
-}
+export { authorizeGuild as checkGuildAccess } from '../guilds/authorization';

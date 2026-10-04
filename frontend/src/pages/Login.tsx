@@ -8,11 +8,7 @@ import { config } from '../config/env';
 
 function Login() {
     const { t } = useTranslation();
-    const REDIRECT_URI = encodeURIComponent(
-        `${window.location.origin}/auth/callback`
-    );
-
-    const discordLoginUrl = `https://discord.com/oauth2/authorize?client_id=${config.discordClientId}&redirect_uri=${REDIRECT_URI}&response_type=code&scope=identify+guilds`;
+    const discordLoginUrl = `${config.apiUrl}/auth/discord/start`;
 
     return (
         <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-ctp-base via-ctp-mantle to-ctp-crust relative">
@@ -69,16 +65,31 @@ function Login() {
                         aria-label="Features"
                     >
                         <li className="flex items-center gap-3 text-ctp-subtext1">
-                            <Activity className="w-5 h-5 text-ctp-green" aria-hidden="true" />
-                            <span className="text-sm">{t('features.realTimeMonitoring')}</span>
+                            <Activity
+                                className="w-5 h-5 text-ctp-green"
+                                aria-hidden="true"
+                            />
+                            <span className="text-sm">
+                                {t('features.realTimeMonitoring')}
+                            </span>
                         </li>
                         <li className="flex items-center gap-3 text-ctp-subtext1">
-                            <Shield className="w-5 h-5 text-ctp-blue" aria-hidden="true" />
-                            <span className="text-sm">{t('features.ghostDetection')}</span>
+                            <Shield
+                                className="w-5 h-5 text-ctp-blue"
+                                aria-hidden="true"
+                            />
+                            <span className="text-sm">
+                                {t('features.ghostDetection')}
+                            </span>
                         </li>
                         <li className="flex items-center gap-3 text-ctp-subtext1">
-                            <TrendingUp className="w-5 h-5 text-ctp-pink" aria-hidden="true" />
-                            <span className="text-sm">{t('features.advancedAnalytics')}</span>
+                            <TrendingUp
+                                className="w-5 h-5 text-ctp-pink"
+                                aria-hidden="true"
+                            />
+                            <span className="text-sm">
+                                {t('features.advancedAnalytics')}
+                            </span>
                         </li>
                     </motion.ul>
 
