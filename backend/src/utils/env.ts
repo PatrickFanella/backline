@@ -42,6 +42,10 @@ const envSchema = z.object({
         .default('')
         .transform((s: string) => s.split(',').filter(Boolean)),
 
+    BOT_RUN_JOBS: z
+        .string()
+        .default('true')
+        .transform((value) => value === 'true'),
     BOT_ACTIVITY_INTENTS: z
         .string()
         .default('false')

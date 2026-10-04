@@ -9,6 +9,7 @@ import analyticsRoutes from './analytics';
 import analyticsRulesRoutes from './analyticsRules';
 import authRoutes from './auth';
 import banRoutes from './bans';
+import guildJobsRoutes from './guildJobs';
 import guildModulesRoutes from './guildModules';
 import incidentsRoutes from './incidents';
 import ipManagementRoutes from './ipManagement';
@@ -71,6 +72,7 @@ router.use('/status', statusRoutes);
 
 router.use('/auth', authRoutes);
 router.use(guildModulesRoutes);
+router.use(guildJobsRoutes);
 router.use('/privacy', privacyRoutes);
 router.use('/admin/privacy', adminPrivacyRoutes);
 router.use('/admin/ip-management', ipManagementRoutes);

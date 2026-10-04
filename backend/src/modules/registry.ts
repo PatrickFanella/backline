@@ -13,7 +13,7 @@ export interface ModuleDefinition {
     permissions: bigint[];
     intents: GatewayIntentBits[];
     commands: string[];
-    pendingJobPolicy: 'cancel' | 'pause';
+    pendingJobPolicy: 'cancel';
 }
 
 export class ModuleRegistry {

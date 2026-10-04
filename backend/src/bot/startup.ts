@@ -4,6 +4,7 @@ import { Client, GatewayIntentBits } from 'discord.js';
 
 import { db } from '../db';
 import { recordInstallation } from '../guilds/installations';
+import { createBotWorker, startJobPolling } from '../jobs/botWorker';
 import { moduleRegistry } from '../modules/registry';
 import { pluginManager } from '../plugins';
 import { PluginHookType } from '../plugins/types';
@@ -70,6 +71,17 @@ export async function startBot(): Promise<Client> {
                         )
                     );
                 console.log('Bot ready');
+                if (env.BOT_RUN_JOBS) {
+                    const stop = startJobPolling(createBotWorker(client));
+                    client.once('invalidated', () => {
+                        void stop();
+                    });
+                    const destroy = client.destroy.bind(client);
+                    client.destroy = async () => {
+                        await stop();
+                        await destroy();
+                    };
+                }
                 resolve();
             })().catch(reject);
         });
