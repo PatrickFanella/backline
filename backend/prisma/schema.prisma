@@ -710,3 +710,43 @@ model OAuthState {
 
   @@index([expiresAt])
 }
+
+model DurableJob {
+  id String @id @default(uuid())
+  guildId String
+  actorId String
+  kind String
+  moduleId String?
+  idempotencyKey String
+  payload Json @db.JsonB
+  state String @default("PENDING")
+  runAt DateTime @default(now()) @db.Timestamptz
+  expiresAt DateTime @db.Timestamptz
+  leaseOwner String?
+  leaseUntil DateTime? @db.Timestamptz
+  attempts Int @default(0)
+  maxAttempts Int @default(5)
+  lastError String?
+  result Json? @db.JsonB
+  createdAt DateTime @default(now()) @db.Timestamptz
+  updatedAt DateTime @updatedAt @db.Timestamptz
+  history JobAttempt[]
+
+  @@unique([guildId, idempotencyKey])
+  @@index([state, runAt])
+  @@index([guildId, createdAt])
+}
+
+model JobAttempt {
+  id String @id @default(uuid())
+  jobId String
+  number Int
+  owner String
+  outcome String @default("RUNNING")
+  detail String?
+  startedAt DateTime @default(now()) @db.Timestamptz
+  finishedAt DateTime? @db.Timestamptz
+  job DurableJob @relation(fields: [jobId], references: [id])
+
+  @@unique([jobId, number])
+}

@@ -37,15 +37,18 @@ export default function AnalyticsConsentBanner() {
 
     return (
         <aside
-            role="complementary"
             aria-labelledby="consent-heading"
             className="fixed bottom-0 left-0 right-0 z-50 bg-gray-900 border-t border-gray-700 shadow-lg"
         >
             <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
-                <div className="flex items-center justify-between gap-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div className="flex-1">
-                        <h3 id="consent-heading" className="text-lg font-semibold text-white mb-1">
-                            <span aria-hidden="true">🍪</span> {t('consent.analyticsTitle')}
+                        <h3
+                            id="consent-heading"
+                            className="text-lg font-semibold text-white mb-1"
+                        >
+                            <span aria-hidden="true">🍪</span>{' '}
+                            {t('consent.analyticsTitle')}
                         </h3>
                         <p className="text-sm text-gray-300">
                             {t('consent.analyticsMessage')}

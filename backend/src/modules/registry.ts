@@ -13,7 +13,7 @@ export interface ModuleDefinition {
     permissions: bigint[];
     intents: GatewayIntentBits[];
     commands: string[];
-    pendingJobPolicy: 'cancel' | 'pause';
+    pendingJobPolicy: 'cancel';
 }
 
 export class ModuleRegistry {
@@ -98,7 +98,7 @@ export class ModuleRegistry {
 export const moduleRegistry = new ModuleRegistry();
 moduleRegistry.register({
     id: 'activity',
-    description: 'Observed member activity and existing analytics collectors',
+    description: 'Collect observed member activity for server reports.',
     version: 1,
     schema: z.object({}).strict(),
     permissions: [PermissionFlagsBits.ViewChannel],
@@ -114,7 +114,7 @@ moduleRegistry.register({
 });
 moduleRegistry.register({
     id: 'operator-plugins',
-    description: 'Trusted operator-installed Discord plugin hooks',
+    description: 'Enable the extensions your bot operator has installed.',
     version: 1,
     schema: z.object({}).strict(),
     permissions: [],
