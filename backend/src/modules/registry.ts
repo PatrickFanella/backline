@@ -2,6 +2,7 @@ import { GatewayIntentBits, PermissionFlagsBits } from 'discord.js';
 import { z } from 'zod';
 
 import {
+    antiSpamConfig,
     auditConfig,
     onboardingConfig,
     selfRolesConfig,
@@ -201,5 +202,21 @@ moduleRegistry.register({
     permissions: [],
     intents: [],
     commands: ['roles-panel'],
+    pendingJobPolicy: 'cancel',
+});
+
+moduleRegistry.register({
+    id: 'anti-spam',
+    description:
+        'Observe message floods, prohibited content and join bursts; optionally enforce timeouts.',
+    version: 1,
+    schema: antiSpamConfig,
+    permissions: [],
+    intents: [
+        GatewayIntentBits.GuildMembers,
+        GatewayIntentBits.GuildMessages,
+        GatewayIntentBits.MessageContent,
+    ],
+    commands: [],
     pendingJobPolicy: 'cancel',
 });

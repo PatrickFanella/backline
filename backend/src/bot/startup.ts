@@ -2,6 +2,7 @@ import path from 'path';
 
 import { Client, Partials } from 'discord.js';
 
+import { registerAntiSpamEvents } from '../community/antiSpam';
 import { registerAuditEvents } from '../community/audit';
 import { registerOnboardingEvents } from '../community/onboarding';
 import { db } from '../db';
@@ -21,6 +22,7 @@ export async function startBot(): Promise<Client> {
         partials: [Partials.Message, Partials.Channel, Partials.GuildMember],
     });
     registerAuditEvents(client);
+    registerAntiSpamEvents(client);
     registerOnboardingEvents(client);
     registerCollectors(client);
     client.on('interactionCreate', (interaction) => {

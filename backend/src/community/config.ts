@@ -65,3 +65,33 @@ export const selfRolesConfig = z
             data.roles.length,
         'Duplicate roles'
     );
+
+export const antiSpamConfig = z
+    .object({
+        observeOnly: z.boolean().default(true),
+        messageLimit: z.number().int().min(2).max(100).default(6),
+        windowSeconds: z.number().int().min(2).max(300).default(10),
+        mentionLimit: z.number().int().min(1).max(100).default(5),
+        prohibitedDomains: z
+            .array(
+                z
+                    .string()
+                    .trim()
+                    .toLowerCase()
+                    .regex(/^[a-z0-9.-]+$/)
+                    .max(253)
+            )
+            .max(100)
+            .default([]),
+        prohibitedWords: z
+            .array(z.string().trim().min(2).max(100))
+            .max(100)
+            .default([]),
+        exemptRoles: z.array(id).max(50).default([]),
+        exemptChannels: z.array(id).max(50).default([]),
+        joinLimit: z.number().int().min(2).max(100).default(10),
+        joinWindowSeconds: z.number().int().min(5).max(300).default(60),
+        raidMinutes: z.number().int().min(1).max(60).default(10),
+        timeoutMinutes: z.number().int().min(1).max(60).default(5),
+    })
+    .strict();
