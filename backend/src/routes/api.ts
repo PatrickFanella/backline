@@ -3,11 +3,13 @@ import redoc from 'redoc-express';
 import swaggerUi from 'swagger-ui-express';
 
 import { swaggerSpec } from '../config/openapi';
+
 import adminPrivacyRoutes from './adminPrivacy';
 import analyticsRoutes from './analytics';
 import analyticsRulesRoutes from './analyticsRules';
 import authRoutes from './auth';
 import banRoutes from './bans';
+import guildModulesRoutes from './guildModules';
 import incidentsRoutes from './incidents';
 import ipManagementRoutes from './ipManagement';
 import metricsAnalyticsRoutes from './metricsAnalytics';
@@ -68,6 +70,7 @@ router.use('/public', publicApiRoutes);
 router.use('/status', statusRoutes);
 
 router.use('/auth', authRoutes);
+router.use(guildModulesRoutes);
 router.use('/privacy', privacyRoutes);
 router.use('/admin/privacy', adminPrivacyRoutes);
 router.use('/admin/ip-management', ipManagementRoutes);
