@@ -7,6 +7,7 @@ import {
     SlashCommandBuilder,
 } from 'discord.js';
 
+import { acknowledgeRules } from '../community/onboarding';
 import { db } from '../db';
 import { moderationCommands, routeModeration } from '../moderation/commands';
 import { moduleRegistry } from '../modules/registry';
@@ -84,6 +85,7 @@ export async function routeInteraction(
             );
             return;
         }
+        if (await acknowledgeRules(interaction)) return;
         if (!interaction.isChatInputCommand()) {
             await interaction.editReply(
                 'This control is unknown or expired. Open a new panel with the relevant command.'

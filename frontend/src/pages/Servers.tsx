@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 
+import OnboardingConfig from '../components/OnboardingConfig';
 import ServerModuleConfig from '../components/ServerModuleConfig';
 import { ThemeToggle } from '../components/ui/ThemeToggle';
 import api from '../lib/api';
@@ -208,8 +209,37 @@ export default function Servers() {
                                             restart the bot.
                                         </p>
                                     )}
+                                    {module.id === 'onboarding' && (
+                                        <OnboardingConfig
+                                            key={`${guildId}:onboarding:${JSON.stringify(module.settings.config)}`}
+                                            guildId={guildId}
+                                            enabled={module.settings.enabled}
+                                            config={module.settings.config}
+                                            onBusy={(value) =>
+                                                setBusy(
+                                                    value ? module.id : null
+                                                )
+                                            }
+                                            onSaved={async () => {
+                                                const current =
+                                                    generation.current;
+                                                const response = await api.get<
+                                                    Module[]
+                                                >(`/guilds/${guildId}/modules`);
+                                                if (
+                                                    current ===
+                                                    generation.current
+                                                ) {
+                                                    setModules(response.data);
+                                                    setNotice(
+                                                        'Onboarding settings saved for this server.'
+                                                    );
+                                                }
+                                            }}
+                                        />
+                                    )}
                                     <ServerModuleConfig
-                                        key={`${guildId}:${module.id}:${JSON.stringify(module.settings.config)}`}
+                                        key={`audit-config:${guildId}:${module.id}:${JSON.stringify(module.settings.config)}`}
                                         guildId={guildId}
                                         moduleId={module.id}
                                         enabled={module.settings.enabled}

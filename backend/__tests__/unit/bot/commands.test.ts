@@ -14,6 +14,7 @@ jest.spyOn(moduleRegistry, 'configure');
 function interaction(commandName = 'help') {
     return {
         isRepliable: () => true,
+        isButton: () => false,
         inGuild: () => true,
         isChatInputCommand: () => true,
         guildId: 'A',

@@ -5,6 +5,7 @@ import {
     expireAuditContent,
     recoverAuditEvents,
 } from '../community/audit';
+import { onboardingHandler, recoverJourneys } from '../community/onboarding';
 import { db } from '../db';
 import { authorizeGuild } from '../guilds/authorization';
 import { performModeration } from '../moderation/service';
@@ -16,6 +17,9 @@ export function createBotWorker(client: Client): JobWorker {
     return new JobWorker(
         new Map<string, JobHandler>([
             ['audit-log', auditHandler(client)],
+            ['onboarding-join', onboardingHandler(client, 'join')],
+            ['onboarding-departure', onboardingHandler(client, 'departure')],
+            ['onboarding-roles', onboardingHandler(client, 'roles')],
             [
                 'moderation',
                 {
@@ -133,6 +137,7 @@ export function startJobPolling(worker: JobWorker): () => Promise<void> {
             if (Date.now() - lastExpiry > 60000) {
                 await expireAuditContent();
                 await recoverAuditEvents();
+                await recoverJourneys();
                 lastExpiry = Date.now();
             }
             const held = await db.durableJob.findMany({

@@ -22,3 +22,19 @@ export const auditConfig = z
         retentionDays: z.number().int().min(1).max(90).default(7),
     })
     .strict();
+
+export const onboardingConfig = z
+    .object({
+        channelId: id.optional(),
+        departureChannelId: id.optional(),
+        welcome: z.string().max(1800).default('Welcome {user} to {server}!'),
+        departure: z.string().max(1800).default('{user} left {server}.'),
+        joinRoles: z.array(id).max(10).default([]),
+        requireRules: z.boolean().default(false),
+        rules: z.string().max(1024).default(''),
+    })
+    .strict()
+    .refine(
+        (data) => !data.requireRules || (!!data.channelId && !!data.rules),
+        'Rules acknowledgment requires a channel and rules'
+    );

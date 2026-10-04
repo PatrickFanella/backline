@@ -788,3 +788,26 @@ model ServerAuditEvent {
   @@index([guildId, createdAt])
   @@index([expiresAt])
 }
+
+model MemberJourney {
+  id String @id @default(uuid())
+  guildId String
+  userId String
+  joinedAt String
+  username String
+  state String @default("PENDING")
+  welcomeMessageId String?
+  welcomeChannelId String?
+  rulesHash String?
+  rolesState String @default("PENDING")
+  acknowledgedAt DateTime? @db.Timestamptz
+  leftAt DateTime? @db.Timestamptz
+  departureState String @default("PENDING")
+  departureMessageId String?
+  detail String?
+  createdAt DateTime @default(now()) @db.Timestamptz
+  expiresAt DateTime @db.Timestamptz
+  @@unique([guildId, userId, joinedAt])
+  @@index([guildId, userId, createdAt])
+  @@index([expiresAt])
+}
