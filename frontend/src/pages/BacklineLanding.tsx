@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom';
 import './backline-landing.css';
 
 const source =
-    'https://git.subcult.tv/subculture-collective/discord-spywatcher';
+    'https://git.subcult.tv/subculture-collective/backline';
 const tools = [
     {
         number: '01',
