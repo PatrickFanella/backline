@@ -90,6 +90,8 @@ export class PluginManager {
         }
 
         await this.loader.stopAllPlugins();
+        this.loader = undefined;
+        this.initialized = false;
         console.log('✅ Plugin system shutdown complete');
     }
 }

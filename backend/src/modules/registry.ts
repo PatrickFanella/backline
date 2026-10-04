@@ -1,7 +1,11 @@
 import { GatewayIntentBits, PermissionFlagsBits } from 'discord.js';
 import { z } from 'zod';
 
-import { auditConfig, onboardingConfig } from '../community/config';
+import {
+    auditConfig,
+    onboardingConfig,
+    selfRolesConfig,
+} from '../community/config';
 import { db } from '../db';
 import { env } from '../utils/env';
 import { toInputJson } from '../utils/prismaJson';
@@ -186,5 +190,16 @@ moduleRegistry.register({
     permissions: [],
     intents: [GatewayIntentBits.GuildMembers],
     commands: [],
+    pendingJobPolicy: 'cancel',
+});
+
+moduleRegistry.register({
+    id: 'self-roles',
+    description: 'Offer eligible roles through buttons or a selection menu.',
+    version: 1,
+    schema: selfRolesConfig,
+    permissions: [],
+    intents: [],
+    commands: ['roles-panel'],
     pendingJobPolicy: 'cancel',
 });

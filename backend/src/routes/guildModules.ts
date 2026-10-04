@@ -2,7 +2,7 @@ import { PermissionFlagsBits } from 'discord.js';
 import { Router } from 'express';
 import { z } from 'zod';
 
-import { onboardingConfig } from '../community/config';
+import { onboardingConfig, selfRolesConfig } from '../community/config';
 import { db } from '../db';
 import { listManagedGuilds } from '../guilds/authorization';
 import { requireAuthOrApiKey, requireGuildAccess } from '../middleware';
@@ -23,6 +23,22 @@ const updateSchema = z.object({
     config: z.unknown().default({}),
 });
 router.use('/guilds/:guildId/modules', requireAuthOrApiKey, requireGuildAccess);
+router.get('/guilds/:guildId/modules/self-roles/history', async (req, res) => {
+    try {
+        res.json(
+            await db.roleChoice.findMany({
+                where: {
+                    guildId: req.params.guildId,
+                    createdAt: { gte: new Date(Date.now() - 90 * 86400000) },
+                },
+                orderBy: { createdAt: 'desc' },
+                take: 100,
+            })
+        );
+    } catch {
+        res.status(503).json({ error: 'Role choice history unavailable' });
+    }
+});
 router.get('/guilds/:guildId/modules/onboarding/history', async (req, res) => {
     try {
         res.json(
@@ -86,8 +102,10 @@ router.put('/guilds/:guildId/modules/:moduleId', async (req, res) => {
     }
     try {
         if (
-            req.params.moduleId === 'onboarding' &&
-            onboardingConfig.parse(body.data.config).joinRoles.length
+            (req.params.moduleId === 'onboarding' &&
+                onboardingConfig.parse(body.data.config).joinRoles.length) ||
+            (req.params.moduleId === 'self-roles' &&
+                selfRolesConfig.parse(body.data.config).roles.length)
         ) {
             const membership = await db.guild.findUnique({
                 where: {
@@ -107,7 +125,7 @@ router.put('/guilds/:guildId/modules/:moduleId', async (req, res) => {
                     ))
             ) {
                 res.status(403).json({
-                    error: 'Current Manage Roles permission is required to configure join roles',
+                    error: 'Current Manage Roles permission is required to configure role assignments',
                 });
                 return;
             }

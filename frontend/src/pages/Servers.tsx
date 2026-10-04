@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import OnboardingConfig from '../components/OnboardingConfig';
+import SelfRolesConfig from '../components/SelfRolesConfig';
 import ServerModuleConfig from '../components/ServerModuleConfig';
 import { ThemeToggle } from '../components/ui/ThemeToggle';
 import api from '../lib/api';
@@ -233,6 +234,35 @@ export default function Servers() {
                                                     setModules(response.data);
                                                     setNotice(
                                                         'Onboarding settings saved for this server.'
+                                                    );
+                                                }
+                                            }}
+                                        />
+                                    )}
+                                    {module.id === 'self-roles' && (
+                                        <SelfRolesConfig
+                                            key={`${guildId}:self-roles:${JSON.stringify(module.settings.config)}`}
+                                            guildId={guildId}
+                                            enabled={module.settings.enabled}
+                                            config={module.settings.config}
+                                            onBusy={(value) =>
+                                                setBusy(
+                                                    value ? module.id : null
+                                                )
+                                            }
+                                            onSaved={async () => {
+                                                const current =
+                                                    generation.current;
+                                                const response = await api.get<
+                                                    Module[]
+                                                >(`/guilds/${guildId}/modules`);
+                                                if (
+                                                    current ===
+                                                    generation.current
+                                                ) {
+                                                    setModules(response.data);
+                                                    setNotice(
+                                                        'Role settings saved for this server.'
                                                     );
                                                 }
                                             }}
