@@ -50,17 +50,13 @@ const { PrismaClient } = await import(
 );
 const client = new PrismaClient({ datasources: { db: { url: existing } } });
 try {
-    await client.presenceEvent.create({
-        data: {
-            id: 'baseline-preserved',
-            userId: 'member',
-            username: 'Member',
-            clients: ['desktop', 'web'],
-        },
-    });
-    const fixture = await client.presenceEvent.findUniqueOrThrow({
-        where: { id: 'baseline-preserved' },
-    });
+    await client.$executeRaw`INSERT INTO "PresenceEvent" ("id", "userId", "username", "clients") VALUES ('baseline-preserved', 'member', 'Member', ARRAY['desktop', 'web'])`;
+    const [fixture] =
+        await client.$queryRaw`SELECT "id", "userId", "username", "clients", "createdAt" FROM "PresenceEvent" WHERE "id" = 'baseline-preserved'`;
+    await client.$executeRaw`INSERT INTO "User" ("id", "discordId", "username", "discriminator", "verified", "accessToken", "refreshToken", "accessTokenExpiresAt", "lastSeenAt", "updatedAt") VALUES ('baseline-admin', 'baseline-admin', 'Admin', '0', true, 'fixture', 'fixture', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`;
+    await client.$executeRaw`INSERT INTO "Guild" ("id", "guildId", "name", "owner", "permissions", "userId") VALUES ('baseline-membership', '123456789', 'Legacy server', true, 8, 'baseline-admin')`;
+    const [membership] =
+        await client.$queryRaw`SELECT "id", "guildId", "name", "owner", "permissions", "userId" FROM "Guild" WHERE "id" = 'baseline-membership'`;
     const dir = mkdtempSync(`${tmpdir()}/spywatcher-baseline-`);
     const receipt = `${dir}/fixture-recovery.json`;
     // Logical fixture export is the recovery artifact for this disposable check.
@@ -81,13 +77,29 @@ try {
         existing
     );
     run(prisma, ['migrate', 'deploy'], existing);
-    assert.deepEqual(
-        await client.presenceEvent.findUniqueOrThrow({
-            where: { id: fixture.id },
-        }),
-        fixture
-    );
+    const [after] =
+        await client.$queryRaw`SELECT "id", "userId", "username", "clients", "createdAt" FROM "PresenceEvent" WHERE "id" = 'baseline-preserved'`;
+    assert.deepEqual(after, fixture);
+    const [membershipAfter] =
+        await client.$queryRaw`SELECT "id", "guildId", "name", "owner", "permissions", "userId" FROM "Guild" WHERE "id" = 'baseline-membership'`;
+    assert.deepEqual(membershipAfter, membership);
     assert.equal(await client.presenceEvent.count(), 1);
+    assert.equal(
+        (
+            await client.guildInstallation.findUniqueOrThrow({
+                where: { guildId: '123456789' },
+            })
+        ).active,
+        false
+    );
+    assert.equal(
+        (
+            await client.presenceEvent.findUniqueOrThrow({
+                where: { id: fixture.id },
+            })
+        ).guildId,
+        null
+    );
     console.log(
         'Fresh migrate/seed and existing-schema adoption passed; fixture row, clients and timestamp preserved.'
     );

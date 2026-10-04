@@ -8,10 +8,22 @@ import RequireAuth from './components/RequireAuth';
 import SuspicionDetail from './components/suspicion/SuspicionDetail';
 import { usePageTracking } from './hooks/useAnalytics';
 import { useRTL } from './hooks/useRTL';
-import { Analytics, AdvancedAnalytics, AuthCallback, Bans, Dashboard, Login, Status, Suspicion, UserTimeline } from './pages';
+import {
+    Analytics,
+    AdvancedAnalytics,
+    AuthCallback,
+    Bans,
+    Dashboard,
+    Login,
+    Status,
+    Suspicion,
+    UserTimeline,
+} from './pages';
 import MetricsDashboard from './pages/MetricsDashboard';
+import Moderation from './pages/Moderation';
 import RuleEditor from './pages/RuleEditor';
 import Rules from './pages/Rules';
+import Servers from './pages/Servers';
 import { useAuth } from './store/auth';
 
 function AppContent() {
@@ -34,16 +46,27 @@ function AppContent() {
                 <Route path="/status" element={<Status />} />
 
                 <Route element={<RequireAuth />}>
-                    <Route path="/" element={<Dashboard />} />
+                    <Route path="/" element={<Servers />} />
+                    <Route path="/moderation" element={<Moderation />} />
+                    <Route path="/observed-activity" element={<Dashboard />} />
                     <Route path="/analytics" element={<Analytics />} />
-                    <Route path="/advanced-analytics" element={<AdvancedAnalytics />} />
+                    <Route
+                        path="/advanced-analytics"
+                        element={<AdvancedAnalytics />}
+                    />
                     <Route path="/metrics" element={<MetricsDashboard />} />
                     <Route path="/rules" element={<Rules />} />
                     <Route path="/rules/new" element={<RuleEditor />} />
                     <Route path="/rules/:id/edit" element={<RuleEditor />} />
                     <Route path="/suspicion" element={<Suspicion />} />
-                    <Route path="/suspicion/:userId" element={<SuspicionDetail />} />
-                    <Route path="/timeline/:userId" element={<UserTimeline />} />
+                    <Route
+                        path="/suspicion/:userId"
+                        element={<SuspicionDetail />}
+                    />
+                    <Route
+                        path="/timeline/:userId"
+                        element={<UserTimeline />}
+                    />
 
                     <Route element={<RequireAdmin />}>
                         <Route path="/bans" element={<Bans />} />

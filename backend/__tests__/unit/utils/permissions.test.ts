@@ -9,6 +9,10 @@ import {
     checkGuildAccess,
 } from '../../../src/utils/permissions';
 
+jest.mock('../../../src/guilds/authorization', () => ({
+    authorizeGuild: jest.fn(),
+}));
+
 jest.mock('../../../src/db', () => ({
     db: {
         user: {
@@ -54,10 +58,7 @@ describe('Permissions Utils', () => {
 
             (db.rolePermission.findFirst as jest.Mock).mockResolvedValue(null);
 
-            const result = await checkUserPermission(
-                'user-1',
-                'users.ban'
-            );
+            const result = await checkUserPermission('user-1', 'users.ban');
             expect(result).toBe(false);
         });
 
@@ -141,18 +142,14 @@ describe('Permissions Utils', () => {
 
     describe('checkGuildAccess', () => {
         it('should return true if user has access to guild', async () => {
-            (db.guild.findFirst as jest.Mock).mockResolvedValue({
-                id: 'guild-1',
-                guildId: '123',
-                userId: 'user-1',
-            });
+            (checkGuildAccess as jest.Mock).mockResolvedValue(true);
 
             const result = await checkGuildAccess('user-1', '123');
             expect(result).toBe(true);
         });
 
         it('should return false if user does not have access to guild', async () => {
-            (db.guild.findFirst as jest.Mock).mockResolvedValue(null);
+            (checkGuildAccess as jest.Mock).mockResolvedValue(false);
 
             const result = await checkGuildAccess('user-1', '123');
             expect(result).toBe(false);

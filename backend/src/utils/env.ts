@@ -42,6 +42,19 @@ const envSchema = z.object({
         .default('')
         .transform((s: string) => s.split(',').filter(Boolean)),
 
+    BOT_RUN_JOBS: z
+        .string()
+        .default('true')
+        .transform((value) => value === 'true'),
+    BOT_ACTIVITY_INTENTS: z
+        .string()
+        .default('false')
+        .transform((value) => value === 'true'),
+    BOT_REGISTER_COMMANDS: z
+        .string()
+        .default('false')
+        .transform((value) => value === 'true'),
+
     // JWT
     JWT_SECRET: z.string().min(32, 'JWT secret must be at least 32 characters'),
     JWT_REFRESH_SECRET: z

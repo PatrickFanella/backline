@@ -164,6 +164,13 @@ jobs:
           createdb -h localhost -U spywatcher spywatcher_existing
           node scripts/check-postgresql-baseline.mjs
 
+      - name: Check server isolation against PostgreSQL
+        working-directory: backend
+        env:
+          RUN_DATABASE_TESTS: "true"
+          DATABASE_URL: postgresql://spywatcher:test_password@localhost:5432/spywatcher_existing
+        run: npm test -- --runInBand __tests__/integration/database/guildIsolation.test.ts
+
   build:
     name: Build
     runs-on: ubuntu-latest

@@ -5,6 +5,7 @@ import { db } from '../db';
 import {
     banIP,
     requireAuth,
+    requireAdmin,
     unbanIP,
     whitelistIP,
     removeIPFromWhitelist,
@@ -15,6 +16,7 @@ import { apiLimiter } from '../middleware/rateLimiter';
 const router = Router();
 
 router.use(requireAuth);
+router.use(requireAdmin);
 router.use(apiLimiter);
 
 // IP Ban Management

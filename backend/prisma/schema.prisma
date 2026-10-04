@@ -25,6 +25,7 @@ enum SubscriptionTier {
 
 model PresenceEvent {
   id        String   @id @default(uuid())
+  guildId   String? // Legacy events without reliable attribution remain outside server reports.
   userId    String
   username  String
   clients   String[] // Array instead of comma-separated
@@ -34,6 +35,7 @@ model PresenceEvent {
   @@index([userId])
   @@index([createdAt])
   @@index([userId, createdAt(sort: Desc)]) // Composite index for user queries with time filter
+  @@index([guildId, createdAt(sort: Desc)])
 }
 
 model TypingEvent {
@@ -218,13 +220,41 @@ model User {
 
 model Guild {
   id          String  @id @default(cuid())
-  guildId     String  @unique
+  guildId     String
   name        String
   icon        String?
   owner       Boolean
   permissions BigInt
   userId      String
   user        User    @relation(fields: [userId], references: [id])
+  installation GuildInstallation @relation(fields: [guildId], references: [guildId])
+  syncedAt    DateTime @default(now()) @db.Timestamptz
+
+  @@unique([userId, guildId])
+  @@index([guildId])
+}
+
+model GuildInstallation {
+  guildId     String @id
+  name        String
+  icon        String?
+  active      Boolean @default(false)
+  installedAt DateTime @default(now()) @db.Timestamptz
+  updatedAt   DateTime @updatedAt @db.Timestamptz
+  members     Guild[]
+  modules     GuildModuleConfig[]
+}
+
+model GuildModuleConfig {
+  guildId       String
+  moduleId      String
+  enabled       Boolean @default(false)
+  version       Int @default(1)
+  config        Json @default("{}") @db.JsonB
+  updatedAt     DateTime @updatedAt @db.Timestamptz
+  installation  GuildInstallation @relation(fields: [guildId], references: [guildId])
+
+  @@id([guildId, moduleId])
 }
 
 model Permission {
@@ -670,4 +700,73 @@ model RuleTemplate {
 
   @@index([category])
   @@index([usageCount(sort: Desc)])
+}
+
+// Only hashes are stored; deletion atomically consumes a browser-bound login nonce.
+model OAuthState {
+  stateHash String @id
+  browserHash String
+  expiresAt DateTime @db.Timestamptz
+
+  @@index([expiresAt])
+}
+
+model DurableJob {
+  id String @id @default(uuid())
+  guildId String
+  actorId String
+  kind String
+  moduleId String?
+  idempotencyKey String
+  payload Json @db.JsonB
+  state String @default("PENDING")
+  runAt DateTime @default(now()) @db.Timestamptz
+  expiresAt DateTime @db.Timestamptz
+  leaseOwner String?
+  leaseUntil DateTime? @db.Timestamptz
+  attempts Int @default(0)
+  maxAttempts Int @default(5)
+  lastError String?
+  result Json? @db.JsonB
+  createdAt DateTime @default(now()) @db.Timestamptz
+  updatedAt DateTime @updatedAt @db.Timestamptz
+  history JobAttempt[]
+
+  @@unique([guildId, idempotencyKey])
+  @@index([state, runAt])
+  @@index([guildId, createdAt])
+}
+
+model JobAttempt {
+  id String @id @default(uuid())
+  jobId String
+  number Int
+  owner String
+  outcome String @default("RUNNING")
+  detail String?
+  startedAt DateTime @default(now()) @db.Timestamptz
+  finishedAt DateTime? @db.Timestamptz
+  job DurableJob @relation(fields: [jobId], references: [id])
+
+  @@unique([jobId, number])
+}
+
+model ModerationCase {
+  id String @id @default(uuid())
+  guildId String
+  requestId String
+  actorId String
+  targetId String?
+  channelId String?
+  action String
+  reason String
+  state String @default("PENDING")
+  detail String?
+  outcome Json? @db.JsonB
+  createdAt DateTime @default(now()) @db.Timestamptz
+  completedAt DateTime? @db.Timestamptz
+
+  @@unique([guildId, requestId])
+  @@index([guildId, createdAt])
+  @@index([guildId, targetId])
 }

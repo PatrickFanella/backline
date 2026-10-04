@@ -3,8 +3,10 @@ import * as crypto from 'crypto';
 
 import axios from 'axios';
 import express from 'express';
+import { z } from 'zod';
 
 import { db } from '../db';
+import { syncGuildMemberships } from '../guilds/installations';
 import {
     requireAdmin,
     requireAuth,
@@ -24,6 +26,7 @@ import {
 } from '../utils/cookies';
 import { env } from '../utils/env';
 import { logLoginAttempt, detectSuspiciousLogin } from '../utils/loginLog';
+import { beginOAuth, consumeOAuthState } from '../utils/oauthState';
 import {
     createRefreshToken,
     verifyAndRotateRefreshToken,
@@ -42,7 +45,14 @@ import {
 const router = express.Router();
 
 // Use environment variable for allowed Discord IDs instead of hardcoding
-const ALLOWED_DISCORD_IDS = env.ADMIN_DISCORD_IDS || [];
+router.get('/discord/start', authLimiter, async (_req, res): Promise<void> => {
+    try {
+        res.setHeader('Cache-Control', 'no-store');
+        res.redirect(await beginOAuth(res));
+    } catch {
+        res.status(503).json({ error: 'Login unavailable' });
+    }
+});
 
 /**
  * @openapi
@@ -91,19 +101,6 @@ router.get(
     async (req, res): Promise<void> => {
         // Safe: 'code' is guaranteed to exist and be a string due to validation middleware
         const code = req.query.code as string;
-        const state = req.query.state as string;
-
-        // State parameter validation for CSRF protection
-        // In production, you should validate this against a stored state
-        if (!state) {
-            console.warn('⚠️ Missing state parameter in OAuth callback');
-        }
-
-        console.log('client_id:', env.DISCORD_CLIENT_ID);
-        console.log('client_secret:', env.DISCORD_CLIENT_SECRET);
-        console.log('redirect_uri:', env.DISCORD_REDIRECT_URI);
-        console.log('auth code from Discord:', code);
-
         const xForwardedFor = req.headers['x-forwarded-for'];
         const ipAddress =
             req.ip ||
@@ -113,6 +110,13 @@ router.get(
         const userAgent = req.headers['user-agent'] || undefined;
 
         try {
+            res.setHeader('Cache-Control', 'no-store');
+            if (!(await consumeOAuthState(req, res))) {
+                res.status(400).json({
+                    error: 'Invalid or expired OAuth state',
+                });
+                return;
+            }
             const tokenRes = await axios.post(
                 'https://discord.com/api/oauth2/token',
                 new URLSearchParams({
@@ -126,10 +130,18 @@ router.get(
                     headers: {
                         'Content-Type': 'application/x-www-form-urlencoded',
                     },
+                    timeout: 5000,
                 }
             );
 
-            const { access_token, refresh_token, scope } = tokenRes.data;
+            const { access_token, refresh_token, scope, expires_in } = z
+                .object({
+                    access_token: z.string().min(1),
+                    refresh_token: z.string().min(1),
+                    scope: z.string(),
+                    expires_in: z.number().positive(),
+                })
+                .parse(tokenRes.data);
 
             // Validate scopes
             const requiredScopes = ['identify', 'guilds'];
@@ -139,7 +151,10 @@ router.get(
             );
 
             if (!hasRequiredScopes) {
-                console.warn('⚠️ Missing required OAuth scopes');
+                res.status(403).json({
+                    error: 'Required Discord scopes were not granted',
+                });
+                return;
             }
 
             const userRes = await axios.get(
@@ -159,28 +174,6 @@ router.get(
                 verified,
             } = userRes.data;
 
-            if (!ALLOWED_DISCORD_IDS.includes(discordId)) {
-                await logLoginAttempt(
-                    discordId,
-                    ipAddress,
-                    userAgent,
-                    false,
-                    'Discord ID not in allowed list'
-                );
-                await logSecurityEvent({
-                    action: SecurityActions.LOGIN_FAILURE,
-                    result: 'FAILURE',
-                    ipAddress,
-                    userAgent,
-                    metadata: {
-                        reason: 'Discord ID not in allowed list',
-                        discordId,
-                    },
-                });
-                res.status(403).json({ error: 'Unauthorized Discord user' });
-                return;
-            }
-
             const dbUser = await db.user.upsert({
                 where: { discordId },
                 update: {
@@ -195,7 +188,9 @@ router.get(
                     accessToken: access_token,
                     refreshToken: refresh_token,
                     refreshTokenIssuedAt: new Date(),
-                    accessTokenExpiresAt: new Date(Date.now() + 15 * 60 * 1000),
+                    accessTokenExpiresAt: new Date(
+                        Date.now() + Number(expires_in) * 1000
+                    ),
                     lastSeenAt: new Date(),
                 },
                 create: {
@@ -211,7 +206,9 @@ router.get(
                     accessToken: access_token,
                     refreshToken: refresh_token,
                     refreshTokenIssuedAt: new Date(),
-                    accessTokenExpiresAt: new Date(Date.now() + 15 * 60 * 1000),
+                    accessTokenExpiresAt: new Date(
+                        Date.now() + Number(expires_in) * 1000
+                    ),
                     lastSeenAt: new Date(),
                 },
             });
@@ -268,19 +265,7 @@ router.get(
                     ? allGuilds.filter((g: any) => botGuildIds.includes(g.id))
                     : allGuilds;
 
-            await db.guild.deleteMany({ where: { userId: dbUser.id } });
-            for (const g of guilds) {
-                await db.guild.create({
-                    data: {
-                        guildId: g.id,
-                        name: g.name,
-                        icon: g.icon,
-                        owner: g.owner,
-                        permissions: g.permissions,
-                        userId: dbUser.id,
-                    },
-                });
-            }
+            await syncGuildMemberships(dbUser.id, guilds);
 
             // Generate access token (15 minutes)
             const accessToken = generateAccessToken({
@@ -344,16 +329,13 @@ router.get(
             res.json({ accessToken });
         } catch (err) {
             if (axios.isAxiosError(err)) {
-                console.error(
-                    'OAuth error:',
-                    err.response?.data || err.message
-                );
+                console.warn('Discord OAuth exchange failed');
                 res.status(401).json({
-                    error: err.response?.data || 'OAuth failed',
+                    error: 'OAuth failed',
                 });
                 return;
             }
-            console.error('Unexpected error:', err);
+            console.warn('OAuth login failed');
             res.status(500).json({ error: 'Unexpected error' });
         }
     }

@@ -47,7 +47,7 @@ async function getMultiClientLoginCountsUncached(
       MAX("username") as username,
       COUNT(*) as multi_client_count
     FROM "PresenceEvent"
-    WHERE "createdAt" >= ${sinceDate}::timestamptz
+    WHERE "guildId" = ${guildId} AND "createdAt" >= ${sinceDate}::timestamptz
       AND array_length(clients, 1) >= 2
     GROUP BY "userId"
     ORDER BY multi_client_count DESC
@@ -66,11 +66,12 @@ async function getMultiClientLoginCountsUncached(
  * @deprecated Use getMultiClientLoginCounts for better performance
  */
 export async function getMultiClientLoginCountsLegacy(
-    _guildId: string,
+    guildId: string,
     since?: Date
 ) {
     const events = await db.presenceEvent.findMany({
         where: {
+            guildId,
             createdAt: since ? { gte: since } : undefined,
         },
     });

@@ -9,7 +9,7 @@ export const validateRequest = (schema: ZodSchema) => {
     return (req: Request, res: Response, next: NextFunction): void => {
         try {
             schema.parse({
-                body: req.body,
+                body: req.body as unknown,
                 query: req.query,
                 params: req.params,
             });
@@ -37,6 +37,9 @@ export const authSchemas = {
     discordCallback: z.object({
         query: z.object({
             code: z.string().min(1, 'Authorization code is required'),
+            state: z
+                .string()
+                .regex(/^[a-f0-9]{64}$/, 'OAuth state is required'),
         }),
     }),
 
