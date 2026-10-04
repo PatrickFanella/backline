@@ -100,3 +100,6 @@ loki/data/
 grafana/data/
 
 *.zip
+
+# Python pilot utility bytecode
+scripts/pilot/__pycache__/
