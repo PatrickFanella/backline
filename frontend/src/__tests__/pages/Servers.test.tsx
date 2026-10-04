@@ -129,4 +129,38 @@ describe('server setup', () => {
             })
         );
     });
+    it('saves onboarding templates and role policy to the selected server', async () => {
+        const onboarding = {
+            ...module,
+            id: 'onboarding',
+            description: 'Welcome members',
+        };
+        vi.mocked(api.get).mockImplementation(async (url) => ({
+            data:
+                url === '/guilds'
+                    ? [{ id: 'A', name: 'Server A', icon: null }]
+                    : [onboarding],
+        }));
+        open();
+        fireEvent.change(await screen.findByLabelText('Welcome channel ID'), {
+            target: { value: '666666666666666666' },
+        });
+        fireEvent.change(
+            screen.getByLabelText('Join role IDs, separated by commas'),
+            { target: { value: '777777777777777777' } }
+        );
+        fireEvent.click(screen.getByText('Save onboarding settings'));
+        await screen.findByText('Onboarding settings saved for this server.');
+        expect(api.put).toHaveBeenCalledWith(
+            '/guilds/A/modules/onboarding',
+            expect.objectContaining({
+                enabled: false,
+                config: expect.objectContaining({
+                    channelId: '666666666666666666',
+                    joinRoles: ['777777777777777777'],
+                    requireRules: false,
+                }),
+            })
+        );
+    });
 });

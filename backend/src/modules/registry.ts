@@ -1,7 +1,7 @@
 import { GatewayIntentBits, PermissionFlagsBits } from 'discord.js';
 import { z } from 'zod';
 
-import { auditConfig } from '../community/config';
+import { auditConfig, onboardingConfig } from '../community/config';
 import { db } from '../db';
 import { env } from '../utils/env';
 import { toInputJson } from '../utils/prismaJson';
@@ -173,6 +173,18 @@ moduleRegistry.register({
     schema: auditConfig,
     permissions: [],
     intents: [GatewayIntentBits.GuildMembers, GatewayIntentBits.GuildMessages],
+    commands: [],
+    pendingJobPolicy: 'cancel',
+});
+
+moduleRegistry.register({
+    id: 'onboarding',
+    description:
+        'Welcome members, assign eligible join roles and collect rules acknowledgment.',
+    version: 1,
+    schema: onboardingConfig,
+    permissions: [],
+    intents: [GatewayIntentBits.GuildMembers],
     commands: [],
     pendingJobPolicy: 'cancel',
 });

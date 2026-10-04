@@ -1,6 +1,8 @@
+import { PermissionFlagsBits } from 'discord.js';
 import { Router } from 'express';
 import { z } from 'zod';
 
+import { onboardingConfig } from '../community/config';
 import { db } from '../db';
 import { listManagedGuilds } from '../guilds/authorization';
 import { requireAuthOrApiKey, requireGuildAccess } from '../middleware';
@@ -21,6 +23,22 @@ const updateSchema = z.object({
     config: z.unknown().default({}),
 });
 router.use('/guilds/:guildId/modules', requireAuthOrApiKey, requireGuildAccess);
+router.get('/guilds/:guildId/modules/onboarding/history', async (req, res) => {
+    try {
+        res.json(
+            await db.memberJourney.findMany({
+                where: {
+                    guildId: req.params.guildId,
+                    expiresAt: { gt: new Date() },
+                },
+                orderBy: { createdAt: 'desc' },
+                take: 100,
+            })
+        );
+    } catch {
+        res.status(503).json({ error: 'Onboarding history unavailable' });
+    }
+});
 router.get('/guilds/:guildId/modules/audit-log/history', async (req, res) => {
     try {
         res.json(
@@ -67,6 +85,33 @@ router.put('/guilds/:guildId/modules/:moduleId', async (req, res) => {
         return;
     }
     try {
+        if (
+            req.params.moduleId === 'onboarding' &&
+            onboardingConfig.parse(body.data.config).joinRoles.length
+        ) {
+            const membership = await db.guild.findUnique({
+                where: {
+                    userId_guildId: {
+                        userId: req.user!.userId,
+                        guildId: req.params.guildId,
+                    },
+                },
+            });
+            if (
+                !membership ||
+                (!membership.owner &&
+                    !(
+                        membership.permissions &
+                        (PermissionFlagsBits.ManageRoles |
+                            PermissionFlagsBits.Administrator)
+                    ))
+            ) {
+                res.status(403).json({
+                    error: 'Current Manage Roles permission is required to configure join roles',
+                });
+                return;
+            }
+        }
         await moduleRegistry.configure(
             req.params.guildId,
             req.params.moduleId,

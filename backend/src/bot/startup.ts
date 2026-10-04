@@ -3,6 +3,7 @@ import path from 'path';
 import { Client, Partials } from 'discord.js';
 
 import { registerAuditEvents } from '../community/audit';
+import { registerOnboardingEvents } from '../community/onboarding';
 import { db } from '../db';
 import { recordInstallation } from '../guilds/installations';
 import { createBotWorker, startJobPolling } from '../jobs/botWorker';
@@ -20,6 +21,7 @@ export async function startBot(): Promise<Client> {
         partials: [Partials.Message, Partials.Channel, Partials.GuildMember],
     });
     registerAuditEvents(client);
+    registerOnboardingEvents(client);
     registerCollectors(client);
     client.on('interactionCreate', (interaction) => {
         void routeInteraction(interaction);
