@@ -228,7 +228,7 @@ const allowedOrigins =
         console.error('🔥 Failed to initialize WebSocket server:', err);
     }
 
-    httpServer.listen(PORT, () => {
+    httpServer.listen(PORT, env.HOST, () => {
         console.log(
             `🔐 Starting server with bot in guild(s):`,
             env.BOT_GUILD_IDS
@@ -284,7 +284,10 @@ const allowedOrigins =
                 console.log('✅ Connection pool monitoring started');
             })
             .catch((err) => {
-                console.error('Failed to start connection pool monitoring:', err);
+                console.error(
+                    'Failed to start connection pool monitoring:',
+                    err
+                );
             });
     });
 })();

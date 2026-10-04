@@ -12,6 +12,7 @@ const envSchema = z.object({
 
     // Server
     PORT: z.coerce.number().int().positive().default(3001),
+    HOST: z.string().min(1).default('0.0.0.0'),
 
     // Database
     DATABASE_URL: z.string().url().optional(),

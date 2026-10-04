@@ -12,6 +12,7 @@ import { rolePanelCommand, routeSelfRoles } from '../community/selfRoles';
 import { db } from '../db';
 import { moderationCommands, routeModeration } from '../moderation/commands';
 import { moduleRegistry } from '../modules/registry';
+import { env } from '../utils/env';
 
 export const coreCommands = [
     new SlashCommandBuilder()
@@ -80,7 +81,11 @@ export async function routeInteraction(
         const installation = await db.guildInstallation.findUnique({
             where: { guildId: interaction.guildId },
         });
-        if (!installation?.active) {
+        if (
+            !installation?.active ||
+            (env.BOT_GUILD_IDS.length &&
+                !env.BOT_GUILD_IDS.includes(interaction.guildId))
+        ) {
             await interaction.editReply(
                 'This server installation is unavailable.'
             );
