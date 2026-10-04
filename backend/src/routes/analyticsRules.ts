@@ -1,12 +1,29 @@
-import { PrismaClient } from '@prisma/client';
+import {
+    Prisma,
+    PrismaClient,
+    RuleStatus,
+    RuleTriggerType,
+} from '@prisma/client';
 import { Router } from 'express';
+import { z } from 'zod';
 
 import { requireAuth } from '../middleware';
 import logger from '../middleware/winstonLogger';
 import { executeRule } from '../services/rulesEngine';
+import { toInputJson } from '../utils/prismaJson';
 
 const router = Router();
 const prisma = new PrismaClient();
+const ruleSchema = z.object({
+    name: z.string().trim().min(1).max(200),
+    description: z.string().max(5000).optional(),
+    status: z.enum(RuleStatus).optional(),
+    triggerType: z.enum(RuleTriggerType).optional(),
+    schedule: z.string().max(200).optional(),
+    conditions: z.array(z.json()),
+    actions: z.array(z.json()),
+    metadata: z.json().optional(),
+});
 
 router.use(requireAuth);
 
@@ -23,7 +40,7 @@ router.use(requireAuth);
  *       200:
  *         description: List of templates
  */
-router.get('/rules/templates', async (req, res) => {
+router.get('/rules/templates', async (req, res): Promise<void> => {
     try {
         const templates = await prisma.ruleTemplate.findMany({
             orderBy: { usageCount: 'desc' },
@@ -55,7 +72,7 @@ router.get('/rules/templates', async (req, res) => {
  *       201:
  *         description: Rule created from template
  */
-router.post('/rules/templates/:id/use', async (req, res) => {
+router.post('/rules/templates/:id/use', async (req, res): Promise<void> => {
     try {
         const userId = req.user?.userId as string;
         const { id } = req.params;
@@ -65,7 +82,8 @@ router.post('/rules/templates/:id/use', async (req, res) => {
         });
 
         if (!template) {
-            return res.status(404).json({ error: 'Template not found' });
+            res.status(404).json({ error: 'Template not found' });
+            return;
         }
 
         // Create rule from template
@@ -76,9 +94,9 @@ router.post('/rules/templates/:id/use', async (req, res) => {
                 description: template.description,
                 status: 'DRAFT',
                 triggerType: 'SCHEDULED',
-                conditions: template.conditions as unknown,
-                actions: template.actions as unknown,
-                metadata: (template.metadata || {}) as unknown,
+                conditions: toInputJson(template.conditions),
+                actions: toInputJson(template.actions),
+                metadata: toInputJson(template.metadata ?? {}),
             },
         });
 
@@ -108,7 +126,7 @@ router.post('/rules/templates/:id/use', async (req, res) => {
  *       200:
  *         description: List of rules
  */
-router.get('/rules', async (req, res) => {
+router.get('/rules', async (req, res): Promise<void> => {
     try {
         const userId = req.user?.userId as string;
 
@@ -151,7 +169,7 @@ router.get('/rules', async (req, res) => {
  *       404:
  *         description: Rule not found
  */
-router.get('/rules/:id', async (req, res) => {
+router.get('/rules/:id', async (req, res): Promise<void> => {
     try {
         const userId = req.user?.userId as string;
         const { id } = req.params;
@@ -167,7 +185,8 @@ router.get('/rules/:id', async (req, res) => {
         });
 
         if (!rule) {
-            return res.status(404).json({ error: 'Rule not found' });
+            res.status(404).json({ error: 'Rule not found' });
+            return;
         }
 
         res.json(rule);
@@ -219,9 +238,17 @@ router.get('/rules/:id', async (req, res) => {
  *       201:
  *         description: Rule created
  */
-router.post('/rules', async (req, res) => {
+router.post('/rules', async (req, res): Promise<void> => {
     try {
         const userId = req.user?.userId as string;
+        const parsed = ruleSchema.safeParse(req.body);
+        if (!parsed.success) {
+            res.status(400).json({
+                error: 'Invalid rule',
+                details: parsed.error.issues,
+            });
+            return;
+        }
         const {
             name,
             description,
@@ -231,23 +258,7 @@ router.post('/rules', async (req, res) => {
             conditions,
             actions,
             metadata,
-        } = req.body as {
-            name?: string;
-            description?: string;
-            status?: string;
-            triggerType?: string;
-            schedule?: string;
-            conditions?: unknown;
-            actions?: unknown;
-            metadata?: unknown;
-        };
-
-        // Validate required fields
-        if (!name || !conditions || !actions) {
-            return res.status(400).json({
-                error: 'Name, conditions, and actions are required',
-            });
-        }
+        } = parsed.data;
 
         const rule = await prisma.analyticsRule.create({
             data: {
@@ -257,9 +268,9 @@ router.post('/rules', async (req, res) => {
                 status: status || 'DRAFT',
                 triggerType: triggerType || 'SCHEDULED',
                 schedule,
-                conditions,
-                actions,
-                metadata: metadata || {},
+                conditions: toInputJson(conditions),
+                actions: toInputJson(actions),
+                metadata: toInputJson(metadata ?? {}),
             },
         });
 
@@ -289,10 +300,18 @@ router.post('/rules', async (req, res) => {
  *       200:
  *         description: Rule updated
  */
-router.put('/rules/:id', async (req, res) => {
+router.put('/rules/:id', async (req, res): Promise<void> => {
     try {
         const userId = req.user?.userId as string;
         const { id } = req.params;
+        const parsed = ruleSchema.partial().safeParse(req.body);
+        if (!parsed.success) {
+            res.status(400).json({
+                error: 'Invalid rule',
+                details: parsed.error.issues,
+            });
+            return;
+        }
         const {
             name,
             description,
@@ -302,16 +321,7 @@ router.put('/rules/:id', async (req, res) => {
             conditions,
             actions,
             metadata,
-        } = req.body as {
-            name?: string;
-            description?: string;
-            status?: string;
-            triggerType?: string;
-            schedule?: string;
-            conditions?: unknown;
-            actions?: unknown;
-            metadata?: unknown;
-        };
+        } = parsed.data;
 
         // Verify ownership
         const existing = await prisma.analyticsRule.findFirst({
@@ -319,18 +329,19 @@ router.put('/rules/:id', async (req, res) => {
         });
 
         if (!existing) {
-            return res.status(404).json({ error: 'Rule not found' });
+            res.status(404).json({ error: 'Rule not found' });
+            return;
         }
 
-        const updateData: Record<string, unknown> = {};
+        const updateData: Prisma.AnalyticsRuleUpdateInput = {};
         if (name) updateData.name = name;
         if (description !== undefined) updateData.description = description;
         if (status) updateData.status = status;
         if (triggerType) updateData.triggerType = triggerType;
         if (schedule !== undefined) updateData.schedule = schedule;
-        if (conditions) updateData.conditions = conditions;
-        if (actions) updateData.actions = actions;
-        if (metadata !== undefined) updateData.metadata = metadata;
+        if (conditions) updateData.conditions = toInputJson(conditions);
+        if (actions) updateData.actions = toInputJson(actions);
+        if (metadata !== undefined) updateData.metadata = toInputJson(metadata);
 
         const rule = await prisma.analyticsRule.update({
             where: { id },
@@ -363,7 +374,7 @@ router.put('/rules/:id', async (req, res) => {
  *       204:
  *         description: Rule deleted
  */
-router.delete('/rules/:id', async (req, res) => {
+router.delete('/rules/:id', async (req, res): Promise<void> => {
     try {
         const userId = req.user?.userId as string;
         const { id } = req.params;
@@ -374,7 +385,8 @@ router.delete('/rules/:id', async (req, res) => {
         });
 
         if (!existing) {
-            return res.status(404).json({ error: 'Rule not found' });
+            res.status(404).json({ error: 'Rule not found' });
+            return;
         }
 
         await prisma.analyticsRule.delete({ where: { id } });
@@ -405,7 +417,7 @@ router.delete('/rules/:id', async (req, res) => {
  *       202:
  *         description: Rule execution started
  */
-router.post('/rules/:id/execute', async (req, res) => {
+router.post('/rules/:id/execute', async (req, res): Promise<void> => {
     try {
         const userId = req.user?.userId as string;
         const { id } = req.params;
@@ -416,7 +428,8 @@ router.post('/rules/:id/execute', async (req, res) => {
         });
 
         if (!rule) {
-            return res.status(404).json({ error: 'Rule not found' });
+            res.status(404).json({ error: 'Rule not found' });
+            return;
         }
 
         // Execute asynchronously

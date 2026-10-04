@@ -103,43 +103,48 @@ const timelineQuerySchema = z.object({
  *       429:
  *         $ref: '#/components/responses/TooManyRequests'
  */
-router.get('/timeline/:userId', requireAuth, async (req, res) => {
-    try {
-        const { userId } = req.params;
-        const guildId = req.guildId as string;
+router.get(
+    '/timeline/:userId',
+    requireAuth,
+    async (req, res): Promise<void> => {
+        try {
+            const { userId } = req.params;
+            const guildId = req.guildId as string;
 
-        // Validate and parse query parameters
-        const queryResult = timelineQuerySchema.safeParse(req.query);
+            // Validate and parse query parameters
+            const queryResult = timelineQuerySchema.safeParse(req.query);
 
-        if (!queryResult.success) {
-            return res.status(400).json({
-                error: 'Invalid query parameters',
-                details: queryResult.error.issues,
+            if (!queryResult.success) {
+                res.status(400).json({
+                    error: 'Invalid query parameters',
+                    details: queryResult.error.issues,
+                });
+                return;
+            }
+
+            const { limit, cursor, eventTypes, startDate, endDate, search } =
+                queryResult.data;
+
+            // Fetch timeline
+            const timeline = await getUserTimeline({
+                userId,
+                guildId,
+                limit,
+                cursor,
+                eventTypes,
+                startDate,
+                endDate,
+                search,
+            });
+
+            res.json(timeline);
+        } catch (error) {
+            console.error('Error fetching user timeline:', error);
+            res.status(500).json({
+                error: 'Failed to fetch user timeline',
             });
         }
-
-        const { limit, cursor, eventTypes, startDate, endDate, search } =
-            queryResult.data;
-
-        // Fetch timeline
-        const timeline = await getUserTimeline({
-            userId,
-            guildId,
-            limit,
-            cursor,
-            eventTypes,
-            startDate,
-            endDate,
-            search,
-        });
-
-        res.json(timeline);
-    } catch (error) {
-        console.error('Error fetching user timeline:', error);
-        res.status(500).json({
-            error: 'Failed to fetch user timeline',
-        });
     }
-});
+);
 
 export default router;

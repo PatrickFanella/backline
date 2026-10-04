@@ -2,8 +2,8 @@
  * Integration tests for Metrics & Analytics API routes
  */
 
-import request from 'supertest';
 import express from 'express';
+import request from 'supertest';
 
 import metricsAnalyticsRoutes from '../../../src/routes/metricsAnalytics';
 import * as analyticsService from '../../../src/services/analytics';
@@ -43,20 +43,24 @@ describe('Metrics Analytics API Routes', () => {
                 },
             ];
 
-            (analyticsService.getAnalyticsSummary as jest.Mock).mockResolvedValue(
-                mockSummary
-            );
+            (
+                analyticsService.getAnalyticsSummary as jest.Mock
+            ).mockResolvedValue(mockSummary);
 
             const response = await request(app).get('/api/metrics/summary');
 
             expect(response.status).toBe(200);
             expect(response.body.success).toBe(true);
-            expect(response.body.data).toEqual(mockSummary);
+            expect(response.body.data).toEqual(
+                JSON.parse(JSON.stringify(mockSummary))
+            );
             expect(response.body.dateRange).toBeDefined();
         });
 
         it('should accept custom date range', async () => {
-            (analyticsService.getAnalyticsSummary as jest.Mock).mockResolvedValue([]);
+            (
+                analyticsService.getAnalyticsSummary as jest.Mock
+            ).mockResolvedValue([]);
 
             const startDate = '2024-01-01T00:00:00.000Z';
             const endDate = '2024-01-07T23:59:59.999Z';
@@ -74,15 +78,17 @@ describe('Metrics Analytics API Routes', () => {
         });
 
         it('should handle errors', async () => {
-            (analyticsService.getAnalyticsSummary as jest.Mock).mockRejectedValue(
-                new Error('Database error')
-            );
+            (
+                analyticsService.getAnalyticsSummary as jest.Mock
+            ).mockRejectedValue(new Error('Database error'));
 
             const response = await request(app).get('/api/metrics/summary');
 
             expect(response.status).toBe(500);
             expect(response.body.success).toBe(false);
-            expect(response.body.error).toBe('Failed to fetch analytics summary');
+            expect(response.body.error).toBe(
+                'Failed to fetch analytics summary'
+            );
         });
     });
 
@@ -101,9 +107,9 @@ describe('Metrics Analytics API Routes', () => {
                 },
             ];
 
-            (analyticsService.getFeatureUsageStats as jest.Mock).mockResolvedValue(
-                mockStats
-            );
+            (
+                analyticsService.getFeatureUsageStats as jest.Mock
+            ).mockResolvedValue(mockStats);
 
             const response = await request(app).get('/api/metrics/features');
 
@@ -113,7 +119,9 @@ describe('Metrics Analytics API Routes', () => {
         });
 
         it('should accept date range parameters', async () => {
-            (analyticsService.getFeatureUsageStats as jest.Mock).mockResolvedValue([]);
+            (
+                analyticsService.getFeatureUsageStats as jest.Mock
+            ).mockResolvedValue([]);
 
             const startDate = '2024-01-01T00:00:00.000Z';
             const endDate = '2024-01-07T23:59:59.999Z';
@@ -142,9 +150,9 @@ describe('Metrics Analytics API Routes', () => {
                 ],
             };
 
-            (analyticsService.getUserActivityMetrics as jest.Mock).mockResolvedValue(
-                mockMetrics
-            );
+            (
+                analyticsService.getUserActivityMetrics as jest.Mock
+            ).mockResolvedValue(mockMetrics);
 
             const response = await request(app).get('/api/metrics/activity');
 
@@ -163,9 +171,9 @@ describe('Metrics Analytics API Routes', () => {
                 count: 100,
             };
 
-            (analyticsService.getPerformanceMetricsSummary as jest.Mock).mockResolvedValue(
-                mockMetrics
-            );
+            (
+                analyticsService.getPerformanceMetricsSummary as jest.Mock
+            ).mockResolvedValue(mockMetrics);
 
             const response = await request(app).get('/api/metrics/performance');
 
@@ -175,21 +183,23 @@ describe('Metrics Analytics API Routes', () => {
         });
 
         it('should accept metric type parameter', async () => {
-            (analyticsService.getPerformanceMetricsSummary as jest.Mock).mockResolvedValue(
-                {
-                    average: 100,
-                    min: 50,
-                    max: 200,
-                    count: 50,
-                }
-            );
+            (
+                analyticsService.getPerformanceMetricsSummary as jest.Mock
+            ).mockResolvedValue({
+                average: 100,
+                min: 50,
+                max: 200,
+                count: 50,
+            });
 
             const response = await request(app)
                 .get('/api/metrics/performance')
                 .query({ type: 'DB_QUERY' });
 
             expect(response.status).toBe(200);
-            expect(analyticsService.getPerformanceMetricsSummary).toHaveBeenCalledWith(
+            expect(
+                analyticsService.getPerformanceMetricsSummary
+            ).toHaveBeenCalledWith(
                 'DB_QUERY',
                 expect.any(Date),
                 expect.any(Date)
@@ -199,7 +209,9 @@ describe('Metrics Analytics API Routes', () => {
 
     describe('POST /api/metrics/event', () => {
         it('should track a custom event', async () => {
-            (analyticsService.trackEvent as jest.Mock).mockResolvedValue(undefined);
+            (analyticsService.trackEvent as jest.Mock).mockResolvedValue(
+                undefined
+            );
 
             const eventData = {
                 eventType: 'BUTTON_CLICK',
@@ -224,7 +236,9 @@ describe('Metrics Analytics API Routes', () => {
 
             expect(response.status).toBe(400);
             expect(response.body.success).toBe(false);
-            expect(response.body.error).toBe('eventType and eventName are required');
+            expect(response.body.error).toBe(
+                'eventType and eventName are required'
+            );
         });
 
         it('should handle tracking errors', async () => {
@@ -264,18 +278,18 @@ describe('Metrics Analytics API Routes', () => {
             };
             const mockSummary: any[] = [];
 
-            (analyticsService.getUserActivityMetrics as jest.Mock).mockResolvedValue(
-                mockActivityMetrics
-            );
-            (analyticsService.getFeatureUsageStats as jest.Mock).mockResolvedValue(
-                mockFeatureStats
-            );
-            (analyticsService.getPerformanceMetricsSummary as jest.Mock).mockResolvedValue(
-                mockPerformanceMetrics
-            );
-            (analyticsService.getAnalyticsSummary as jest.Mock).mockResolvedValue(
-                mockSummary
-            );
+            (
+                analyticsService.getUserActivityMetrics as jest.Mock
+            ).mockResolvedValue(mockActivityMetrics);
+            (
+                analyticsService.getFeatureUsageStats as jest.Mock
+            ).mockResolvedValue(mockFeatureStats);
+            (
+                analyticsService.getPerformanceMetricsSummary as jest.Mock
+            ).mockResolvedValue(mockPerformanceMetrics);
+            (
+                analyticsService.getAnalyticsSummary as jest.Mock
+            ).mockResolvedValue(mockSummary);
 
             const response = await request(app).get('/api/metrics/dashboard');
 
@@ -291,9 +305,9 @@ describe('Metrics Analytics API Routes', () => {
         });
 
         it('should handle errors gracefully', async () => {
-            (analyticsService.getUserActivityMetrics as jest.Mock).mockRejectedValue(
-                new Error('Database error')
-            );
+            (
+                analyticsService.getUserActivityMetrics as jest.Mock
+            ).mockRejectedValue(new Error('Database error'));
 
             const response = await request(app).get('/api/metrics/dashboard');
 

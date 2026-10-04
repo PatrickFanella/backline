@@ -27,7 +27,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
           cache-dependency-path: backend/package-lock.json
       
@@ -51,7 +51,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
           cache-dependency-path: backend/package-lock.json
       
@@ -59,7 +59,7 @@ jobs:
         run: npm ci
       
       - name: Run TypeScript check
-        run: npm run typecheck
+        run: npm run type-check
 
   prisma:
     name: Prisma Validation
@@ -75,7 +75,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
           cache-dependency-path: backend/package-lock.json
       
@@ -85,12 +85,12 @@ jobs:
       - name: Validate Prisma schema
         run: npm run prisma:validate
         env:
-          DATABASE_URL: "file:./dev.db"
+          DATABASE_URL: "postgresql://spywatcher:test_password@localhost:5432/spywatcher_test"
       
       - name: Generate Prisma client
         run: npm run prisma:generate
         env:
-          DATABASE_URL: "file:./dev.db"
+          DATABASE_URL: "postgresql://spywatcher:test_password@localhost:5432/spywatcher_test"
 
   test:
     name: Run Tests
@@ -106,7 +106,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
           cache-dependency-path: backend/package-lock.json
       
@@ -116,7 +116,7 @@ jobs:
       - name: Run tests
         run: npm test
         env:
-          DATABASE_URL: "file:./dev.db"
+          DATABASE_URL: "postgresql://spywatcher:test_password@localhost:5432/spywatcher_test"
 
   migration-test:
     name: Test Migrations
@@ -143,7 +143,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
           cache-dependency-path: backend/package-lock.json
       
@@ -151,26 +151,18 @@ jobs:
         working-directory: backend
         run: npm ci
       
-      - name: Make scripts executable
-        run: chmod +x scripts/*.sh
-      
-      - name: Test migrations
+      - name: Generate Prisma client
+        working-directory: backend
+        run: npm run prisma:generate
+
+      - name: Check fresh and existing PostgreSQL baselines
         env:
-          DB_PASSWORD: test_password
-          TEST_DB_NAME: spywatcher_test
-          DB_USER: spywatcher
-          DB_HOST: localhost
-          DB_PORT: 5432
-        run: ./scripts/test-migration.sh
-      
-      - name: Validate migrations
-        env:
-          DB_PASSWORD: test_password
-          DB_NAME: spywatcher_test
-          DB_USER: spywatcher
-          DB_HOST: localhost
-          DB_PORT: 5432
-        run: ./scripts/validate-migration.sh
+          PGPASSWORD: test_password
+          BASELINE_FRESH_DATABASE_URL: postgresql://spywatcher:test_password@localhost:5432/spywatcher_test
+          BASELINE_EXISTING_DATABASE_URL: postgresql://spywatcher:test_password@localhost:5432/spywatcher_existing
+        run: |
+          createdb -h localhost -U spywatcher spywatcher_existing
+          node scripts/check-postgresql-baseline.mjs
 
   build:
     name: Build
@@ -187,7 +179,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
           cache-dependency-path: backend/package-lock.json
       
@@ -197,7 +189,7 @@ jobs:
       - name: Generate Prisma client
         run: npm run prisma:generate
         env:
-          DATABASE_URL: "file:./dev.db"
+          DATABASE_URL: "postgresql://spywatcher:test_password@localhost:5432/spywatcher_test"
       
       - name: Build
         run: npm run build

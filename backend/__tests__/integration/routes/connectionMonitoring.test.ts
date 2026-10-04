@@ -5,8 +5,9 @@
 import express from 'express';
 import request from 'supertest';
 
-import * as db from '../../../src/db';
 import monitoringRoutes from '../../../src/routes/monitoring';
+import * as connectionPoolMonitor from '../../../src/utils/connectionPoolMonitor';
+import * as databaseMaintenance from '../../../src/utils/databaseMaintenance';
 
 // Mock dependencies
 jest.mock('../../../src/db', () => ({
@@ -63,8 +64,6 @@ jest.mock('../../../src/utils/databaseMaintenance', () => ({
     analyzeAllTables: jest.fn(),
 }));
 
-import * as connectionPoolMonitor from '../../../src/utils/connectionPoolMonitor';
-
 describe('Connection Monitoring Routes', () => {
     let app: express.Application;
 
@@ -100,9 +99,10 @@ describe('Connection Monitoring Routes', () => {
                 },
             };
 
-            jest.spyOn(connectionPoolMonitor, 'getSystemHealth').mockResolvedValue(
-                mockHealth
-            );
+            jest.spyOn(
+                connectionPoolMonitor,
+                'getSystemHealth'
+            ).mockResolvedValue(mockHealth);
 
             const response = await request(app).get(
                 '/api/admin/monitoring/connections/health'
@@ -116,9 +116,10 @@ describe('Connection Monitoring Routes', () => {
         });
 
         it('should handle errors gracefully', async () => {
-            jest.spyOn(connectionPoolMonitor, 'getSystemHealth').mockRejectedValue(
-                new Error('Database connection failed')
-            );
+            jest.spyOn(
+                connectionPoolMonitor,
+                'getSystemHealth'
+            ).mockRejectedValue(new Error('Database connection failed'));
 
             const response = await request(app).get(
                 '/api/admin/monitoring/connections/health'
@@ -231,10 +232,14 @@ describe('Connection Monitoring Routes', () => {
             const mockHealth = {
                 connected: true,
                 version: '15.3',
-                responseTime: 8,
+                activeConnections: 1,
+                maxConnections: 100,
             };
 
-            jest.spyOn(db, 'checkDatabaseHealth').mockResolvedValue(mockHealth);
+            jest.spyOn(
+                databaseMaintenance,
+                'checkDatabaseHealth'
+            ).mockResolvedValue(mockHealth);
 
             const response = await request(app).get(
                 '/api/admin/monitoring/database/health'

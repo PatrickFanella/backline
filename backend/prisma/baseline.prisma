@@ -1,0 +1,673 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider        = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+  MODERATOR
+  BANNED
+}
+
+enum SubscriptionTier {
+  FREE
+  PRO
+  ENTERPRISE
+}
+
+model PresenceEvent {
+  id        String   @id @default(uuid())
+  userId    String
+  username  String
+  clients   String[] // Array instead of comma-separated
+  metadata  Json?    @db.JsonB // JSONB for flexible data
+  createdAt DateTime @default(now()) @db.Timestamptz
+
+  @@index([userId])
+  @@index([createdAt])
+  @@index([userId, createdAt(sort: Desc)]) // Composite index for user queries with time filter
+}
+
+model TypingEvent {
+  id        String   @id @default(uuid())
+  userId    String
+  username  String
+  channelId String
+  channel   String
+  guildId   String
+  metadata  Json?    @db.JsonB
+  createdAt DateTime @default(now()) @db.Timestamptz
+
+  @@index([userId])
+  @@index([guildId])
+  @@index([channelId])
+  @@index([createdAt])
+  @@index([userId, channelId]) // Composite index for user-channel queries
+  @@index([guildId, createdAt(sort: Desc)]) // Composite index for guild queries with time filter
+}
+
+model MessageEvent {
+  id        String   @id @default(uuid())
+  userId    String
+  username  String
+  channelId String
+  channel   String
+  guildId   String
+  content   String   @db.Text
+  metadata  Json?    @db.JsonB
+  createdAt DateTime @default(now()) @db.Timestamptz
+
+  @@index([userId])
+  @@index([guildId])
+  @@index([channelId])
+  @@index([createdAt])
+  @@index([userId, createdAt(sort: Desc)]) // Composite index for user queries with time filter
+  @@index([guildId, channelId]) // Composite index for guild-channel queries
+  @@index([guildId, createdAt(sort: Desc)]) // Composite index for guild queries with time filter
+  // Full-text search setup via scripts/setup-fulltext-search.sh which adds a tsvector column and GIN index
+}
+
+model JoinEvent {
+  id             String   @id @default(uuid())
+  userId         String
+  username       String
+  guildId        String
+  accountAgeDays Int
+  metadata       Json?    @db.JsonB
+  createdAt      DateTime @default(now()) @db.Timestamptz
+
+  @@index([userId])
+  @@index([guildId])
+  @@index([createdAt])
+  @@index([guildId, createdAt(sort: Desc)]) // Composite index for guild queries with time filter
+}
+
+model DeletedMessageEvent {
+  id        String   @id @default(uuid())
+  userId    String
+  username  String
+  channelId String
+  channel   String
+  guildId   String
+  metadata  Json?    @db.JsonB
+  createdAt DateTime @default(now()) @db.Timestamptz
+
+  @@index([userId])
+  @@index([guildId])
+  @@index([channelId])
+  @@index([createdAt])
+}
+
+model ReactionTime {
+  id           String   @id @default(uuid())
+  observerId   String
+  observerName String
+  actorId      String
+  actorName    String
+  channelId    String
+  guildId      String
+  deltaMs      Int
+  metadata     Json?    @db.JsonB
+  createdAt    DateTime @default(now()) @db.Timestamptz
+
+  @@index([observerId])
+  @@index([actorId])
+  @@index([guildId])
+  @@index([createdAt])
+  @@index([observerId, createdAt(sort: Desc)]) // Composite index for observer queries with time filter
+  @@index([guildId, createdAt(sort: Desc)]) // Composite index for guild queries with time filter
+  @@index([deltaMs]) // Index for fast reaction queries
+}
+
+model RoleChangeEvent {
+  id         String   @id @default(uuid())
+  userId     String
+  username   String
+  guildId    String
+  addedRoles String[] // Array instead of comma-separated
+  metadata   Json?    @db.JsonB
+  createdAt  DateTime @default(now()) @db.Timestamptz
+
+  @@index([userId])
+  @@index([guildId])
+  @@index([createdAt])
+  @@index([guildId, createdAt(sort: Desc)]) // Composite index for guild queries with time filter
+}
+
+model BlockedIP {
+  id        Int       @id @default(autoincrement())
+  ip        String    @unique
+  reason    String?
+  expiresAt DateTime? @db.Timestamptz // Optional expiration time for temporary blocks
+  createdAt DateTime  @default(now()) @db.Timestamptz
+
+  @@index([ip])
+  @@index([expiresAt])
+}
+
+model WhitelistedIP {
+  id        Int      @id @default(autoincrement())
+  ip        String   @unique
+  reason    String?  // Why this IP is whitelisted (e.g., "Office IP", "Admin")
+  createdAt DateTime @default(now()) @db.Timestamptz
+
+  @@index([ip])
+}
+
+model BannedUser {
+  id        Int      @id @default(autoincrement())
+  userId    String   @unique
+  username  String
+  reason    String?
+  createdAt DateTime @default(now()) @db.Timestamptz
+
+  @@index([userId])
+}
+
+model User {
+  id                   String   @id @default(cuid())
+  discordId            String   @unique
+  username             String
+  discriminator        String
+  avatar               String?
+  email                String?
+  locale               String?
+  verified             Boolean
+  ipAddress            String?
+  userAgent            String?
+  accessToken          String
+  refreshToken         String
+  refreshTokenIssuedAt DateTime @default(now()) @db.Timestamptz
+  accessTokenExpiresAt DateTime @db.Timestamptz
+  lastSeenAt           DateTime @db.Timestamptz
+  createdAt            DateTime @default(now()) @db.Timestamptz
+  updatedAt            DateTime @updatedAt @db.Timestamptz
+
+  // New role field
+  role Role @default(USER)
+
+  // Subscription tier for rate limiting and quotas
+  subscriptionTier SubscriptionTier @default(FREE)
+
+  // Analytics consent for GDPR compliance
+  analyticsConsent Boolean @default(false)
+
+  guilds          Guild[]
+  refreshTokens   RefreshToken[]
+  sessions        Session[]
+  apiKeys         ApiKey[]
+  loginLogs       LoginLog[]
+  deletionRequest DeletionRequest?
+  consentLogs     ConsentLog[]
+
+  @@index([discordId])
+  @@index([email])
+  @@index([role]) // Index for role-based queries
+  @@index([subscriptionTier]) // Index for tier-based queries
+  @@index([lastSeenAt(sort: Desc)]) // Index for last seen queries
+  @@index([role, lastSeenAt(sort: Desc)]) // Composite index for role + last seen queries
+}
+
+model Guild {
+  id          String  @id @default(cuid())
+  guildId     String  @unique
+  name        String
+  icon        String?
+  owner       Boolean
+  permissions BigInt
+  userId      String
+  user        User    @relation(fields: [userId], references: [id])
+}
+
+model Permission {
+  id          String           @id @default(cuid())
+  name        String           @unique // e.g., "analytics.view", "users.ban"
+  description String
+  category    String // e.g., "analytics", "admin"
+  createdAt   DateTime         @default(now()) @db.Timestamptz
+  updatedAt   DateTime         @updatedAt @db.Timestamptz
+  roles       RolePermission[]
+
+  @@index([category])
+  @@index([name])
+}
+
+model RolePermission {
+  role         Role
+  permissionId String
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  createdAt    DateTime   @default(now()) @db.Timestamptz
+
+  @@id([role, permissionId])
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  familyId  String // For token rotation detection
+  used      Boolean  @default(false)
+  revoked   Boolean  @default(false)
+  expiresAt DateTime @db.Timestamptz
+  userAgent String?
+  ipAddress String?
+  createdAt DateTime @default(now()) @db.Timestamptz
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([familyId])
+  @@index([token])
+  @@index([expiresAt])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  userId       String
+  userAgent    String?
+  ipAddress    String?
+  lastActivity DateTime @default(now()) @db.Timestamptz
+  expiresAt    DateTime @db.Timestamptz
+  createdAt    DateTime @default(now()) @db.Timestamptz
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model ApiKey {
+  id         String    @id @default(cuid())
+  key        String    @unique
+  name       String
+  userId     String
+  scopes     String // JSON array of scopes/permissions
+  lastUsedAt DateTime? @db.Timestamptz
+  expiresAt  DateTime? @db.Timestamptz
+  revoked    Boolean   @default(false)
+  createdAt  DateTime  @default(now()) @db.Timestamptz
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([key])
+}
+
+model LoginLog {
+  id        String   @id @default(cuid())
+  userId    String
+  ipAddress String
+  userAgent String?
+  success   Boolean
+  reason    String? // Failure reason if success=false
+  createdAt DateTime @default(now()) @db.Timestamptz
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([createdAt])
+  @@index([ipAddress])
+}
+
+// GDPR Compliance Models
+
+model DeletionRequest {
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  reason       String?
+  requestedAt  DateTime @default(now()) @db.Timestamptz
+  scheduledFor DateTime @db.Timestamptz
+  status       String   @default("PENDING") // PENDING, CANCELLED, COMPLETED
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@index([scheduledFor])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  action    String // ACCOUNT_CREATED, DATA_EXPORTED, ACCOUNT_DELETED, etc.
+  details   Json?    @db.JsonB
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now()) @db.Timestamptz
+
+  @@index([userId])
+  @@index([createdAt])
+  @@index([action])
+  @@index([ipAddress])
+}
+
+model ConsentLog {
+  id          String   @id @default(cuid())
+  userId      String
+  consentType String // PRIVACY_POLICY, COOKIES, DATA_COLLECTION
+  granted     Boolean
+  version     String // Policy version
+  createdAt   DateTime @default(now()) @db.Timestamptz
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([consentType])
+}
+
+model DataRetentionPolicy {
+  id            String    @id @default(cuid())
+  dataType      String    @unique // PRESENCE_EVENTS, MESSAGE_EVENTS, TYPING_EVENTS, etc.
+  retentionDays Int // Number of days to retain data
+  description   String?
+  enabled       Boolean   @default(true)
+  lastCleanupAt DateTime? @db.Timestamptz
+  createdAt     DateTime  @default(now()) @db.Timestamptz
+  updatedAt     DateTime  @updatedAt @db.Timestamptz
+
+  @@index([dataType])
+  @@index([enabled])
+}
+
+model SecurityLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  action    String // LOGIN_ATTEMPT, PERMISSION_DENIED, DATA_EXPORT, etc.
+  resource  String? // Resource being accessed
+  result    String // SUCCESS, FAILURE
+  ipAddress String?
+  userAgent String?
+  requestId String?
+  metadata  Json?    @db.JsonB
+  timestamp DateTime @default(now()) @db.Timestamptz
+
+  @@index([userId])
+  @@index([action])
+  @@index([timestamp])
+  @@index([ipAddress])
+  @@index([result])
+}
+
+model AlertLog {
+  id       String   @id @default(cuid())
+  severity String // LOW, MEDIUM, HIGH, CRITICAL
+  title    String
+  message  String
+  details  Json?    @db.JsonB
+  sentAt   DateTime @default(now()) @db.Timestamptz
+
+  @@index([severity])
+  @@index([sentAt])
+}
+
+// User Analytics & Metrics Models
+
+model UserAnalyticsEvent {
+  id           String   @id @default(cuid())
+  userId       String?
+  sessionId    String?
+  eventType    String // PAGE_VIEW, BUTTON_CLICK, FEATURE_USED, API_CALL, etc.
+  eventName    String // Specific event name
+  category     String? // analytics, auth, admin, etc.
+  properties   Json?    @db.JsonB // Event-specific properties
+  ipAddress    String?
+  userAgent    String?
+  referrer     String?
+  pathname     String?
+  consentGiven Boolean  @default(false) // GDPR consent flag
+  anonymized   Boolean  @default(false) // Whether data was anonymized
+  createdAt    DateTime @default(now()) @db.Timestamptz
+
+  @@index([userId])
+  @@index([sessionId])
+  @@index([eventType])
+  @@index([eventName])
+  @@index([category])
+  @@index([createdAt])
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([eventType, createdAt(sort: Desc)])
+  @@index([consentGiven])
+}
+
+model FeatureUsageMetric {
+  id           String   @id @default(cuid())
+  featureName  String // Name of the feature (e.g., "ghost_analysis", "lurker_detection")
+  userId       String?
+  usageCount   Int      @default(1)
+  lastUsedAt   DateTime @default(now()) @db.Timestamptz
+  metadata     Json?    @db.JsonB
+  consentGiven Boolean  @default(false)
+  createdAt    DateTime @default(now()) @db.Timestamptz
+
+  @@index([featureName])
+  @@index([userId])
+  @@index([lastUsedAt])
+  @@index([featureName, createdAt(sort: Desc)])
+}
+
+model PerformanceMetric {
+  id            String   @id @default(cuid())
+  metricType    String // API_RESPONSE_TIME, PAGE_LOAD, DB_QUERY, etc.
+  metricName    String // Specific metric name
+  value         Float // Metric value (e.g., milliseconds, bytes)
+  unit          String // Unit of measurement (ms, bytes, count)
+  endpoint      String? // API endpoint if applicable
+  userId        String?
+  sessionId     String?
+  metadata      Json?    @db.JsonB
+  createdAt     DateTime @default(now()) @db.Timestamptz
+
+  @@index([metricType])
+  @@index([metricName])
+  @@index([endpoint])
+  @@index([createdAt])
+  @@index([metricType, createdAt(sort: Desc)])
+}
+
+model AnalyticsSummary {
+  id              String   @id @default(cuid())
+  summaryDate     DateTime @db.Date // Date for daily/weekly/monthly aggregation
+  summaryType     String // DAILY, WEEKLY, MONTHLY
+  metric          String // active_users, feature_usage, etc.
+  value           Float
+  metadata        Json?    @db.JsonB
+  createdAt       DateTime @default(now()) @db.Timestamptz
+
+  @@unique([summaryDate, summaryType, metric])
+  @@index([summaryDate])
+  @@index([summaryType])
+  @@index([metric])
+}
+
+// Service Health & Status Page Models
+
+model StatusCheck {
+  id              String   @id @default(cuid())
+  timestamp       DateTime @default(now()) @db.Timestamptz
+  status          String // healthy, degraded, down
+  database        Boolean
+  databaseLatency Int? // ms
+  redis           Boolean
+  redisLatency    Int? // ms
+  discord         Boolean
+  discordLatency  Int? // ms
+  overall         Boolean
+  metadata        Json?    @db.JsonB
+
+  @@index([timestamp(sort: Desc)])
+  @@index([status])
+  @@index([overall])
+}
+
+enum IncidentStatus {
+  INVESTIGATING
+  IDENTIFIED
+  MONITORING
+  RESOLVED
+}
+
+enum IncidentSeverity {
+  MINOR
+  MAJOR
+  CRITICAL
+}
+
+model Incident {
+  id          String           @id @default(cuid())
+  title       String
+  description String           @db.Text
+  status      IncidentStatus   @default(INVESTIGATING)
+  severity    IncidentSeverity @default(MINOR)
+  startedAt   DateTime         @default(now()) @db.Timestamptz
+  resolvedAt  DateTime?        @db.Timestamptz
+  updates     IncidentUpdate[]
+  affectedServices String[] // e.g., ["database", "api", "discord"]
+  metadata    Json?            @db.JsonB
+  createdAt   DateTime         @default(now()) @db.Timestamptz
+  updatedAt   DateTime         @updatedAt @db.Timestamptz
+
+  @@index([status])
+  @@index([severity])
+  @@index([startedAt(sort: Desc)])
+}
+
+model IncidentUpdate {
+  id         String   @id @default(cuid())
+  incidentId String
+  incident   Incident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  message    String   @db.Text
+  status     IncidentStatus?
+  createdAt  DateTime @default(now()) @db.Timestamptz
+
+  @@index([incidentId])
+  @@index([createdAt(sort: Desc)])
+}
+
+// Backup & Disaster Recovery Models
+
+enum BackupType {
+  FULL
+  INCREMENTAL
+  WAL_ARCHIVE
+}
+
+enum BackupStatus {
+  IN_PROGRESS
+  COMPLETED
+  FAILED
+  VERIFIED
+}
+
+model BackupLog {
+  id            String       @id @default(cuid())
+  backupType    BackupType
+  status        BackupStatus
+  filename      String
+  fileSizeMB    Float?
+  duration      Int? // Duration in seconds
+  s3Location    String? // Primary S3 location
+  s3LocationSecondary String? // Secondary region S3 location
+  errorMessage  String?      @db.Text
+  metadata      Json?        @db.JsonB
+  startedAt     DateTime     @default(now()) @db.Timestamptz
+  completedAt   DateTime?    @db.Timestamptz
+  verifiedAt    DateTime?    @db.Timestamptz
+
+  @@index([backupType])
+  @@index([status])
+  @@index([startedAt(sort: Desc)])
+  @@index([completedAt(sort: Desc)])
+}
+
+// Analytics Rules Engine Models
+
+enum RuleStatus {
+  ACTIVE
+  PAUSED
+  DRAFT
+}
+
+enum RuleTriggerType {
+  SCHEDULED // Runs on a schedule (cron)
+  REALTIME  // Evaluates on event streams
+  MANUAL    // User-triggered
+}
+
+enum ActionType {
+  WEBHOOK
+  NOTIFICATION
+  EMAIL
+  DISCORD_MESSAGE
+}
+
+enum ConditionOperator {
+  EQUALS
+  NOT_EQUALS
+  GREATER_THAN
+  LESS_THAN
+  GREATER_THAN_OR_EQUAL
+  LESS_THAN_OR_EQUAL
+  CONTAINS
+  NOT_CONTAINS
+  IN
+  NOT_IN
+}
+
+model AnalyticsRule {
+  id              String           @id @default(cuid())
+  name            String
+  description     String?          @db.Text
+  userId          String // Owner of the rule
+  status          RuleStatus       @default(DRAFT)
+  triggerType     RuleTriggerType  @default(SCHEDULED)
+  schedule        String?          // Cron expression for scheduled rules
+  conditions      Json             @db.JsonB // Array of condition objects
+  actions         Json             @db.JsonB // Array of action configurations
+  metadata        Json?            @db.JsonB // Additional configuration
+  lastExecutedAt  DateTime?        @db.Timestamptz
+  createdAt       DateTime         @default(now()) @db.Timestamptz
+  updatedAt       DateTime         @updatedAt @db.Timestamptz
+  executions      RuleExecution[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([triggerType])
+  @@index([lastExecutedAt])
+  @@index([userId, status])
+}
+
+model RuleExecution {
+  id              String   @id @default(cuid())
+  ruleId          String
+  rule            AnalyticsRule @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+  status          String   // SUCCESS, FAILED, PARTIAL
+  matchedCount    Int      @default(0) // Number of records that matched conditions
+  actionsExecuted Int      @default(0) // Number of actions successfully executed
+  error           String?  @db.Text
+  results         Json?    @db.JsonB // Execution results and matched data
+  executionTimeMs Int?     // Execution duration in milliseconds
+  startedAt       DateTime @default(now()) @db.Timestamptz
+  completedAt     DateTime? @db.Timestamptz
+
+  @@index([ruleId])
+  @@index([status])
+  @@index([startedAt(sort: Desc)])
+  @@index([ruleId, startedAt(sort: Desc)])
+}
+
+model RuleTemplate {
+  id          String   @id @default(cuid())
+  name        String
+  description String?  @db.Text
+  category    String   // E.g., "ghost_detection", "suspicious_activity", "engagement"
+  conditions  Json     @db.JsonB // Template condition structure
+  actions     Json     @db.JsonB // Template action structure
+  metadata    Json?    @db.JsonB
+  usageCount  Int      @default(0)
+  createdAt   DateTime @default(now()) @db.Timestamptz
+  updatedAt   DateTime @updatedAt @db.Timestamptz
+
+  @@index([category])
+  @@index([usageCount(sort: Desc)])
+}

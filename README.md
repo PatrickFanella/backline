@@ -38,6 +38,8 @@ docs/           # VitePress documentation site
 
 ## 📚 Documentation
 
+Development direction: [Community bot expansion roadmap](./docs/developer/bot-expansion-roadmap.md) — server management, onboarding, engagement, support, automation, recovery, and audio, with SUBCULT as the first pilot before broader community installation. These additions are planned; the roadmap separates existing code from new work and defines qualification gates.
+
 Comprehensive documentation is available at multiple levels:
 
 - **[User Guide](./docs/guide/)** - Installation, features, and usage
