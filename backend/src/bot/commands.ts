@@ -162,7 +162,16 @@ export async function routeInteraction(
                     interaction.guildId,
                     moduleId,
                     enabled,
-                    {}
+                    (
+                        await db.guildModuleConfig.findUnique({
+                            where: {
+                                guildId_moduleId: {
+                                    guildId: interaction.guildId,
+                                    moduleId,
+                                },
+                            },
+                        })
+                    )?.config ?? {}
                 );
                 await interaction.editReply(
                     `${moduleId} ${enabled ? 'enabled' : 'disabled'} for this server.`

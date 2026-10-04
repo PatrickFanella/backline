@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 
+import ServerModuleConfig from '../components/ServerModuleConfig';
 import { ThemeToggle } from '../components/ui/ThemeToggle';
 import api from '../lib/api';
 import { useGuild } from '../store/guild';
@@ -202,11 +203,35 @@ export default function Servers() {
                                     </p>
                                     {!module.operatorReady && (
                                         <p className="text-ctp-yellow">
-                                            Activity collection needs the
-                                            operator to enable Discord intents
-                                            and restart the bot.
+                                            This module needs the operator to
+                                            enable its Discord intents and
+                                            restart the bot.
                                         </p>
                                     )}
+                                    <ServerModuleConfig
+                                        key={`${guildId}:${module.id}:${JSON.stringify(module.settings.config)}`}
+                                        guildId={guildId}
+                                        moduleId={module.id}
+                                        enabled={module.settings.enabled}
+                                        config={module.settings.config}
+                                        onBusy={(value) =>
+                                            setBusy(value ? module.id : null)
+                                        }
+                                        onSaved={async () => {
+                                            const current = generation.current;
+                                            const response = await api.get<
+                                                Module[]
+                                            >(`/guilds/${guildId}/modules`);
+                                            if (
+                                                current === generation.current
+                                            ) {
+                                                setModules(response.data);
+                                                setNotice(
+                                                    'Log settings saved for this server.'
+                                                );
+                                            }
+                                        }}
+                                    />
                                     <p className="text-sm text-ctp-subtext0">
                                         Use /setup in Discord to check the bot’s
                                         required permissions.

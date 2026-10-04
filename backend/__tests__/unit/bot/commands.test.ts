@@ -7,7 +7,7 @@ import { moduleRegistry } from '../../../src/modules/registry';
 jest.mock('../../../src/db', () => ({
     db: {
         guildInstallation: { findUnique: jest.fn() },
-        guildModuleConfig: { findMany: jest.fn() },
+        guildModuleConfig: { findMany: jest.fn(), findUnique: jest.fn() },
     },
 }));
 jest.spyOn(moduleRegistry, 'configure');

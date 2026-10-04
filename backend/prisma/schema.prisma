@@ -770,3 +770,21 @@ model ModerationCase {
   @@index([guildId, createdAt])
   @@index([guildId, targetId])
 }
+
+model ServerAuditEvent {
+  id String @id @default(uuid())
+  guildId String
+  eventKey String
+  kind String
+  subjectId String?
+  channelId String?
+  data Json @db.JsonB
+  state String @default("PENDING")
+  messageId String?
+  detail String?
+  createdAt DateTime @default(now()) @db.Timestamptz
+  expiresAt DateTime @db.Timestamptz
+  @@unique([guildId, eventKey])
+  @@index([guildId, createdAt])
+  @@index([expiresAt])
+}

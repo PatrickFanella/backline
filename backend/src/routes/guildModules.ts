@@ -4,8 +4,7 @@ import { z } from 'zod';
 import { db } from '../db';
 import { listManagedGuilds } from '../guilds/authorization';
 import { requireAuthOrApiKey, requireGuildAccess } from '../middleware';
-import { moduleRegistry } from '../modules/registry';
-import { env } from '../utils/env';
+import { moduleOperatorReady, moduleRegistry } from '../modules/registry';
 
 const router = Router();
 router.get('/guilds', requireAuthOrApiKey, async (req, res) => {
@@ -22,6 +21,22 @@ const updateSchema = z.object({
     config: z.unknown().default({}),
 });
 router.use('/guilds/:guildId/modules', requireAuthOrApiKey, requireGuildAccess);
+router.get('/guilds/:guildId/modules/audit-log/history', async (req, res) => {
+    try {
+        res.json(
+            await db.serverAuditEvent.findMany({
+                where: {
+                    guildId: req.params.guildId,
+                    expiresAt: { gt: new Date() },
+                },
+                orderBy: { createdAt: 'desc' },
+                take: 100,
+            })
+        );
+    } catch {
+        res.status(503).json({ error: 'Audit history unavailable' });
+    }
+});
 router.get('/guilds/:guildId/modules', async (req, res) => {
     try {
         const settings = await db.guildModuleConfig.findMany({
@@ -35,8 +50,7 @@ router.get('/guilds/:guildId/modules', async (req, res) => {
                 permissions: module.permissions.map(String),
                 intents: module.intents,
                 pendingJobPolicy: module.pendingJobPolicy,
-                operatorReady:
-                    module.id !== 'activity' || env.BOT_ACTIVITY_INTENTS,
+                operatorReady: moduleOperatorReady(module),
                 settings: settings.find(
                     (row) => row.moduleId === module.id
                 ) ?? { enabled: false, config: {} },

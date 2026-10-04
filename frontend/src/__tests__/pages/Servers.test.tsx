@@ -96,4 +96,37 @@ describe('server setup', () => {
         ).toBeDisabled();
         expect(screen.getByText(/needs the operator/)).toBeInTheDocument();
     });
+    it('saves audit destination and retention without enabling the module', async () => {
+        const audit = {
+            ...module,
+            id: 'audit-log',
+            description: 'Audit events',
+        };
+        vi.mocked(api.get).mockImplementation(async (url) => ({
+            data:
+                url === '/guilds'
+                    ? [{ id: 'A', name: 'Server A', icon: null }]
+                    : [audit],
+        }));
+        open();
+        fireEvent.change(await screen.findByLabelText('Log channel ID'), {
+            target: { value: '333333333333333333' },
+        });
+        fireEvent.change(screen.getByLabelText('Keep records for (days)'), {
+            target: { value: '3' },
+        });
+        fireEvent.click(screen.getByText('Save log settings'));
+        await screen.findByText('Log settings saved for this server.');
+        expect(api.put).toHaveBeenCalledWith(
+            '/guilds/A/modules/audit-log',
+            expect.objectContaining({
+                enabled: false,
+                config: expect.objectContaining({
+                    channelId: '333333333333333333',
+                    retentionDays: 3,
+                    retainContent: false,
+                }),
+            })
+        );
+    });
 });
