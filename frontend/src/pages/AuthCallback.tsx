@@ -22,7 +22,7 @@ export default function AuthCallback() {
         api.get('/auth/discord', { params: { code, state } })
             .then((res) => {
                 setToken(res.data.accessToken);
-                navigate('/', { replace: true }); // ✅ clear ?code=
+                navigate('/servers', { replace: true });
             })
             .catch((err) => {
                 const message =

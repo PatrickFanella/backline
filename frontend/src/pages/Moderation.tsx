@@ -117,7 +117,7 @@ export default function Moderation() {
             className="min-h-screen bg-ctp-base text-ctp-text p-6 pb-64"
         >
             <div className="max-w-4xl mx-auto space-y-6">
-                <Link to="/" className="text-ctp-blue">
+                <Link to="/servers" className="text-ctp-blue">
                     Server setup
                 </Link>
                 <h1 className="text-3xl font-semibold">Moderation cases</h1>

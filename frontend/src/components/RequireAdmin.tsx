@@ -9,7 +9,7 @@ export default function RequireAdmin() {
     if (loading) return <p>Loading...</p>;
     if (!session || session.role !== 'ADMIN') {
         toast.error('You do not have permission to view this page');
-        return <Navigate to="/" replace />;
+        return <Navigate to="/servers" replace />;
     }
     return <Outlet />;
 }

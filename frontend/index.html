@@ -1,33 +1,73 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Discord Spywatcher</title>
-    <!-- Prevent flash of unstyled content by applying theme before React loads -->
-    <script>
-      (function() {
-        function getTheme() {
-          const stored = localStorage.getItem('theme');
-          if (stored && ['light', 'dark', 'system'].includes(stored)) {
-            if (stored === 'system') {
-              return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-            }
-            return stored;
-          }
-          // Default to system preference
-          return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-        }
-        
-        const theme = getTheme();
-        document.documentElement.classList.add(theme);
-        document.documentElement.style.colorScheme = theme;
-      })();
-    </script>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+    <head>
+        <meta charset="UTF-8" />
+        <link
+            rel="icon"
+            type="image/svg+xml"
+            href="/brand/backline/favicon.svg"
+        />
+        <link
+            rel="apple-touch-icon"
+            href="/brand/backline/apple-touch-icon.png"
+        />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Backline — The tools behind your community</title>
+        <meta
+            name="description"
+            content="Backline brings welcome messages, moderation cases, and private support tools to Discord communities. Currently in a private pilot with SUBCULT."
+        />
+        <meta name="theme-color" content="#8b5cf6" />
+        <meta
+            property="og:title"
+            content="Backline — Keep your people together"
+        />
+        <meta
+            property="og:description"
+            content="The tools behind your Discord community. Welcome, moderate, support. Currently in a private pilot with SUBCULT."
+        />
+        <meta property="og:type" content="website" />
+        <meta property="og:image" content="/brand/backline/og.png" />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta
+            property="og:image:alt"
+            content="Backline. Keep your people together. Discord community tools. Private pilot."
+        />
+        <meta name="twitter:card" content="summary_large_image" />
+        <!-- Prevent flash of unstyled content by applying theme before React loads -->
+        <script>
+            (function () {
+                function getTheme() {
+                    const stored = localStorage.getItem('theme');
+                    if (
+                        stored &&
+                        ['light', 'dark', 'system'].includes(stored)
+                    ) {
+                        if (stored === 'system') {
+                            return window.matchMedia(
+                                '(prefers-color-scheme: dark)'
+                            ).matches
+                                ? 'dark'
+                                : 'light';
+                        }
+                        return stored;
+                    }
+                    // Default to system preference
+                    return window.matchMedia('(prefers-color-scheme: dark)')
+                        .matches
+                        ? 'dark'
+                        : 'light';
+                }
+
+                const theme = getTheme();
+                document.documentElement.classList.add(theme);
+                document.documentElement.style.colorScheme = theme;
+            })();
+        </script>
+    </head>
+    <body>
+        <div id="root"></div>
+        <script type="module" src="/src/main.tsx"></script>
+    </body>
 </html>

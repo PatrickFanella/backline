@@ -70,7 +70,7 @@ function Dashboard() {
     return (
         <div className="min-h-screen bg-ctp-base p-6">
             <div className="max-w-7xl mx-auto space-y-6">
-                <Link to="/" className="text-ctp-blue underline">
+                <Link to="/servers" className="text-ctp-blue underline">
                     Server settings
                 </Link>
                 {/* Header */}
