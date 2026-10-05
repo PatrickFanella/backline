@@ -1050,3 +1050,23 @@ model VoicePlayback {
   daveProtocol Int?
   @@index([guildId, startedAt])
 }
+
+model ScheduledUtility {
+  id String @id @default(uuid())
+  guildId String
+  actorId String
+  requestId String
+  kind String
+  channelId String
+  content String
+  localTime String
+  timeZone String
+  runAt DateTime @db.Timestamptz
+  expiresAt DateTime @db.Timestamptz
+  state String @default("PENDING")
+  messageId String?
+  createdAt DateTime @default(now()) @db.Timestamptz
+  @@unique([guildId, requestId])
+  @@index([guildId, state, runAt])
+  @@index([expiresAt])
+}

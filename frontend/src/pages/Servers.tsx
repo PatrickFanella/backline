@@ -8,6 +8,7 @@ import CustomCommandsConfig from '../components/CustomCommandsConfig';
 import GiveawayConfig from '../components/GiveawayConfig';
 import LevelingConfig from '../components/LevelingConfig';
 import OnboardingConfig from '../components/OnboardingConfig';
+import ScheduledUtilitiesHistory from '../components/ScheduledUtilitiesHistory';
 import SelfRolesConfig from '../components/SelfRolesConfig';
 import ServerModuleConfig from '../components/ServerModuleConfig';
 import TicketConfig from '../components/TicketConfig';
@@ -216,6 +217,26 @@ export default function Servers() {
                                             enable its Discord intents and
                                             restart the bot.
                                         </p>
+                                    )}
+                                    {module.id === 'polls' && (
+                                        <p>
+                                            Use /poll create in a server text
+                                            channel with a question and two to
+                                            ten answers separated by |. Managers
+                                            can create or close Backline polls;
+                                            members can use /poll results.
+                                            Voting happens in Discord. Backline
+                                            needs Send Polls and Read Message
+                                            History in the destination. Queued
+                                            actions require delivery
+                                            confirmation in the channel.
+                                        </p>
+                                    )}
+                                    {module.id === 'scheduled-utilities' && (
+                                        <ScheduledUtilitiesHistory
+                                            key={`${guildId}:scheduled-utilities`}
+                                            guildId={guildId}
+                                        />
                                     )}
                                     {module.id === 'audio' && (
                                         <AudioConfig
