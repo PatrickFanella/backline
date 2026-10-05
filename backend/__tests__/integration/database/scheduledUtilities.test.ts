@@ -12,6 +12,7 @@ import {
     scheduledUtilityHandler,
 } from '../../../src/community/scheduledUtilities';
 import { db } from '../../../src/db';
+import { JobWorker } from '../../../src/jobs/store';
 import { moduleRegistry } from '../../../src/modules/registry';
 import { env } from '../../../src/utils/env';
 
@@ -90,6 +91,9 @@ databaseTests('durable channel utilities', () => {
     });
     afterEach(async () => {
         const where = { guildId: { in: [guildId, otherGuild] } };
+        await db.jobAttempt.deleteMany({
+            where: { job: { guildId: { in: [guildId, otherGuild] } } },
+        });
         await db.durableJob.deleteMany({ where });
         await db.scheduledUtility.deleteMany({ where });
         await db.guildModuleConfig.deleteMany({ where });
@@ -255,6 +259,24 @@ databaseTests('durable channel utilities', () => {
             })
         ).rejects.toThrow('does not exist');
         expect(await db.scheduledUtility.count({ where: { guildId } })).toBe(0);
+    });
+    it('removes completed worker attempts together with expired schedule receipts', async () => {
+        const { event, job, handler } = await due();
+        await db.durableJob.update({
+            where: { id: job.id },
+            data: { runAt: new Date(Date.now() - 1000) },
+        });
+        await new JobWorker(new Map([['scheduled-utility', handler]])).tick();
+        expect(await db.jobAttempt.count({ where: { jobId: job.id } })).toBe(1);
+        await db.scheduledUtility.update({
+            where: { id: event.id },
+            data: { expiresAt: new Date(Date.now() - 32 * 86400000) },
+        });
+        await expireScheduledUtilities();
+        expect(await db.jobAttempt.count({ where: { jobId: job.id } })).toBe(0);
+        expect(
+            await db.durableJob.findUnique({ where: { id: job.id } })
+        ).toBeNull();
     });
     it('expires old content and its job together without deleting another guild', async () => {
         const { event } = await due();

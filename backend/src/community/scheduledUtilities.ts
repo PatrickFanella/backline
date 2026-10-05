@@ -426,6 +426,16 @@ export async function expireScheduledUtilities() {
             await tx.$queryRaw(
                 Prisma.sql`SELECT pg_advisory_xact_lock(hashtext(${event.guildId})::bigint)::text`
             );
+            await tx.jobAttempt.deleteMany({
+                where: {
+                    job: {
+                        guildId: event.guildId,
+                        kind: 'scheduled-utility',
+                        idempotencyKey: 'scheduled-utility:' + event.id,
+                        state: { not: 'LEASED' },
+                    },
+                },
+            });
             await tx.durableJob.deleteMany({
                 where: {
                     guildId: event.guildId,
