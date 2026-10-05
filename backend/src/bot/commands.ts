@@ -11,10 +11,13 @@ import {
 import { radioCommand, routeRadio } from '../audio/radio';
 import {
     auditConfig,
+    levelingConfig,
+    communityReportsConfig,
     onboardingConfig,
     selfRolesConfig,
 } from '../community/config';
 import { giveawayCommand, routeGiveaways } from '../community/giveaways';
+import { routeLeveling, xpCommand } from '../community/leveling';
 import { acknowledgeRules } from '../community/onboarding';
 import { rolePanelCommand, routeSelfRoles } from '../community/selfRoles';
 import { routeTickets, ticketCommands } from '../community/tickets';
@@ -144,6 +147,7 @@ export async function routeInteraction(
         if (await routeTickets(interaction)) return;
         if (await routeGiveaways(interaction)) return;
         if (await routeRadio(interaction)) return;
+        if (await routeLeveling(interaction)) return;
         if (await routeSelfRoles(interaction)) return;
         if (!interaction.isChatInputCommand()) {
             await interaction.editReply(
@@ -285,6 +289,49 @@ export async function routeInteraction(
                         },
                     },
                 });
+                if (
+                    enabled &&
+                    moduleId === 'leveling' &&
+                    levelingConfig.parse(saved?.config ?? {}).rewards.length
+                ) {
+                    const actor = await interaction.guild.members.fetch({
+                        user: interaction.user.id,
+                        force: true,
+                    });
+                    if (
+                        !actor.permissions.has(
+                            PermissionFlagsBits.ManageRoles
+                        ) &&
+                        interaction.guild.ownerId !== actor.id
+                    ) {
+                        await interaction.editReply(
+                            'Current Manage Roles permission is required to enable level rewards.'
+                        );
+                        return;
+                    }
+                }
+                if (
+                    enabled &&
+                    moduleId === 'community-reports' &&
+                    communityReportsConfig.parse(saved?.config ?? {}).counters
+                        .length
+                ) {
+                    const actor = await interaction.guild.members.fetch({
+                        user: interaction.user.id,
+                        force: true,
+                    });
+                    if (
+                        !actor.permissions.has(
+                            PermissionFlagsBits.ManageChannels
+                        ) &&
+                        interaction.guild.ownerId !== actor.id
+                    ) {
+                        await interaction.editReply(
+                            'Current Manage Channels permission is required to enable channel counters.'
+                        );
+                        return;
+                    }
+                }
                 const note = configurationNote(moduleId, saved?.config ?? {});
                 if (enabled && moduleId === 'audit-log' && note) {
                     await interaction.editReply(
@@ -352,6 +399,7 @@ export async function registerGuildCommands(
             ...ticketCommands,
             radioCommand,
             giveawayCommand,
+            xpCommand,
         ])
             await guild.commands.create(command);
     }

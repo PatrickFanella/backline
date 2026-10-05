@@ -8,7 +8,12 @@ import {
     recoverAuditEvents,
 } from '../community/audit';
 import { giveawayHandlers, recoverGiveaways } from '../community/giveaways';
+import { expireLeveling, levelingHandler } from '../community/leveling';
 import { onboardingHandler, recoverJourneys } from '../community/onboarding';
+import {
+    communityCounterHandler,
+    maintainCommunityReports,
+} from '../community/reports';
 import { expireRoleChoices } from '../community/selfRoles';
 import { expireTickets } from '../community/tickets';
 import { db } from '../db';
@@ -22,6 +27,8 @@ export function createBotWorker(client: Client): JobWorker {
     return new JobWorker(
         new Map<string, JobHandler>([
             ...giveawayHandlers(client),
+            ['level-reward', levelingHandler(client)],
+            ['community-counter', communityCounterHandler(client)],
             ['audit-log', auditHandler(client)],
             ['anti-spam', antiSpamHandler(client)],
             ['onboarding-join', onboardingHandler(client, 'join')],
@@ -153,6 +160,8 @@ export function startJobPolling(
                 await radioRuntime.expireHistory();
                 await recoverSpamDecisions();
                 await recoverGiveaways();
+                await expireLeveling();
+                await maintainCommunityReports();
                 lastExpiry = Date.now();
             }
             const held = await db.durableJob.findMany({
@@ -163,6 +172,8 @@ export function startJobPolling(
                             'server-status',
                             'giveaway-draw',
                             'giveaway-reroll',
+                            'level-reward',
+                            'community-counter',
                         ],
                     },
                 },
