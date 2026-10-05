@@ -10,6 +10,11 @@ import {
     communityReportsConfig,
 } from '../community/config';
 import { db } from '../db';
+import {
+    originalTemplates,
+    templateProvenance,
+} from '../entertainment/catalog';
+import { renderTemplate } from '../entertainment/images';
 import { listManagedGuilds } from '../guilds/authorization';
 import { requireAuthOrApiKey, requireGuildAccess } from '../middleware';
 import { moduleOperatorReady, moduleRegistry } from '../modules/registry';
@@ -30,6 +35,53 @@ const updateSchema = z.object({
     config: z.unknown().default({}),
 });
 router.use('/guilds/:guildId/modules', requireAuthOrApiKey, requireGuildAccess);
+router.get('/guilds/:guildId/modules/entertainment/catalog', (_req, res) => {
+    res.json(
+        Object.entries(originalTemplates).map(([id, template]) => ({
+            id,
+            ...template,
+            provenance: templateProvenance,
+        }))
+    );
+});
+router.get(
+    '/guilds/:guildId/modules/entertainment/templates/:id/preview',
+    async (req, res) => {
+        try {
+            res.type('png').send(
+                await renderTemplate(req.params.id, 'OUR COMMUNITY / OUR STORY')
+            );
+        } catch {
+            res.status(503).json({ error: 'Template preview unavailable' });
+        }
+    }
+);
+router.get(
+    '/guilds/:guildId/modules/entertainment/trades',
+    async (req, res) => {
+        try {
+            res.json(
+                await db.collectionTrade.findMany({
+                    where: { guildId: req.params.guildId },
+                    orderBy: { createdAt: 'desc' },
+                    take: 100,
+                    select: {
+                        id: true,
+                        sellerId: true,
+                        buyerId: true,
+                        itemId: true,
+                        quantity: true,
+                        price: true,
+                        state: true,
+                        expiresAt: true,
+                    },
+                })
+            );
+        } catch {
+            res.status(503).json({ error: 'Trade history unavailable' });
+        }
+    }
+);
 router.get('/guilds/:guildId/modules/economy/ledger', async (req, res) => {
     try {
         res.json(

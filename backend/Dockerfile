@@ -23,7 +23,7 @@ RUN npm run build
 
 # Production stage
 FROM node:22-alpine
-RUN apk add --no-cache ffmpeg
+RUN apk add --no-cache ffmpeg font-dejavu
 
 # Create non-root user
 RUN addgroup -g 1001 -S nodejs && adduser -S nodejs -u 1001

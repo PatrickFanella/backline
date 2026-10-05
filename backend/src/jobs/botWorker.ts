@@ -29,6 +29,7 @@ import { expireSuggestions, suggestionHandler } from '../community/suggestions';
 import { expireTickets } from '../community/tickets';
 import { db } from '../db';
 import { expireEconomyEntries } from '../economy/engine';
+import { maintainEntertainment } from '../entertainment/engine';
 import { authorizeGuild } from '../guilds/authorization';
 import {
     maintainProviderFeeds,
@@ -209,6 +210,7 @@ export function startJobPolling(
                 await expireScheduledUtilities();
                 await expireWorkflowRuns();
                 await expireEconomyEntries();
+                await maintainEntertainment();
                 await maintainSnapshots();
                 await maintainRestorePlans();
                 await materializeAnnouncementSeries();

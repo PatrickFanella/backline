@@ -22,6 +22,7 @@ import { customCommandsConfig } from '../community/utilityTemplates';
 import { scheduledUtilitiesConfig } from '../community/utilityTime';
 import { db } from '../db';
 import { economyConfig } from '../economy/config';
+import { entertainmentConfig } from '../entertainment/catalog';
 import { integrationsConfig } from '../integrations/config';
 import { recoveryConfig } from '../recovery/config';
 import { env } from '../utils/env';
@@ -128,7 +129,8 @@ export class ModuleRegistry {
             moduleId === 'integrations' ||
             moduleId === 'workflows' ||
             moduleId === 'recovery' ||
-            moduleId === 'economy'
+            moduleId === 'economy' ||
+            moduleId === 'entertainment'
         ) {
             await db.$transaction(async (tx) => {
                 await tx.$queryRaw(
@@ -611,5 +613,17 @@ moduleRegistry.register({
     permissions: [],
     intents: [],
     commands: ['economy'],
+    pendingJobPolicy: 'cancel',
+});
+
+moduleRegistry.register({
+    id: 'entertainment',
+    description:
+        'Approved original image templates, private games and opt-in collection trades.',
+    version: 1,
+    schema: entertainmentConfig,
+    permissions: [],
+    intents: [],
+    commands: ['fun', 'trade'],
     pendingJobPolicy: 'cancel',
 });

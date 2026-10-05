@@ -14,6 +14,7 @@ import { moduleRegistry } from '../modules/registry';
 import { env } from '../utils/env';
 
 import { economyCatalog, economyConfig, economyItemId } from './config';
+import { cancelMemberTrades, escrowQuantity } from './escrow';
 
 const snowflake = z.string().regex(/^\d{17,20}$/);
 const actionSchema = z.discriminatedUnion('type', [
@@ -55,7 +56,7 @@ export type EconomyRequest = {
     actorId: string;
     requestId: string;
 };
-function validateRequest(input: EconomyRequest) {
+export function validateEconomyRequest(input: EconomyRequest) {
     const request = z
         .object({
             guildId: snowflake,
@@ -101,7 +102,7 @@ export async function economyAction(
     input: EconomyRequest,
     raw: unknown
 ) {
-    const request = validateRequest(input),
+    const request = validateEconomyRequest(input),
         action = actionSchema.parse(raw);
     const member = await economyMember(
         client,
@@ -189,6 +190,8 @@ export async function economyAction(
                 account = await tx.economyAccount.create({ data: key });
             }
             if (action.type === 'join' || action.type === 'leave') {
+                if (action.type === 'leave')
+                    await cancelMemberTrades(tx, guildId, memberId);
                 if (
                     account.optRequestId &&
                     BigInt(account.optRequestId) > BigInt(requestId)
@@ -285,7 +288,17 @@ export async function economyAction(
                 const inventory = await tx.economyInventory.findUnique({
                     where: { guildId_memberId_itemId: inventoryKey },
                 });
-                if ((inventory?.quantity ?? 0) + action.quantity > 99)
+                if (
+                    (inventory?.quantity ?? 0) +
+                        action.quantity +
+                        (await escrowQuantity(
+                            tx,
+                            guildId,
+                            memberId,
+                            action.itemId
+                        )) >
+                    99
+                )
                     throw new EconomyError('Inventory limit reached');
                 await tx.economyInventory.upsert({
                     where: { guildId_memberId_itemId: inventoryKey },
