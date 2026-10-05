@@ -1228,3 +1228,41 @@ model RecoveryMapping {
  createdAt DateTime @default(now())
  @@unique([guildId, kind, sourceId])
 }
+
+model EconomyAccount {
+ inventory EconomyInventory[]
+ guildId String
+ memberId String
+ optedIn Boolean @default(false)
+ optRequestId String?
+ balance Int @default(0)
+ lastDailyAt DateTime?
+ lastPlayedAt DateTime?
+ createdAt DateTime @default(now())
+ @@id([guildId, memberId])
+}
+model EconomyEntry {
+ id String @id @default(uuid())
+ guildId String
+ memberId String
+ actorId String
+ requestId String
+ kind String
+ fingerprint String
+ delta Int
+ balanceAfter Int
+ reason String
+ createdAt DateTime @default(now())
+ @@unique([guildId, requestId])
+ @@index([guildId, memberId, createdAt])
+ @@index([guildId, actorId, createdAt])
+ @@index([createdAt])
+}
+model EconomyInventory {
+ account EconomyAccount @relation(fields: [guildId, memberId], references: [guildId, memberId], onDelete: Cascade, map: "EconomyInventory_account_fkey")
+ guildId String
+ memberId String
+ itemId String
+ quantity Int @default(0)
+ @@id([guildId, memberId, itemId])
+}

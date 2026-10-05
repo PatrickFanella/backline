@@ -36,6 +36,7 @@ import { rolePanelCommand, routeSelfRoles } from '../community/selfRoles';
 import { routeSuggestions, suggestCommand } from '../community/suggestions';
 import { routeTickets, ticketCommands } from '../community/tickets';
 import { db } from '../db';
+import { economyCommand, routeEconomy } from '../economy/engine';
 import { feedCommand, routeFeed } from '../integrations/notifications';
 import { moderationCommands, routeModeration } from '../moderation/commands';
 import { moduleRegistry } from '../modules/registry';
@@ -172,6 +173,7 @@ export async function routeInteraction(
         if (await routeWorkflow(interaction)) return;
         if (await routeSnapshot(interaction)) return;
         if (await routeRestore(interaction)) return;
+        if (await routeEconomy(interaction)) return;
         if (await routePolls(interaction)) return;
         if (await routeSuggestions(interaction)) return;
         if (await routeMemberUtilities(interaction)) return;
@@ -433,6 +435,7 @@ export async function registerGuildCommands(
             workflowCommand,
             snapshotCommand,
             restoreCommand,
+            economyCommand,
             pollCommand,
             suggestCommand,
             ...memberUtilityCommands,

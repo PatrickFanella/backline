@@ -28,6 +28,7 @@ import { expireRoleChoices } from '../community/selfRoles';
 import { expireSuggestions, suggestionHandler } from '../community/suggestions';
 import { expireTickets } from '../community/tickets';
 import { db } from '../db';
+import { expireEconomyEntries } from '../economy/engine';
 import { authorizeGuild } from '../guilds/authorization';
 import {
     maintainProviderFeeds,
@@ -207,6 +208,7 @@ export function startJobPolling(
                 await expireLeveling();
                 await expireScheduledUtilities();
                 await expireWorkflowRuns();
+                await expireEconomyEntries();
                 await maintainSnapshots();
                 await maintainRestorePlans();
                 await materializeAnnouncementSeries();
