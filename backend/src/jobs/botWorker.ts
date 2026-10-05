@@ -1,5 +1,6 @@
 import { Client } from 'discord.js';
 
+import { maintainQueues } from '../audio/queue';
 import { radioRuntime } from '../audio/radio';
 import { antiSpamHandler, recoverSpamDecisions } from '../community/antiSpam';
 import {
@@ -197,6 +198,7 @@ export function startJobPolling(
         }
         if (active) return;
         active = (async () => {
+            if (client) await maintainQueues(client);
             if (Date.now() - lastExpiry > 60000) {
                 await expireAuditContent();
                 await recoverAuditEvents();

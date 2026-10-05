@@ -11,6 +11,7 @@ export const stationId = z
     );
 export const audioConfig = z
     .object({
+        queuesEnabled: z.boolean().default(false),
         defaultStation: stationId.default('defcon'),
         djRoles: z
             .array(z.string().regex(/^\d{17,20}$/))
