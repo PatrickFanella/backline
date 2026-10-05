@@ -11,6 +11,7 @@ import {
     ticketConfig,
     giveawayConfig,
     levelingConfig,
+    communityReportsConfig,
 } from '../community/config';
 import { db } from '../db';
 import { env } from '../utils/env';
@@ -80,7 +81,7 @@ export class ModuleRegistry {
         });
         if (!installation?.active)
             throw new Error('Bot installation unavailable');
-        if (moduleId === 'leveling') {
+        if (moduleId === 'leveling' || moduleId === 'community-reports') {
             await db.$transaction(async (tx) => {
                 await tx.$queryRaw(
                     Prisma.sql`SELECT pg_advisory_xact_lock(hashtext(${guildId})::bigint)::text`
@@ -202,6 +203,18 @@ export class ModuleRegistry {
 }
 
 export const moduleRegistry = new ModuleRegistry();
+moduleRegistry.register({
+    id: 'community-reports',
+    description:
+        'Observed community totals, collection coverage, join cohorts and scheduled channel counters.',
+    version: 1,
+    schema: communityReportsConfig,
+    permissions: [],
+    intents: [GatewayIntentBits.GuildMessages, GatewayIntentBits.GuildMembers],
+    commands: [],
+    pendingJobPolicy: 'cancel',
+    actionPermissions: { counters: [PermissionFlagsBits.ManageChannels] },
+});
 moduleRegistry.register({
     id: 'leveling',
     description:

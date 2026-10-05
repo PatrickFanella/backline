@@ -12,6 +12,7 @@ import { radioCommand, routeRadio } from '../audio/radio';
 import {
     auditConfig,
     levelingConfig,
+    communityReportsConfig,
     onboardingConfig,
     selfRolesConfig,
 } from '../community/config';
@@ -305,6 +306,28 @@ export async function routeInteraction(
                     ) {
                         await interaction.editReply(
                             'Current Manage Roles permission is required to enable level rewards.'
+                        );
+                        return;
+                    }
+                }
+                if (
+                    enabled &&
+                    moduleId === 'community-reports' &&
+                    communityReportsConfig.parse(saved?.config ?? {}).counters
+                        .length
+                ) {
+                    const actor = await interaction.guild.members.fetch({
+                        user: interaction.user.id,
+                        force: true,
+                    });
+                    if (
+                        !actor.permissions.has(
+                            PermissionFlagsBits.ManageChannels
+                        ) &&
+                        interaction.guild.ownerId !== actor.id
+                    ) {
+                        await interaction.editReply(
+                            'Current Manage Channels permission is required to enable channel counters.'
                         );
                         return;
                     }

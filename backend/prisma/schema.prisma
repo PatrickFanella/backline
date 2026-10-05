@@ -96,6 +96,45 @@ model LevelDigest {
   @@index([expiresAt])
 }
 
+model CommunityObservation {
+  guildId String
+  eventId String
+  memberId String
+  channelId String?
+  kind String
+  at DateTime @db.Timestamptz
+
+  @@id([guildId, eventId])
+  @@index([guildId, at])
+}
+
+model CommunityCoverage {
+  guildId String
+  minute DateTime @db.Timestamptz
+
+  @@id([guildId, minute])
+  @@index([minute])
+}
+
+model CommunityCohort {
+  guildId String
+  memberId String
+  joinedAt DateTime @db.Timestamptz
+  leftAt DateTime? @db.Timestamptz
+
+  @@id([guildId, memberId, joinedAt])
+  @@index([guildId, joinedAt])
+}
+
+model CommunityCounter {
+  guildId String
+  channelId String
+  lastAttemptAt DateTime @db.Timestamptz
+  expectedName String
+
+  @@id([guildId, channelId])
+}
+
 enum Role {
   USER
   ADMIN

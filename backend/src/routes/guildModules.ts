@@ -7,6 +7,7 @@ import {
     selfRolesConfig,
     antiSpamConfig,
     levelingConfig,
+    communityReportsConfig,
 } from '../community/config';
 import { db } from '../db';
 import { listManagedGuilds } from '../guilds/authorization';
@@ -155,6 +156,33 @@ router.put('/guilds/:guildId/modules/:moduleId', async (req, res) => {
         return;
     }
     try {
+        if (
+            req.params.moduleId === 'community-reports' &&
+            communityReportsConfig.parse(body.data.config).counters.length
+        ) {
+            const membership = await db.guild.findUnique({
+                where: {
+                    userId_guildId: {
+                        userId: req.user!.userId,
+                        guildId: req.params.guildId,
+                    },
+                },
+            });
+            if (
+                !membership ||
+                (!membership.owner &&
+                    !(
+                        membership.permissions &
+                        (PermissionFlagsBits.ManageChannels |
+                            PermissionFlagsBits.Administrator)
+                    ))
+            ) {
+                res.status(403).json({
+                    error: 'Current Manage Channels permission is required to configure channel counters',
+                });
+                return;
+            }
+        }
         if (req.params.moduleId === 'tickets') {
             const member = await db.guild.findUnique({
                 where: {

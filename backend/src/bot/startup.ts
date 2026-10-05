@@ -7,6 +7,7 @@ import { registerAntiSpamEvents } from '../community/antiSpam';
 import { registerAuditEvents } from '../community/audit';
 import { registerLevelingEvents } from '../community/leveling';
 import { registerOnboardingEvents } from '../community/onboarding';
+import { registerCommunityReportEvents } from '../community/reports';
 import { db } from '../db';
 import { recordInstallation } from '../guilds/installations';
 import { createBotWorker, startJobPolling } from '../jobs/botWorker';
@@ -28,6 +29,7 @@ export async function startBot(): Promise<Client> {
     registerOnboardingEvents(client);
     registerCollectors(client);
     const stopLeveling = registerLevelingEvents(client);
+    const stopReports = registerCommunityReportEvents(client);
     client.on('interactionCreate', (interaction) => {
         void routeInteraction(interaction);
     });
@@ -108,6 +110,7 @@ export async function startBot(): Promise<Client> {
                     const destroy = client.destroy.bind(client);
                     client.destroy = async () => {
                         await stopLeveling();
+                        await stopReports();
                         await radioRuntime.shutdown();
                         await stop();
                         await destroy();
@@ -117,6 +120,7 @@ export async function startBot(): Promise<Client> {
                     const destroy = client.destroy.bind(client);
                     client.destroy = async () => {
                         await stopLeveling();
+                        await stopReports();
                         await radioRuntime.shutdown();
                         await destroy();
                     };
@@ -171,6 +175,7 @@ export async function startBot(): Promise<Client> {
         return client;
     } catch (error) {
         await stopLeveling();
+        await stopReports();
         await client.destroy();
         throw error;
     }
