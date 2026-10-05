@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 
@@ -25,7 +24,6 @@ import Moderation from './pages/Moderation';
 import RuleEditor from './pages/RuleEditor';
 import Rules from './pages/Rules';
 import Servers from './pages/Servers';
-import { useAuth } from './store/auth';
 
 function AppContent() {
     const { t } = useTranslation();
@@ -83,13 +81,6 @@ function AppContent() {
 }
 
 function App() {
-    const setToken = useAuth((s) => s.setToken);
-
-    useEffect(() => {
-        const token = localStorage.getItem('accessToken');
-        if (token) setToken(token);
-    }, [setToken]);
-
     return (
         <BrowserRouter>
             <AppContent />

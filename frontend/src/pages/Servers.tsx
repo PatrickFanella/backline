@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import AntiSpamConfig from '../components/AntiSpamConfig';
 import AudioConfig from '../components/AudioConfig';
 import CommunityReportsConfig from '../components/CommunityReportsConfig';
+import CustomCommandsConfig from '../components/CustomCommandsConfig';
 import GiveawayConfig from '../components/GiveawayConfig';
 import LevelingConfig from '../components/LevelingConfig';
 import OnboardingConfig from '../components/OnboardingConfig';
@@ -219,6 +220,31 @@ export default function Servers() {
                                     {module.id === 'audio' && (
                                         <AudioConfig
                                             key={`${guildId}:audio:${JSON.stringify(module.settings.config)}`}
+                                            guildId={guildId}
+                                            enabled={module.settings.enabled}
+                                            config={module.settings.config}
+                                            onBusy={(value) =>
+                                                setBusy(
+                                                    value ? module.id : null
+                                                )
+                                            }
+                                            onSaved={async () => {
+                                                const current =
+                                                    generation.current;
+                                                const response = await api.get<
+                                                    Module[]
+                                                >(`/guilds/${guildId}/modules`);
+                                                if (
+                                                    current ===
+                                                    generation.current
+                                                )
+                                                    setModules(response.data);
+                                            }}
+                                        />
+                                    )}
+                                    {module.id === 'custom-commands' && (
+                                        <CustomCommandsConfig
+                                            key={`${guildId}:custom-commands:${JSON.stringify(module.settings.config)}`}
                                             guildId={guildId}
                                             enabled={module.settings.enabled}
                                             config={module.settings.config}

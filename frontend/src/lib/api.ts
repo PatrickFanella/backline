@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios';
 
 import { config } from '../config/env';
 import { useAuth } from '../store/auth';
@@ -27,37 +27,60 @@ api.interceptors.request.use((config) => {
     return config;
 });
 
-api.interceptors.response.use(
-    (res) => res,
-    async (err) => {
-        if (
-            err.response?.status === 401 &&
-            !err.config?.url?.startsWith('/auth/')
-        ) {
-            const originalRequest = err.config;
+type RetryRequest = InternalAxiosRequestConfig & { _retry?: boolean };
+let refreshInFlight: Promise<string> | null = null;
 
-            if (!originalRequest._retry) {
-                originalRequest._retry = true;
-
-                try {
-                    const res = await axios.post(
-                        `${config.apiUrl}/auth/refresh`,
-                        {},
-                        { withCredentials: true }
-                    );
-                    const newToken = res.data.accessToken;
-                    useAuth.getState().setToken(newToken);
-                    originalRequest.headers.Authorization = `Bearer ${newToken}`;
-                    return api(originalRequest);
-                } catch (refreshErr) {
-                    // Refresh failed; logging out
-                    useAuth.getState().logout();
-                    return Promise.reject(refreshErr);
+function refreshSession(): Promise<string> {
+    if (!refreshInFlight) {
+        refreshInFlight = axios
+            .post(
+                `${config.apiUrl}/auth/refresh`,
+                {},
+                { withCredentials: true }
+            )
+            .then((response) => {
+                const token: unknown = response.data?.accessToken;
+                if (typeof token !== 'string' || !token.trim()) {
+                    throw new Error('Invalid refresh response');
                 }
-            }
-        }
+                useAuth.getState().setToken(token);
+                return token;
+            })
+            .catch((error: unknown) => {
+                useAuth.getState().logout();
+                throw error;
+            })
+            .finally(() => {
+                refreshInFlight = null;
+            });
+    }
+    return refreshInFlight;
+}
 
-        return Promise.reject(err);
+api.interceptors.response.use(
+    (response) => response,
+    async (error: AxiosError) => {
+        const request = error.config as RetryRequest | undefined;
+        const url = request?.url?.split('?')[0];
+        const canRefresh = !url?.startsWith('/auth/') || url === '/auth/me';
+        if (
+            error.response?.status !== 401 ||
+            !request ||
+            request._retry ||
+            !canRefresh
+        ) {
+            return Promise.reject(error);
+        }
+        request._retry = true;
+        // A response for the old token may arrive after another request renewed it.
+        const currentToken = useAuth.getState().accessToken;
+        const token =
+            currentToken &&
+            request.headers.Authorization !== `Bearer ${currentToken}`
+                ? currentToken
+                : await refreshSession();
+        request.headers.Authorization = `Bearer ${token}`;
+        return api(request);
     }
 );
 

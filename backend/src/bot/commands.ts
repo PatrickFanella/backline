@@ -16,6 +16,10 @@ import {
     onboardingConfig,
     selfRolesConfig,
 } from '../community/config';
+import {
+    customCommand,
+    routeCustomCommands,
+} from '../community/customCommands';
 import { giveawayCommand, routeGiveaways } from '../community/giveaways';
 import { routeLeveling, xpCommand } from '../community/leveling';
 import { acknowledgeRules } from '../community/onboarding';
@@ -148,6 +152,7 @@ export async function routeInteraction(
         if (await routeGiveaways(interaction)) return;
         if (await routeRadio(interaction)) return;
         if (await routeLeveling(interaction)) return;
+        if (await routeCustomCommands(interaction)) return;
         if (await routeSelfRoles(interaction)) return;
         if (!interaction.isChatInputCommand()) {
             await interaction.editReply(
@@ -159,7 +164,7 @@ export async function routeInteraction(
         switch (interaction.commandName) {
             case 'help':
                 await interaction.editReply(
-                    '/help — commands\n/setup — server diagnostics\n/settings module enabled — configure a module\n/status — current module status\n/warn /timeout /kick /ban /unban /purge /cases — opt-in moderation\nSettings require current Manage Server permission. Activity collection is opt-in.'
+                    '/help — commands\n/setup — server diagnostics\n/settings module enabled — configure a module\n/status — current module status\n/warn /timeout /kick /ban /unban /purge /cases — opt-in moderation\n/custom [name] — configured private server replies\n/xp profile or leaderboard — server XP\n/giveaway — server giveaways\n/ticket /ticket-panel — support tickets\n/radio — approved radio\n/roles-panel — configured self-service roles\nSettings require current Manage Server permission. Modules are opt-in.'
                 );
                 break;
             case 'setup': {
@@ -400,6 +405,7 @@ export async function registerGuildCommands(
             radioCommand,
             giveawayCommand,
             xpCommand,
+            customCommand,
         ])
             await guild.commands.create(command);
     }

@@ -111,7 +111,8 @@ jobs:
       
       - name: Build
         run: npm run build
-        continue-on-error: true
+        env:
+          VITE_DISCORD_CLIENT_ID: '123456789012345678'
       
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
