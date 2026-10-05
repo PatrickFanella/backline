@@ -591,11 +591,11 @@ moduleRegistry.register({
 moduleRegistry.register({
     id: 'recovery',
     description:
-        'Versioned server structure snapshots, scheduled capture and reusable templates.',
+        'Versioned snapshots, scheduled capture and owner-confirmed selective restore.',
     version: 1,
     schema: recoveryConfig,
     permissions: [],
     intents: [],
-    commands: ['snapshot'],
+    commands: ['snapshot', 'restore'],
     pendingJobPolicy: 'cancel',
 });

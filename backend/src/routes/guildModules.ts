@@ -246,6 +246,65 @@ router.get(
         }
     }
 );
+router.get('/guilds/:guildId/modules/recovery/plans', async (req, res) => {
+    try {
+        const plans = await db.restorePlan.findMany({
+            where: { guildId: req.params.guildId },
+            orderBy: { createdAt: 'desc' },
+            take: 20,
+            select: {
+                id: true,
+                snapshotId: true,
+                actorId: true,
+                state: true,
+                operations: true,
+                lastError: true,
+                expiresAt: true,
+                createdAt: true,
+            },
+        });
+        res.json(
+            plans.map((plan) => ({
+                ...plan,
+                operations: Array.isArray(plan.operations)
+                    ? plan.operations.map((operation) =>
+                          operation &&
+                          typeof operation === 'object' &&
+                          !Array.isArray(operation) &&
+                          operation.selected
+                              ? operation
+                              : {
+                                    ...(operation as Record<string, unknown>),
+                                    before: null,
+                                    after: null,
+                                }
+                      )
+                    : [],
+            }))
+        );
+    } catch {
+        res.status(503).json({ error: 'Restore history unavailable' });
+    }
+});
+router.get(
+    '/guilds/:guildId/modules/recovery/plans/:id/export',
+    async (req, res) => {
+        try {
+            const plan = await db.restorePlan.findFirstOrThrow({
+                where: { guildId: req.params.guildId, id: req.params.id },
+            });
+            res.attachment(
+                'backline-' +
+                    req.params.guildId +
+                    '-restore-' +
+                    plan.id +
+                    '.json'
+            ).json(plan);
+        } catch {
+            res.status(404).json({ error: 'Restore plan unavailable' });
+        }
+    }
+);
 router.get('/guilds/:guildId/modules/anti-spam/history', async (req, res) => {
     try {
         const decisions = await db.spamDecision.findMany({
