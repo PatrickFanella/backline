@@ -6,6 +6,7 @@ import {
     onboardingConfig,
     selfRolesConfig,
     antiSpamConfig,
+    levelingConfig,
 } from '../community/config';
 import { db } from '../db';
 import { listManagedGuilds } from '../guilds/authorization';
@@ -181,6 +182,8 @@ router.put('/guilds/:guildId/modules/:moduleId', async (req, res) => {
         if (
             (req.params.moduleId === 'onboarding' &&
                 onboardingConfig.parse(body.data.config).joinRoles.length) ||
+            (req.params.moduleId === 'leveling' &&
+                levelingConfig.parse(body.data.config).rewards.length) ||
             (req.params.moduleId === 'self-roles' &&
                 selfRolesConfig.parse(body.data.config).roles.length)
         ) {

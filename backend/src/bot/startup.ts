@@ -5,6 +5,7 @@ import { Client, Partials } from 'discord.js';
 import { radioRuntime } from '../audio/radio';
 import { registerAntiSpamEvents } from '../community/antiSpam';
 import { registerAuditEvents } from '../community/audit';
+import { registerLevelingEvents } from '../community/leveling';
 import { registerOnboardingEvents } from '../community/onboarding';
 import { db } from '../db';
 import { recordInstallation } from '../guilds/installations';
@@ -26,6 +27,7 @@ export async function startBot(): Promise<Client> {
     registerAntiSpamEvents(client);
     registerOnboardingEvents(client);
     registerCollectors(client);
+    const stopLeveling = registerLevelingEvents(client);
     client.on('interactionCreate', (interaction) => {
         void routeInteraction(interaction);
     });
@@ -105,6 +107,7 @@ export async function startBot(): Promise<Client> {
                     });
                     const destroy = client.destroy.bind(client);
                     client.destroy = async () => {
+                        await stopLeveling();
                         await radioRuntime.shutdown();
                         await stop();
                         await destroy();
@@ -113,6 +116,7 @@ export async function startBot(): Promise<Client> {
                 if (!env.BOT_RUN_JOBS) {
                     const destroy = client.destroy.bind(client);
                     client.destroy = async () => {
+                        await stopLeveling();
                         await radioRuntime.shutdown();
                         await destroy();
                     };
@@ -166,6 +170,7 @@ export async function startBot(): Promise<Client> {
         await ready;
         return client;
     } catch (error) {
+        await stopLeveling();
         await client.destroy();
         throw error;
     }

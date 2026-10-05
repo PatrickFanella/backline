@@ -58,6 +58,44 @@ model GiveawayDraw {
   @@unique([giveawayId, requestId])
 }
 
+model LevelProfile {
+  guildId       String
+  memberId      String
+  displayName   String
+  xp            Int @default(0)
+  digestKey     String @default(uuid())
+  lastMessageAt DateTime? @db.Timestamptz
+  lastVoiceAt   DateTime? @db.Timestamptz
+  updatedAt     DateTime @default(now()) @db.Timestamptz
+
+  @@id([guildId, memberId])
+  @@index([guildId, xp(sort: Desc)])
+  @@index([updatedAt])
+}
+
+model LevelGrant {
+  guildId   String
+  requestId String
+  memberId  String
+  source    String
+  amount    Int
+  createdAt DateTime @default(now()) @db.Timestamptz
+
+  @@id([guildId, requestId])
+  @@index([guildId, memberId, createdAt])
+  @@index([createdAt])
+}
+
+model LevelDigest {
+  guildId   String
+  memberId  String
+  digest    String
+  expiresAt DateTime @db.Timestamptz
+
+  @@id([guildId, memberId, digest])
+  @@index([expiresAt])
+}
+
 enum Role {
   USER
   ADMIN

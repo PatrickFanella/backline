@@ -1,6 +1,38 @@
 import { z } from 'zod';
 
 export const id = z.string().regex(/^\d{17,20}$/);
+export const levelingConfig = z
+    .object({
+        messageXp: z.number().int().min(1).max(100).default(15),
+        cooldownSeconds: z.number().int().min(30).max(3600).default(60),
+        minMessageLength: z.number().int().min(1).max(100).default(8),
+        excludedChannels: z.array(id).max(100).default([]),
+        excludedRoles: z.array(id).max(100).default([]),
+        voiceEnabled: z.boolean().default(false),
+        voiceXp: z.number().int().min(1).max(10).default(3),
+        excludeDeafened: z.boolean().default(true),
+        excludeMuted: z.boolean().default(true),
+        excludeSolo: z.boolean().default(true),
+        retentionDays: z.number().int().min(1).max(365).default(90),
+        rewards: z
+            .array(
+                z
+                    .object({
+                        roleId: id,
+                        level: z.number().int().min(1).max(1000),
+                    })
+                    .strict()
+            )
+            .max(10)
+            .default([]),
+    })
+    .strict()
+    .refine(
+        (data) =>
+            new Set(data.rewards.map((reward) => reward.roleId)).size ===
+            data.rewards.length,
+        'Duplicate reward roles'
+    );
 export const giveawayConfig = z
     .object({
         maxActive: z.number().int().min(1).max(25).default(10),
