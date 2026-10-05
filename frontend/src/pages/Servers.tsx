@@ -218,6 +218,20 @@ export default function Servers() {
                                             restart the bot.
                                         </p>
                                     )}
+                                    {module.id === 'polls' && (
+                                        <p>
+                                            Use /poll create in a server text
+                                            channel with a question and two to
+                                            ten answers separated by |. Managers
+                                            can create or close Backline polls;
+                                            members can use /poll results.
+                                            Voting happens in Discord. Backline
+                                            needs Send Polls and Read Message
+                                            History in the destination. Queued
+                                            actions require delivery
+                                            confirmation in the channel.
+                                        </p>
+                                    )}
                                     {module.id === 'scheduled-utilities' && (
                                         <ScheduledUtilitiesHistory
                                             key={`${guildId}:scheduled-utilities`}

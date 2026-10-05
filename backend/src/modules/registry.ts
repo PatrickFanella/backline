@@ -86,7 +86,8 @@ export class ModuleRegistry {
         if (
             moduleId === 'leveling' ||
             moduleId === 'community-reports' ||
-            moduleId === 'scheduled-utilities'
+            moduleId === 'scheduled-utilities' ||
+            moduleId === 'polls'
         ) {
             await db.$transaction(async (tx) => {
                 await tx.$queryRaw(
@@ -209,6 +210,25 @@ export class ModuleRegistry {
 }
 
 export const moduleRegistry = new ModuleRegistry();
+moduleRegistry.register({
+    id: 'polls',
+    description:
+        'Native Discord polls with manager creation and member result readback.',
+    version: 1,
+    schema: z.object({}).strict(),
+    permissions: [],
+    intents: [],
+    commands: ['poll'],
+    pendingJobPolicy: 'cancel',
+    actionPermissions: {
+        send: [
+            PermissionFlagsBits.ViewChannel,
+            PermissionFlagsBits.SendMessages,
+            PermissionFlagsBits.SendPolls,
+            PermissionFlagsBits.ReadMessageHistory,
+        ],
+    },
+});
 moduleRegistry.register({
     id: 'scheduled-utilities',
     description:
