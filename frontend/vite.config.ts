@@ -1,5 +1,6 @@
 import { sentryVitePlugin } from '@sentry/vite-plugin';
 import react from '@vitejs/plugin-react-swc';
+import { loadEnv } from 'vite';
 import { defineConfig } from 'vitest/config';
 
 // https://vite.dev/config/
@@ -33,28 +34,41 @@ if (shouldEnableSentryPlugin) {
     );
 }
 
-export default defineConfig({
-    plugins,
-    build: {
-        // Generate source maps for error tracking
-        sourcemap: true,
-    },
-    test: {
-        globals: true,
-        environment: 'jsdom',
-        setupFiles: ['./src/__tests__/setup.ts'],
-        exclude: ['**/node_modules/**', '**/e2e/**', '**/dist/**'],
-        coverage: {
-            provider: 'v8',
-            reporter: ['text', 'html', 'lcov'],
-            exclude: [
-                'node_modules/',
-                'src/__tests__/',
-                'e2e/',
-                '**/*.d.ts',
-                '**/*.config.*',
-                '**/mockData',
-            ],
+export default defineConfig(({ command, mode }) => {
+    if (command === 'build') {
+        const values = {
+            ...loadEnv(mode, process.cwd(), 'VITE_'),
+            ...process.env,
+        };
+        if (!values.VITE_DISCORD_CLIENT_ID?.trim()) {
+            throw new Error(
+                'VITE_DISCORD_CLIENT_ID is required when building the dashboard'
+            );
+        }
+    }
+    return {
+        plugins,
+        build: {
+            // Generate source maps for error tracking
+            sourcemap: true,
         },
-    },
+        test: {
+            globals: true,
+            environment: 'jsdom',
+            setupFiles: ['./src/__tests__/setup.ts'],
+            exclude: ['**/node_modules/**', '**/e2e/**', '**/dist/**'],
+            coverage: {
+                provider: 'v8',
+                reporter: ['text', 'html', 'lcov'],
+                exclude: [
+                    'node_modules/',
+                    'src/__tests__/',
+                    'e2e/',
+                    '**/*.d.ts',
+                    '**/*.config.*',
+                    '**/mockData',
+                ],
+            },
+        },
+    };
 });
