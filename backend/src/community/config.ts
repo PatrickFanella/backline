@@ -1,6 +1,43 @@
 import { z } from 'zod';
 
 export const id = z.string().regex(/^\d{17,20}$/);
+export const communityReportsConfig = z
+    .object({
+        retentionDays: z.number().int().min(1).max(90).default(30),
+        excludedChannels: z.array(id).max(100).default([]),
+        counters: z
+            .array(
+                z
+                    .object({
+                        channelId: id,
+                        metric: z.enum(['messages', 'joins', 'departures']),
+                        days: z.number().int().min(1).max(30).default(1),
+                        intervalMinutes: z
+                            .number()
+                            .int()
+                            .min(60)
+                            .max(1440)
+                            .default(60),
+                    })
+                    .strict()
+            )
+            .max(5)
+            .default([]),
+    })
+    .strict()
+    .refine(
+        (config) =>
+            new Set(config.counters.map((counter) => counter.channelId))
+                .size === config.counters.length,
+        'Duplicate counter channels'
+    )
+    .refine(
+        (config) =>
+            config.counters.every(
+                (counter) => counter.days <= config.retentionDays
+            ),
+        'Counter windows must fit retained history'
+    );
 export const levelingConfig = z
     .object({
         messageXp: z.number().int().min(1).max(100).default(15),
