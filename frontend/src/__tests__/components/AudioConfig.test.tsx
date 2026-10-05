@@ -25,6 +25,7 @@ describe('radio configuration', () => {
         expect(api.put).toHaveBeenCalledWith('/guilds/B/modules/audio', {
             enabled: false,
             config: {
+                queuesEnabled: false,
                 defaultStation: 'defcon',
                 djRoles: [],
                 volume: 25,

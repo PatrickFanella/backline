@@ -119,6 +119,7 @@ export class ModuleRegistry {
         if (!installation?.active)
             throw new Error('Bot installation unavailable');
         if (
+            moduleId === 'audio' ||
             moduleId === 'leveling' ||
             moduleId === 'community-reports' ||
             moduleId === 'scheduled-utilities' ||

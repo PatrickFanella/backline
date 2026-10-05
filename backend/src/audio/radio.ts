@@ -58,7 +58,7 @@ export function isDJ(member: GuildMember, config: Config): boolean {
         config.djRoles.some((role) => member.roles.cache.has(role))
     );
 }
-async function settings(guildId: string): Promise<Config> {
+export async function audioSettings(guildId: string): Promise<Config> {
     if (!(await moduleRegistry.enabled(guildId, 'audio')))
         throw new Error('Audio disabled or voice intent unavailable');
     const row = await db.guildModuleConfig.findUniqueOrThrow({
@@ -66,9 +66,30 @@ async function settings(guildId: string): Promise<Config> {
     });
     return audioConfig.parse(row.config);
 }
+export async function audioAccess(
+    client: Client,
+    guildId: string,
+    actorId: string,
+    djOnly = false
+) {
+    const config = await audioSettings(guildId);
+    const guild = await client.guilds.fetch({ guild: guildId, force: true });
+    const actor = await guild.members.fetch({ user: actorId, force: true });
+    if (
+        actor.user.bot ||
+        (await db.user.count({ where: { discordId: actorId, role: 'BANNED' } }))
+    )
+        throw new Error('Audio account unavailable');
+    if (djOnly && !isDJ(actor, config))
+        throw new Error('Current DJ permission required');
+    if (!actor.voice.channelId)
+        throw new Error('Join the intended voice channel first');
+    return { actor, config, channelId: actor.voice.channelId };
+}
 export class RadioRuntime {
     private readonly sessions = new Map<string, Session>();
     private readonly pending = new Set<string>();
+    private readonly votes = new Map<string, Set<string>>();
     status(guildId: string) {
         const row = this.sessions.get(guildId);
         return row
@@ -110,7 +131,8 @@ export class RadioRuntime {
         guildId: string,
         actorId: string,
         station?: string,
-        requestedChannel?: string
+        requestedChannel?: string,
+        segmentMinutes?: number
     ) {
         if (this.pending.has(guildId))
             throw new Error('Radio startup already in progress');
@@ -123,7 +145,12 @@ export class RadioRuntime {
         let session: Session | undefined;
         let reservedId: string | undefined;
         try {
-            const config = await settings(guildId);
+            const config = await audioSettings(guildId);
+            if (segmentMinutes !== undefined)
+                config.maxMinutes = Math.min(
+                    config.maxMinutes,
+                    Math.max(1, Math.min(30, segmentMinutes))
+                );
             const selected = stationId.parse(station ?? config.defaultStation);
             const guild = await client.guilds.fetch({
                 guild: guildId,
@@ -133,6 +160,13 @@ export class RadioRuntime {
                 user: actorId,
                 force: true,
             });
+            if (
+                actor.user.bot ||
+                (await db.user.count({
+                    where: { discordId: actorId, role: 'BANNED' },
+                }))
+            )
+                throw new Error('Audio account unavailable');
             const dj = isDJ(actor, config);
             if (config.djRoles.length && !dj)
                 throw new Error('Current DJ role required');
@@ -333,7 +367,7 @@ export class RadioRuntime {
                         );
                         return;
                     }
-                    const current = await settings(guildId);
+                    const current = await audioSettings(guildId);
                     const currentActor = await guild.members.fetch({
                         user: actorId,
                         force: true,
@@ -423,10 +457,61 @@ export class RadioRuntime {
             this.pending.delete(guildId);
         }
     }
+    async control(
+        client: Client,
+        guildId: string,
+        actorId: string,
+        action: 'pause' | 'resume' | 'volume' | 'skip',
+        volume?: number
+    ) {
+        const session = this.sessions.get(guildId);
+        if (!session || session.stopping)
+            throw new Error('No active audio session');
+        const { actor, config, channelId } = await audioAccess(
+            client,
+            guildId,
+            actorId
+        );
+        if (channelId !== session.channelId)
+            throw new Error('Join the current audio channel');
+        const privileged =
+            actorId === session.requesterId || isDJ(actor, config);
+        if (action === 'skip' && !privileged) {
+            const channel = await actor.guild.channels.fetch(session.channelId);
+            if (!channel || channel.type !== ChannelType.GuildVoice)
+                throw new Error('Voice channel unavailable');
+            const listeners = channel.members.filter((m) => !m.user.bot);
+            if (!listeners.has(actorId))
+                throw new Error('Current listener unavailable');
+            const votes = this.votes.get(guildId) ?? new Set<string>();
+            for (const id of votes) if (!listeners.has(id)) votes.delete(id);
+            votes.add(actorId);
+            this.votes.set(guildId, votes);
+            const required = Math.max(1, Math.ceil(listeners.size / 2));
+            if (votes.size < required)
+                return { skipped: false, votes: votes.size, required };
+        } else if (!privileged)
+            throw new Error('Requester or current DJ required');
+        if (action === 'pause') session.player.pause();
+        if (action === 'resume') session.player.unpause();
+        if (action === 'volume') {
+            if (
+                volume === undefined ||
+                !Number.isInteger(volume) ||
+                volume < 0 ||
+                volume > config.volume
+            )
+                throw new Error('Volume exceeds server limit');
+            session.config.volume = volume;
+            session.resource?.volume?.setVolume(volume / 100);
+        }
+        if (action === 'skip') await this.stop(guildId, 'Queue skip');
+        return { skipped: action === 'skip', votes: 0, required: 0 };
+    }
     async authorizedStop(client: Client, guildId: string, actorId: string) {
         const session = this.sessions.get(guildId);
         if (!session) return;
-        const config = await settings(guildId),
+        const config = await audioSettings(guildId),
             guild = await client.guilds.fetch(guildId);
         const actor = await guild.members.fetch({ user: actorId, force: true });
         if (actorId !== session.requesterId && !isDJ(actor, config))
@@ -468,6 +553,7 @@ export class RadioRuntime {
         if (session.connection.state.status !== VoiceConnectionStatus.Destroyed)
             session.connection.destroy();
         this.sessions.delete(guildId);
+        this.votes.delete(guildId);
         await db.voicePlayback.update({
             where: { id: session.id },
             data: { state, detail, finishedAt: new Date(), playbackMs },

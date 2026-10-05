@@ -1298,3 +1298,24 @@ model EconomyInventory {
  quantity Int @default(0)
  @@id([guildId, memberId, itemId])
 }
+
+model AudioQueue {
+  guildId String @id
+  items Json @default("[]")
+  state String @default("IDLE")
+  loop Boolean @default(false)
+  shuffle Boolean @default(false)
+  claimId String?
+  leaseUntil DateTime?
+  updatedAt DateTime @updatedAt
+}
+model AudioPlaylist {
+  id String @id @default(uuid())
+  guildId String
+  name String
+  items Json
+  createdBy String
+  createdAt DateTime @default(now())
+  @@unique([guildId,name])
+  @@index([guildId,createdAt])
+}

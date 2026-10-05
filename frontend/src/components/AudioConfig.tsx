@@ -22,6 +22,9 @@ export default function AudioConfig({
     const [roles, setRoles] = useState(
         Array.isArray(config.djRoles) ? config.djRoles.join(', ') : ''
     );
+    const [queuesEnabled, setQueuesEnabled] = useState(
+        config.queuesEnabled === true
+    );
     const [volume, setVolume] = useState(Number(config.volume ?? 25));
     const [duration, setDuration] = useState(Number(config.maxMinutes ?? 30));
     const [idle, setIdle] = useState(Number(config.idleSeconds ?? 60));
@@ -36,6 +39,7 @@ export default function AudioConfig({
             await api.put(`/guilds/${guildId}/modules/audio`, {
                 enabled,
                 config: {
+                    queuesEnabled,
                     defaultStation: station,
                     djRoles: roles.split(/[\s,]+/).filter(Boolean),
                     volume,
@@ -63,6 +67,24 @@ export default function AudioConfig({
         >
             <fieldset disabled={busy} className="space-y-3">
                 <legend className="font-medium">SomaFM radio settings</legend>
+                <label className="block">
+                    <input
+                        type="checkbox"
+                        checked={queuesEnabled}
+                        onChange={(event) =>
+                            setQueuesEnabled(event.target.checked)
+                        }
+                    />{' '}
+                    Enable timed station queues and playlists
+                </label>
+                <p>
+                    Members queue up to ten segments each with /audio enqueue; a
+                    DJ explicitly starts playback. /audio offers pause, resume,
+                    skip votes, shuffle, loop and saved playlists. Queues stop
+                    at the server duration limit and require explicit restart
+                    after interruption. Skip votes require half of current human
+                    listeners; requester or DJ can skip immediately.
+                </p>
                 <label className="block">
                     Default station ID
                     <input
