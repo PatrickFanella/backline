@@ -56,7 +56,9 @@ export function metricsMiddleware(
 
     res.on('finish', () => {
         const duration = (Date.now() - start) / 1000;
-        const route = req.route?.path || req.path;
+        const routePath: unknown = (req.route as { path?: unknown } | undefined)
+            ?.path;
+        const route = typeof routePath === 'string' ? routePath : req.path;
         const labels = {
             method: req.method,
             route,

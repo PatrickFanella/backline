@@ -52,7 +52,7 @@ export const etagMiddleware = (
     const originalSend = res.send;
 
     // Override the send function to generate ETag
-    res.send = function (data): Response {
+    res.send = function (data: unknown): Response {
         // Generate ETag from response data
         if ((data && typeof data === 'string') || Buffer.isBuffer(data)) {
             const hash = crypto.createHash('md5').update(data).digest('hex');
@@ -110,20 +110,25 @@ export const redisCacheMiddleware = (ttl: number = 60) => {
             const originalSend = res.send;
 
             // Override send to cache the response
-            res.send = function (data): Response {
+            res.send = function (data: unknown): Response {
                 // Cache the response
                 if (res.statusCode === 200 && data) {
                     const cacheData =
                         typeof data === 'string' ? data : JSON.stringify(data);
                     const dataSize = Buffer.byteLength(cacheData, 'utf8');
-                    redis.setex(cacheKey, ttl, cacheData).catch((err) => {
-                        console.error(`Failed to cache response in Redis.`, {
-                            cacheKey,
-                            ttl,
-                            dataSize,
-                            error: err,
+                    redis
+                        .setex(cacheKey, ttl, cacheData)
+                        .catch((err: unknown) => {
+                            console.error(
+                                `Failed to cache response in Redis.`,
+                                {
+                                    cacheKey,
+                                    ttl,
+                                    dataSize,
+                                    error: err,
+                                }
+                            );
                         });
-                    });
                 }
 
                 res.setHeader('X-Cache', 'MISS');
@@ -189,7 +194,7 @@ export const staleWhileRevalidate = (
             const originalSend = res.send;
 
             // Override send to cache the response
-            res.send = function (data): Response {
+            res.send = function (data: unknown): Response {
                 if (res.statusCode === 200 && data) {
                     const dataStr =
                         typeof data === 'string' ? data : JSON.stringify(data);
@@ -200,7 +205,7 @@ export const staleWhileRevalidate = (
                             staleTime,
                             Date.now().toString()
                         ),
-                    ]).catch((err) =>
+                    ]).catch((err: unknown) =>
                         console.error('Failed to cache response:', err)
                     );
                 }

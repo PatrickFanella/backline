@@ -50,10 +50,10 @@ async function getLurkerFlagsUncached(guildId: string, since?: Date) {
         ELSE 0
       END as lurker_score
     FROM (
-      SELECT "userId", "username", COUNT(*) as presence_count
+      SELECT "userId", (array_agg("username" ORDER BY "createdAt" DESC))[1] as username, COUNT(*) as presence_count
       FROM "PresenceEvent"
       WHERE "guildId" = ${guildId} AND "createdAt" >= ${sinceDate}::timestamptz
-      GROUP BY "userId", "username"
+      GROUP BY "userId"
     ) p
     LEFT JOIN (
       SELECT "userId", COUNT(*) as activity_count
@@ -68,6 +68,7 @@ async function getLurkerFlagsUncached(guildId: string, since?: Date) {
     ) a ON p."userId" = a."userId"
     WHERE COALESCE(a.activity_count, 0) = 0
     ORDER BY p.presence_count DESC
+    LIMIT 100
   `;
 
     return result.map((r) => ({

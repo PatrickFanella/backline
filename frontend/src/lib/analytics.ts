@@ -13,9 +13,10 @@ export const AnalyticsEventType = {
     ERROR: 'ERROR',
     SEARCH: 'SEARCH',
     EXPORT: 'EXPORT',
-}
+};
 
-export type AnalyticsEventType = (typeof AnalyticsEventType)[keyof typeof AnalyticsEventType];
+export type AnalyticsEventType =
+    (typeof AnalyticsEventType)[keyof typeof AnalyticsEventType];
 
 interface TrackEventOptions {
     eventType: AnalyticsEventType;
@@ -23,6 +24,37 @@ interface TrackEventOptions {
     properties?: Record<string, unknown>;
     pathname?: string;
     referrer?: string;
+}
+
+export interface AnalyticsDashboardData {
+    activity: {
+        totalEvents: number;
+        uniqueUsers: number;
+        consentedUsers: number;
+        topEvents: Array<{ eventName: string; count: number }>;
+    };
+    features: Array<{
+        featureName: string;
+        totalUsage: number;
+        uniqueUsers: number;
+    }>;
+    performance: {
+        average: number;
+        min: number;
+        max: number;
+        count: number;
+    };
+    summary: Array<{
+        summaryDate: Date;
+        metric: string;
+        value: number;
+    }>;
+}
+
+export interface AnalyticsDashboardResponse {
+    success: boolean;
+    data: AnalyticsDashboardData;
+    generatedAt: Date;
 }
 
 /**
@@ -38,7 +70,7 @@ export function hasAnalyticsConsent(): boolean {
  */
 export function setAnalyticsConsent(granted: boolean): void {
     localStorage.setItem('analyticsConsent', granted ? 'true' : 'false');
-    
+
     // Set cookie for backend
     document.cookie = `analyticsConsent=${granted}; path=/; max-age=${365 * 24 * 60 * 60}; SameSite=Lax`;
 }
@@ -92,7 +124,10 @@ export function trackPageView(pathname?: string): void {
 /**
  * Track a button click
  */
-export function trackButtonClick(buttonName: string, properties?: Record<string, unknown>): void {
+export function trackButtonClick(
+    buttonName: string,
+    properties?: Record<string, unknown>
+): void {
     trackEvent({
         eventType: AnalyticsEventType.BUTTON_CLICK,
         eventName: `button_click_${buttonName}`,
@@ -103,7 +138,10 @@ export function trackButtonClick(buttonName: string, properties?: Record<string,
 /**
  * Track feature usage
  */
-export function trackFeatureUsage(featureName: string, properties?: Record<string, unknown>): void {
+export function trackFeatureUsage(
+    featureName: string,
+    properties?: Record<string, unknown>
+): void {
     trackEvent({
         eventType: AnalyticsEventType.FEATURE_USED,
         eventName: featureName,
@@ -114,7 +152,10 @@ export function trackFeatureUsage(featureName: string, properties?: Record<strin
 /**
  * Track form submission
  */
-export function trackFormSubmit(formName: string, properties?: Record<string, unknown>): void {
+export function trackFormSubmit(
+    formName: string,
+    properties?: Record<string, unknown>
+): void {
     trackEvent({
         eventType: AnalyticsEventType.FORM_SUBMIT,
         eventName: `form_submit_${formName}`,
@@ -125,7 +166,10 @@ export function trackFormSubmit(formName: string, properties?: Record<string, un
 /**
  * Track an error
  */
-export function trackError(errorName: string, properties?: Record<string, unknown>): void {
+export function trackError(
+    errorName: string,
+    properties?: Record<string, unknown>
+): void {
     trackEvent({
         eventType: AnalyticsEventType.ERROR,
         eventName: errorName,
@@ -168,7 +212,7 @@ export async function getAnalyticsSummary(
     startDate?: Date,
     endDate?: Date,
     metric?: string
-): Promise<any> {
+): Promise<unknown> {
     const params = new URLSearchParams();
     if (startDate) params.append('startDate', startDate.toISOString());
     if (endDate) params.append('endDate', endDate.toISOString());
@@ -184,7 +228,7 @@ export async function getAnalyticsSummary(
 export async function getFeatureUsageStats(
     startDate?: Date,
     endDate?: Date
-): Promise<any> {
+): Promise<unknown> {
     const params = new URLSearchParams();
     if (startDate) params.append('startDate', startDate.toISOString());
     if (endDate) params.append('endDate', endDate.toISOString());
@@ -199,7 +243,7 @@ export async function getFeatureUsageStats(
 export async function getUserActivityMetrics(
     startDate?: Date,
     endDate?: Date
-): Promise<any> {
+): Promise<unknown> {
     const params = new URLSearchParams();
     if (startDate) params.append('startDate', startDate.toISOString());
     if (endDate) params.append('endDate', endDate.toISOString());
@@ -215,7 +259,7 @@ export async function getPerformanceMetrics(
     metricType?: string,
     startDate?: Date,
     endDate?: Date
-): Promise<any> {
+): Promise<unknown> {
     const params = new URLSearchParams();
     if (metricType) params.append('type', metricType);
     if (startDate) params.append('startDate', startDate.toISOString());
@@ -228,7 +272,8 @@ export async function getPerformanceMetrics(
 /**
  * Fetch complete dashboard data
  */
-export async function getDashboardData(): Promise<any> {
-    const response = await api.get('/metrics/dashboard');
+export async function getDashboardData(): Promise<AnalyticsDashboardResponse> {
+    const response =
+        await api.get<AnalyticsDashboardResponse>('/metrics/dashboard');
     return response.data;
 }

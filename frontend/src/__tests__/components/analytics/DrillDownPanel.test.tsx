@@ -1,8 +1,10 @@
 import { render, screen } from '@testing-library/react';
-import { describe, it, expect, vi } from 'vitest';
 import userEvent from '@testing-library/user-event';
+import { describe, it, expect, vi } from 'vitest';
 
-import DrillDownPanel, { type DrillDownData } from '../../../components/analytics/DrillDownPanel';
+import DrillDownPanel, {
+    type DrillDownData,
+} from '../../../components/analytics/DrillDownPanel';
 import { ThemeProvider } from '../../../contexts/ThemeContext';
 
 const renderWithTheme = (component: React.ReactElement) => {
@@ -32,7 +34,7 @@ describe('DrillDownPanel', () => {
         };
 
         renderWithTheme(<DrillDownPanel data={mockData} onClose={() => {}} />);
-        
+
         expect(screen.getByText('TestUser')).toBeInTheDocument();
         expect(screen.getByText('User Details')).toBeInTheDocument();
         expect(screen.getByText('75')).toBeInTheDocument(); // Suspicion Score
@@ -51,7 +53,7 @@ describe('DrillDownPanel', () => {
         };
 
         renderWithTheme(<DrillDownPanel data={mockData} onClose={() => {}} />);
-        
+
         expect(screen.getByText('general')).toBeInTheDocument();
         expect(screen.getByText('Channel Details')).toBeInTheDocument();
         expect(screen.getByText('500')).toBeInTheDocument(); // Message count
@@ -60,7 +62,7 @@ describe('DrillDownPanel', () => {
     it('should call onClose when close button is clicked', async () => {
         const user = userEvent.setup();
         const onCloseMock = vi.fn();
-        
+
         const mockData: DrillDownData = {
             type: 'user',
             id: 'user123',
@@ -70,11 +72,13 @@ describe('DrillDownPanel', () => {
             },
         };
 
-        renderWithTheme(<DrillDownPanel data={mockData} onClose={onCloseMock} />);
-        
+        renderWithTheme(
+            <DrillDownPanel data={mockData} onClose={onCloseMock} />
+        );
+
         const closeButton = screen.getByRole('button');
         await user.click(closeButton);
-        
+
         expect(onCloseMock).toHaveBeenCalledTimes(1);
     });
 
@@ -90,8 +94,10 @@ describe('DrillDownPanel', () => {
         };
 
         renderWithTheme(<DrillDownPanel data={mockData} onClose={() => {}} />);
-        
-        expect(screen.getByText('No recent activity available')).toBeInTheDocument();
+
+        expect(
+            screen.getByText('No recent activity available')
+        ).toBeInTheDocument();
     });
 
     it('should display recent activity when provided', () => {
@@ -103,12 +109,16 @@ describe('DrillDownPanel', () => {
                 suspicionScore: 60,
                 recentActivity: [
                     {
-                        timestamp: new Date('2025-01-01T12:00:00Z').toISOString(),
+                        timestamp: new Date(
+                            '2025-01-01T12:00:00Z'
+                        ).toISOString(),
                         action: 'Sent message',
                         channel: 'general',
                     },
                     {
-                        timestamp: new Date('2025-01-01T11:00:00Z').toISOString(),
+                        timestamp: new Date(
+                            '2025-01-01T11:00:00Z'
+                        ).toISOString(),
                         action: 'Joined voice channel',
                     },
                 ],
@@ -116,7 +126,7 @@ describe('DrillDownPanel', () => {
         };
 
         renderWithTheme(<DrillDownPanel data={mockData} onClose={() => {}} />);
-        
+
         expect(screen.getByText('Recent Activity')).toBeInTheDocument();
         expect(screen.getByText('Sent message')).toBeInTheDocument();
         expect(screen.getByText('Joined voice channel')).toBeInTheDocument();

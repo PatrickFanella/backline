@@ -101,7 +101,7 @@ router.get('/usage', requireAuth, async (req: Request, res: Response) => {
  *                 ENTERPRISE:
  *                   type: object
  */
-router.get('/limits', async (_req: Request, res: Response) => {
+router.get('/limits', (_req: Request, res: Response) => {
     try {
         const tiers: SubscriptionTier[] = ['FREE', 'PRO', 'ENTERPRISE'];
         const limits: Record<string, { quotas: unknown; rateLimits: unknown }> =

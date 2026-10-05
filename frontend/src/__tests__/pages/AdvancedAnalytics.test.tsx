@@ -2,9 +2,9 @@ import { render, screen, waitFor } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-import AdvancedAnalytics from '../../pages/AdvancedAnalytics';
 import { ThemeProvider } from '../../contexts/ThemeContext';
 import api from '../../lib/api';
+import AdvancedAnalytics from '../../pages/AdvancedAnalytics';
 
 vi.mock('../../lib/api');
 vi.mock('../../hooks/useAnalytics', () => ({
@@ -16,9 +16,7 @@ vi.mock('../../hooks/useAnalytics', () => ({
 const renderWithProviders = (component: React.ReactElement) => {
     return render(
         <BrowserRouter>
-            <ThemeProvider>
-                {component}
-            </ThemeProvider>
+            <ThemeProvider>{component}</ThemeProvider>
         </BrowserRouter>
     );
 };
@@ -31,14 +29,16 @@ describe('AdvancedAnalytics Page', () => {
 
     it('should render page title', async () => {
         renderWithProviders(<AdvancedAnalytics />);
-        
+
         expect(screen.getByText('Advanced Analytics')).toBeInTheDocument();
-        expect(screen.getByText('Interactive visualizations and deep insights')).toBeInTheDocument();
+        expect(
+            screen.getByText('Interactive visualizations and deep insights')
+        ).toBeInTheDocument();
     });
 
     it('should render view toggle buttons', async () => {
         renderWithProviders(<AdvancedAnalytics />);
-        
+
         expect(screen.getByText('Network Graph')).toBeInTheDocument();
         expect(screen.getByText('Sankey Flow')).toBeInTheDocument();
         expect(screen.getByText('Chord Diagram')).toBeInTheDocument();
@@ -46,16 +46,22 @@ describe('AdvancedAnalytics Page', () => {
 
     it('should fetch data on mount', async () => {
         renderWithProviders(<AdvancedAnalytics />);
-        
+
         await waitFor(() => {
-            expect(api.get).toHaveBeenCalledWith('/heatmap', expect.any(Object));
-            expect(api.get).toHaveBeenCalledWith('/suspicion', expect.any(Object));
+            expect(api.get).toHaveBeenCalledWith(
+                '/heatmap',
+                expect.any(Object)
+            );
+            expect(api.get).toHaveBeenCalledWith(
+                '/suspicion',
+                expect.any(Object)
+            );
         });
     });
 
     it('should display stats cards', async () => {
         renderWithProviders(<AdvancedAnalytics />);
-        
+
         await waitFor(() => {
             expect(screen.getByText('Total Users')).toBeInTheDocument();
             expect(screen.getByText('Total Channels')).toBeInTheDocument();

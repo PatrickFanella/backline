@@ -28,14 +28,20 @@ const defaultFilters: FilterConfig = {
     minInteractions: 0,
 };
 
-function InteractiveFilter({ onFilterChange, initialFilters = {} }: InteractiveFilterProps) {
+function InteractiveFilter({
+    onFilterChange,
+    initialFilters = {},
+}: InteractiveFilterProps) {
     const [isOpen, setIsOpen] = useState(false);
     const [filters, setFilters] = useState<FilterConfig>({
         ...defaultFilters,
         ...initialFilters,
     });
 
-    const handleFilterChange = (key: keyof FilterConfig, value: string | number) => {
+    const handleFilterChange = (
+        key: keyof FilterConfig,
+        value: string | number
+    ) => {
         const newFilters = { ...filters, [key]: value };
         setFilters(newFilters);
         onFilterChange(newFilters);
@@ -46,15 +52,21 @@ function InteractiveFilter({ onFilterChange, initialFilters = {} }: InteractiveF
         onFilterChange(defaultFilters);
     };
 
-    const activeFiltersCount = Object.entries(filters).filter(([key, value]) => {
-        if (key === 'suspicionMin' || key === 'ghostMin' || key === 'minInteractions') {
-            return value > 0;
+    const activeFiltersCount = Object.entries(filters).filter(
+        ([key, value]) => {
+            if (
+                key === 'suspicionMin' ||
+                key === 'ghostMin' ||
+                key === 'minInteractions'
+            ) {
+                return value > 0;
+            }
+            if (key === 'suspicionMax' || key === 'ghostMax') {
+                return value < 100;
+            }
+            return value !== '';
         }
-        if (key === 'suspicionMax' || key === 'ghostMax') {
-            return value < 100;
-        }
-        return value !== '';
-    }).length;
+    ).length;
 
     return (
         <div className="relative">
@@ -76,8 +88,12 @@ function InteractiveFilter({ onFilterChange, initialFilters = {} }: InteractiveF
             {isOpen && (
                 <div className="absolute top-full mt-2 right-0 z-50 w-96 bg-ctp-surface0 border border-ctp-surface1 rounded-lg shadow-lg p-4">
                     <div className="flex justify-between items-center mb-4">
-                        <h3 className="text-lg font-semibold text-ctp-text">Filter Options</h3>
+                        <h3 className="text-lg font-semibold text-ctp-text">
+                            Filter Options
+                        </h3>
                         <button
+                            type="button"
+                            aria-label="Close filters"
                             onClick={() => setIsOpen(false)}
                             className="text-ctp-subtext0 hover:text-ctp-text"
                         >
@@ -87,80 +103,122 @@ function InteractiveFilter({ onFilterChange, initialFilters = {} }: InteractiveF
 
                     <div className="space-y-4">
                         {/* Suspicion Score Range */}
-                        <div>
-                            <label className="block text-sm font-medium text-ctp-text mb-2">
+                        <fieldset>
+                            <legend className="block text-sm font-medium text-ctp-text mb-2">
                                 Suspicion Score Range
-                            </label>
+                            </legend>
                             <div className="flex items-center gap-2">
                                 <input
+                                    aria-label="Minimum suspicion score"
                                     type="number"
                                     min="0"
                                     max="100"
                                     value={filters.suspicionMin}
-                                    onChange={(e) => handleFilterChange('suspicionMin', parseInt(e.target.value) || 0)}
+                                    onChange={(e) =>
+                                        handleFilterChange(
+                                            'suspicionMin',
+                                            parseInt(e.target.value) || 0
+                                        )
+                                    }
                                     className="w-20 px-2 py-1 bg-ctp-surface1 text-ctp-text rounded border border-ctp-surface2 focus:border-ctp-blue focus:outline-none"
                                 />
                                 <span className="text-ctp-subtext0">to</span>
                                 <input
+                                    aria-label="Maximum suspicion score"
                                     type="number"
                                     min="0"
                                     max="100"
                                     value={filters.suspicionMax}
-                                    onChange={(e) => handleFilterChange('suspicionMax', parseInt(e.target.value) || 100)}
+                                    onChange={(e) =>
+                                        handleFilterChange(
+                                            'suspicionMax',
+                                            parseInt(e.target.value) || 100
+                                        )
+                                    }
                                     className="w-20 px-2 py-1 bg-ctp-surface1 text-ctp-text rounded border border-ctp-surface2 focus:border-ctp-blue focus:outline-none"
                                 />
                             </div>
-                        </div>
+                        </fieldset>
 
                         {/* Ghost Score Range */}
-                        <div>
-                            <label className="block text-sm font-medium text-ctp-text mb-2">
+                        <fieldset>
+                            <legend className="block text-sm font-medium text-ctp-text mb-2">
                                 Ghost Score Range
-                            </label>
+                            </legend>
                             <div className="flex items-center gap-2">
                                 <input
+                                    aria-label="Minimum ghost score"
                                     type="number"
                                     min="0"
                                     max="100"
                                     value={filters.ghostMin}
-                                    onChange={(e) => handleFilterChange('ghostMin', parseInt(e.target.value) || 0)}
+                                    onChange={(e) =>
+                                        handleFilterChange(
+                                            'ghostMin',
+                                            parseInt(e.target.value) || 0
+                                        )
+                                    }
                                     className="w-20 px-2 py-1 bg-ctp-surface1 text-ctp-text rounded border border-ctp-surface2 focus:border-ctp-blue focus:outline-none"
                                 />
                                 <span className="text-ctp-subtext0">to</span>
                                 <input
+                                    aria-label="Maximum ghost score"
                                     type="number"
                                     min="0"
                                     max="100"
                                     value={filters.ghostMax}
-                                    onChange={(e) => handleFilterChange('ghostMax', parseInt(e.target.value) || 100)}
+                                    onChange={(e) =>
+                                        handleFilterChange(
+                                            'ghostMax',
+                                            parseInt(e.target.value) || 100
+                                        )
+                                    }
                                     className="w-20 px-2 py-1 bg-ctp-surface1 text-ctp-text rounded border border-ctp-surface2 focus:border-ctp-blue focus:outline-none"
                                 />
                             </div>
-                        </div>
+                        </fieldset>
 
                         {/* Minimum Interactions */}
                         <div>
-                            <label className="block text-sm font-medium text-ctp-text mb-2">
+                            <label
+                                htmlFor="minimum-interactions"
+                                className="block text-sm font-medium text-ctp-text mb-2"
+                            >
                                 Minimum Interactions
                             </label>
                             <input
+                                id="minimum-interactions"
                                 type="number"
                                 min="0"
                                 value={filters.minInteractions}
-                                onChange={(e) => handleFilterChange('minInteractions', parseInt(e.target.value) || 0)}
+                                onChange={(e) =>
+                                    handleFilterChange(
+                                        'minInteractions',
+                                        parseInt(e.target.value) || 0
+                                    )
+                                }
                                 className="w-full px-3 py-2 bg-ctp-surface1 text-ctp-text rounded border border-ctp-surface2 focus:border-ctp-blue focus:outline-none"
                             />
                         </div>
 
                         {/* User Search */}
                         <div>
-                            <label className="block text-sm font-medium text-ctp-text mb-2">
+                            <label
+                                htmlFor="user-search"
+                                className="block text-sm font-medium text-ctp-text mb-2"
+                            >
                                 Search Users
                             </label>
                             <input
+                                id="user-search"
                                 type="text"
                                 value={filters.userSearch}
-                                onChange={(e) => handleFilterChange('userSearch', e.target.value)}
+                                onChange={(e) =>
+                                    handleFilterChange(
+                                        'userSearch',
+                                        e.target.value
+                                    )
+                                }
                                 placeholder="Enter username..."
                                 className="w-full px-3 py-2 bg-ctp-surface1 text-ctp-text rounded border border-ctp-surface2 focus:border-ctp-blue focus:outline-none"
                             />
@@ -168,13 +226,22 @@ function InteractiveFilter({ onFilterChange, initialFilters = {} }: InteractiveF
 
                         {/* Channel Search */}
                         <div>
-                            <label className="block text-sm font-medium text-ctp-text mb-2">
+                            <label
+                                htmlFor="channel-search"
+                                className="block text-sm font-medium text-ctp-text mb-2"
+                            >
                                 Search Channels
                             </label>
                             <input
+                                id="channel-search"
                                 type="text"
                                 value={filters.channelSearch}
-                                onChange={(e) => handleFilterChange('channelSearch', e.target.value)}
+                                onChange={(e) =>
+                                    handleFilterChange(
+                                        'channelSearch',
+                                        e.target.value
+                                    )
+                                }
                                 placeholder="Enter channel name..."
                                 className="w-full px-3 py-2 bg-ctp-surface1 text-ctp-text rounded border border-ctp-surface2 focus:border-ctp-blue focus:outline-none"
                             />

@@ -1,271 +1,66 @@
 import { getLurkerFlags } from '../../../src/analytics/lurkers';
 import { db } from '../../../src/db';
+import { cache } from '../../../src/services/cache';
 
-jest.mock('../../../src/db', () => ({
-    db: {
-        presenceEvent: {
-            findMany: jest.fn(),
-        },
-        typingEvent: {
-            findMany: jest.fn(),
-        },
-        messageEvent: {
-            findMany: jest.fn(),
-        },
+jest.mock('../../../src/db', () => ({ db: { $queryRaw: jest.fn() } }));
+jest.mock('../../../src/services/cache', () => ({
+    cache: {
+        remember: jest.fn(
+            (_key: string, _ttl: number, load: () => Promise<unknown>) => load()
+        ),
     },
 }));
-
-describe('Analytics - Lurker Flags', () => {
-    beforeEach(() => {
-        jest.clearAllMocks();
+describe('getLurkerFlags SQL boundary', () => {
+    beforeEach(() => jest.clearAllMocks());
+    it('serializes PostgreSQL bigint counts for the API', async () => {
+        (db.$queryRaw as jest.Mock).mockResolvedValue([
+            {
+                userId: 'u1',
+                username: 'User',
+                presence_count: BigInt(5),
+                activity_count: BigInt(0),
+                lurker_score: 1,
+            },
+        ]);
+        const result = await getLurkerFlags('guild-one');
+        expect(result).toEqual([
+            {
+                userId: 'u1',
+                username: 'User',
+                presenceCount: 5,
+                lurkerScore: 1,
+            },
+        ]);
+        expect(() => JSON.stringify(result)).not.toThrow();
     });
-
-    describe('getLurkerFlags', () => {
-        it('should identify lurkers with presence but no activity', async () => {
-            const mockPresence = [
-                {
-                    userId: 'lurker1',
-                    username: 'Lurker One',
-                    createdAt: new Date(),
-                },
-                {
-                    userId: 'lurker1',
-                    username: 'Lurker One',
-                    createdAt: new Date(),
-                },
-                {
-                    userId: 'lurker1',
-                    username: 'Lurker One',
-                    createdAt: new Date(),
-                },
-                {
-                    userId: 'lurker1',
-                    username: 'Lurker One',
-                    createdAt: new Date(),
-                },
-                {
-                    userId: 'lurker1',
-                    username: 'Lurker One',
-                    createdAt: new Date(),
-                },
-                {
-                    userId: 'active1',
-                    username: 'Active User',
-                    createdAt: new Date(),
-                },
-            ];
-
-            const mockTyping = [
-                {
-                    userId: 'active1',
-                    username: 'Active User',
-                    guildId: 'guild1',
-                    createdAt: new Date(),
-                },
-            ];
-
-            const mockMessages = [
-                { userId: 'active1', guildId: 'guild1', createdAt: new Date() },
-            ];
-
-            (db.presenceEvent.findMany as jest.Mock).mockResolvedValue(
-                mockPresence
-            );
-            (db.typingEvent.findMany as jest.Mock).mockResolvedValue(
-                mockTyping
-            );
-            (db.messageEvent.findMany as jest.Mock).mockResolvedValue(
-                mockMessages
-            );
-
-            const result = await getLurkerFlags('guild1');
-
-            expect(result).toHaveLength(1);
-            expect(result[0].userId).toBe('lurker1');
-            expect(result[0].username).toBe('Lurker One');
-            expect(result[0].lurkerScore).toBe(1); // >= 5 presence events
-            expect(result[0].presenceCount).toBe(5);
-        });
-
-        it('should not flag users with less than 5 presence events', async () => {
-            const mockPresence = [
-                {
-                    userId: 'user1',
-                    username: 'User One',
-                    createdAt: new Date(),
-                },
-                {
-                    userId: 'user1',
-                    username: 'User One',
-                    createdAt: new Date(),
-                },
-            ];
-
-            const mockTyping: any[] = [];
-            const mockMessages: any[] = [];
-
-            (db.presenceEvent.findMany as jest.Mock).mockResolvedValue(
-                mockPresence
-            );
-            (db.typingEvent.findMany as jest.Mock).mockResolvedValue(
-                mockTyping
-            );
-            (db.messageEvent.findMany as jest.Mock).mockResolvedValue(
-                mockMessages
-            );
-
-            const result = await getLurkerFlags('guild1');
-
-            expect(result).toHaveLength(1);
-            expect(result[0].lurkerScore).toBe(0); // < 5 presence events
-        });
-
-        it('should exclude active users from lurker list', async () => {
-            const mockPresence = [
-                {
-                    userId: 'active1',
-                    username: 'Active',
-                    createdAt: new Date(),
-                },
-                {
-                    userId: 'active1',
-                    username: 'Active',
-                    createdAt: new Date(),
-                },
-                {
-                    userId: 'active1',
-                    username: 'Active',
-                    createdAt: new Date(),
-                },
-                {
-                    userId: 'active1',
-                    username: 'Active',
-                    createdAt: new Date(),
-                },
-                {
-                    userId: 'active1',
-                    username: 'Active',
-                    createdAt: new Date(),
-                },
-                {
-                    userId: 'active1',
-                    username: 'Active',
-                    createdAt: new Date(),
-                },
-            ];
-
-            const mockTyping = [
-                {
-                    userId: 'active1',
-                    username: 'Active',
-                    guildId: 'guild1',
-                    createdAt: new Date(),
-                },
-            ];
-
-            const mockMessages: any[] = [];
-
-            (db.presenceEvent.findMany as jest.Mock).mockResolvedValue(
-                mockPresence
-            );
-            (db.typingEvent.findMany as jest.Mock).mockResolvedValue(
-                mockTyping
-            );
-            (db.messageEvent.findMany as jest.Mock).mockResolvedValue(
-                mockMessages
-            );
-
-            const result = await getLurkerFlags('guild1');
-
-            expect(result).toHaveLength(0); // Active in typing
-        });
-
-        it('should filter by date when provided', async () => {
-            const since = new Date('2024-01-01');
-
-            (db.presenceEvent.findMany as jest.Mock).mockResolvedValue([]);
-            (db.typingEvent.findMany as jest.Mock).mockResolvedValue([]);
-            (db.messageEvent.findMany as jest.Mock).mockResolvedValue([]);
-
-            await getLurkerFlags('guild1', since);
-
-            expect(db.presenceEvent.findMany).toHaveBeenCalledWith({
-                where: {
-                    createdAt: { gte: since },
-                },
-            });
-
-            expect(db.typingEvent.findMany).toHaveBeenCalledWith({
-                where: {
-                    guildId: 'guild1',
-                    createdAt: { gte: since },
-                },
-            });
-        });
-
-        it('should return empty array when no lurkers', async () => {
-            (db.presenceEvent.findMany as jest.Mock).mockResolvedValue([]);
-            (db.typingEvent.findMany as jest.Mock).mockResolvedValue([]);
-            (db.messageEvent.findMany as jest.Mock).mockResolvedValue([]);
-
-            const result = await getLurkerFlags('guild1');
-
-            expect(result).toEqual([]);
-        });
-
-        it('should aggregate presence count per user', async () => {
-            const mockPresence = [
-                { userId: 'user1', username: 'User', createdAt: new Date() },
-                { userId: 'user1', username: 'User', createdAt: new Date() },
-                { userId: 'user1', username: 'User', createdAt: new Date() },
-                {
-                    userId: 'user2',
-                    username: 'User Two',
-                    createdAt: new Date(),
-                },
-                {
-                    userId: 'user2',
-                    username: 'User Two',
-                    createdAt: new Date(),
-                },
-                {
-                    userId: 'user2',
-                    username: 'User Two',
-                    createdAt: new Date(),
-                },
-                {
-                    userId: 'user2',
-                    username: 'User Two',
-                    createdAt: new Date(),
-                },
-                {
-                    userId: 'user2',
-                    username: 'User Two',
-                    createdAt: new Date(),
-                },
-                {
-                    userId: 'user2',
-                    username: 'User Two',
-                    createdAt: new Date(),
-                },
-            ];
-
-            (db.presenceEvent.findMany as jest.Mock).mockResolvedValue(
-                mockPresence
-            );
-            (db.typingEvent.findMany as jest.Mock).mockResolvedValue([]);
-            (db.messageEvent.findMany as jest.Mock).mockResolvedValue([]);
-
-            const result = await getLurkerFlags('guild1');
-
-            expect(result).toHaveLength(2);
-
-            const user1 = result.find((u) => u.userId === 'user1');
-            const user2 = result.find((u) => u.userId === 'user2');
-
-            expect(user1?.presenceCount).toBe(3);
-            expect(user2?.presenceCount).toBe(6);
-            expect(user2?.lurkerScore).toBe(1); // >= 5
-        });
+    it('binds guild and cutoff values instead of interpolating SQL text', async () => {
+        (db.$queryRaw as jest.Mock).mockResolvedValue([]);
+        const since = new Date('2025-01-01');
+        await getLurkerFlags("guild'quoted", since);
+        const [sql, ...values] = (db.$queryRaw as jest.Mock).mock.calls[0] as [
+            TemplateStringsArray,
+            ...unknown[],
+        ];
+        expect(sql.join('')).not.toContain("guild'quoted");
+        expect(values.filter((v) => v === "guild'quoted")).toHaveLength(3);
+        expect(values.filter((v) => v === since)).toHaveLength(3);
+        expect(cache.remember).toHaveBeenCalledWith(
+            `analytics:lurkers:guild'quoted:${since.getTime()}`,
+            300,
+            expect.any(Function),
+            { tags: ["guild:guild'quoted", 'analytics:lurkers'] }
+        );
+    });
+    it('returns an empty result for an empty server', async () => {
+        (db.$queryRaw as jest.Mock).mockResolvedValue([]);
+        expect(await getLurkerFlags('empty')).toEqual([]);
+    });
+    it('propagates database failure', async () => {
+        (db.$queryRaw as jest.Mock).mockRejectedValue(
+            new Error('database unavailable')
+        );
+        await expect(getLurkerFlags('guild')).rejects.toThrow(
+            'database unavailable'
+        );
     });
 });

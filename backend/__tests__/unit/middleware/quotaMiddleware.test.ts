@@ -1,7 +1,10 @@
 import { SubscriptionTier } from '@prisma/client';
 import { Request, Response, NextFunction } from 'express';
 
-import { quotaEnforcement, quotaHeaders } from '../../../src/middleware/quotaMiddleware';
+import {
+    quotaEnforcement,
+    quotaHeaders,
+} from '../../../src/middleware/quotaMiddleware';
 
 // Mock database
 jest.mock('../../../src/db', () => ({
@@ -31,11 +34,11 @@ describe('Quota Middleware', () => {
     let mockReq: Partial<Request>;
     let mockRes: Partial<Response>;
     let mockNext: NextFunction;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     let mockDb: any;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     let mockCheckQuota: any;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     let mockCheckAndIncrementQuota: any;
 
     beforeEach(() => {
@@ -91,8 +94,14 @@ describe('Quota Middleware', () => {
             const middleware = quotaEnforcement();
             await middleware(mockReq as Request, mockRes as Response, mockNext);
 
-            expect(mockRes.setHeader).toHaveBeenCalledWith('X-Quota-Limit', 100);
-            expect(mockRes.setHeader).toHaveBeenCalledWith('X-Quota-Remaining', 50);
+            expect(mockRes.setHeader).toHaveBeenCalledWith(
+                'X-Quota-Limit',
+                100
+            );
+            expect(mockRes.setHeader).toHaveBeenCalledWith(
+                'X-Quota-Remaining',
+                50
+            );
             expect(mockNext).toHaveBeenCalled();
         });
 
@@ -127,7 +136,9 @@ describe('Quota Middleware', () => {
             await middleware(mockReq as Request, mockRes as Response, mockNext);
 
             expect(mockRes.status).toHaveBeenCalledWith(403);
-            expect(mockRes.json).toHaveBeenCalledWith({ error: 'User not found' });
+            expect(mockRes.json).toHaveBeenCalledWith({
+                error: 'User not found',
+            });
             expect(mockNext).not.toHaveBeenCalled();
         });
 
@@ -136,7 +147,9 @@ describe('Quota Middleware', () => {
                 subscriptionTier: SubscriptionTier.FREE,
             });
 
-            mockCheckAndIncrementQuota.mockRejectedValue(new Error('Redis error'));
+            mockCheckAndIncrementQuota.mockRejectedValue(
+                new Error('Redis error')
+            );
 
             const middleware = quotaEnforcement();
             await middleware(mockReq as Request, mockRes as Response, mockNext);
@@ -161,8 +174,14 @@ describe('Quota Middleware', () => {
             const middleware = quotaHeaders();
             await middleware(mockReq as Request, mockRes as Response, mockNext);
 
-            expect(mockRes.setHeader).toHaveBeenCalledWith('X-Quota-Limit', 1000);
-            expect(mockRes.setHeader).toHaveBeenCalledWith('X-Quota-Remaining', 500);
+            expect(mockRes.setHeader).toHaveBeenCalledWith(
+                'X-Quota-Limit',
+                1000
+            );
+            expect(mockRes.setHeader).toHaveBeenCalledWith(
+                'X-Quota-Remaining',
+                500
+            );
             expect(mockNext).toHaveBeenCalled();
         });
 
@@ -177,7 +196,9 @@ describe('Quota Middleware', () => {
         });
 
         it('should not fail on error', async () => {
-            mockDb.user.findUnique.mockRejectedValue(new Error('Database error'));
+            mockDb.user.findUnique.mockRejectedValue(
+                new Error('Database error')
+            );
 
             const middleware = quotaHeaders();
             await middleware(mockReq as Request, mockRes as Response, mockNext);

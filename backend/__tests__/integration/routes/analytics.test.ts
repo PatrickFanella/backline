@@ -21,7 +21,7 @@ jest.mock('../../../src/analytics', () => ({
 
 // Mock the middleware
 jest.mock('../../../src/middleware', () => ({
-    requireAuth: jest.fn((req, res, next) => next()),
+    requireAuthOrApiKey: jest.fn((req, res, next) => next()),
     validateGuild: jest.fn((req, res, next) => {
         req.guildId = 'test-guild-123';
         next();
@@ -84,7 +84,7 @@ describe('Integration - Analytics Routes', () => {
                 .expect(200);
 
             expect(getGhostScores).toHaveBeenCalledWith(
-                expect.any(String),
+                'test-guild-123',
                 expect.any(Date)
             );
         });

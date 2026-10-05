@@ -53,13 +53,21 @@ export default tseslint.config(
         },
     },
     // TypeScript files - with type checking
-    ...tseslint.configs.recommendedTypeChecked,
+    ...tseslint.configs.recommendedTypeChecked.map((config) => ({
+        ...config,
+        files: ['**/*.ts'],
+    })),
     {
         files: ['**/*.ts'],
         languageOptions: {
             parser: tseslint.parser,
             parserOptions: {
-                projectService: true,
+                projectService: {
+                    allowDefaultProject: [
+                        'scripts/benchmark-queries.ts',
+                        'scripts/validate-pagination.ts',
+                    ],
+                },
                 tsconfigRootDir: __dirname,
             },
         },

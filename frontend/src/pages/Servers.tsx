@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import AntiSpamConfig from '../components/AntiSpamConfig';
 import AudioClips from '../components/AudioClips';
 import AudioConfig from '../components/AudioConfig';
+import AudioQueue from '../components/AudioQueue';
 import BirthdaysConfig from '../components/BirthdaysConfig';
 import CommunityReportsConfig from '../components/CommunityReportsConfig';
 import CustomCommandsConfig from '../components/CustomCommandsConfig';
@@ -389,6 +390,17 @@ export default function Servers() {
                                                 )
                                                     setModules(response.data);
                                             }}
+                                        />
+                                    )}
+                                    {module.id === 'audio' && (
+                                        <AudioQueue
+                                            key={`${guildId}:audio-queue`}
+                                            guildId={guildId}
+                                            onBusy={(value) =>
+                                                setBusy(
+                                                    value ? module.id : null
+                                                )
+                                            }
                                         />
                                     )}
                                     {module.id === 'audio' && (

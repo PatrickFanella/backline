@@ -80,7 +80,7 @@ export function initSentry(_app: Express): void {
         },
 
         // Before breadcrumb hook for filtering and sanitization
-        beforeBreadcrumb(breadcrumb, hint) {
+        beforeBreadcrumb(breadcrumb) {
             // Filter out sensitive data from breadcrumbs
             if (breadcrumb.data) {
                 delete breadcrumb.data.authorization;

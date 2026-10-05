@@ -57,6 +57,7 @@ describe('Analytics - Channel Heatmap', () => {
 
             expect(db.typingEvent.groupBy).toHaveBeenCalledWith({
                 by: ['userId', 'username', 'channelId', 'channel'],
+                take: 500,
                 where: {
                     guildId: 'test-guild-id',
                     createdAt: { gte: since },

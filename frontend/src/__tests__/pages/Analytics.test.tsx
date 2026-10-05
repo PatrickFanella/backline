@@ -1,6 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { BrowserRouter } from 'react-router-dom';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 import { ThemeProvider } from '../../contexts/ThemeContext';
 import api from '../../lib/api';
@@ -28,7 +28,7 @@ const renderWithTheme = (component: React.ReactElement) => {
 describe('Analytics Page', () => {
     beforeEach(() => {
         vi.clearAllMocks();
-        
+
         // Mock API responses
         (api.get as ReturnType<typeof vi.fn>).mockResolvedValue({
             data: [],
@@ -37,25 +37,34 @@ describe('Analytics Page', () => {
 
     it('should render the analytics dashboard', async () => {
         renderWithTheme(<Analytics />);
-        
+
         expect(screen.getByText('Analytics Dashboard')).toBeInTheDocument();
     });
 
     it('should display loading state initially', () => {
         renderWithTheme(<Analytics />);
-        
+
         // The loading skeletons don't have text, so we just check the page renders
         expect(screen.getByText('Analytics Dashboard')).toBeInTheDocument();
     });
 
     it('should fetch analytics data on mount', async () => {
         renderWithTheme(<Analytics />);
-        
+
         await waitFor(() => {
-            expect(api.get).toHaveBeenCalledWith('/heatmap', expect.any(Object));
+            expect(api.get).toHaveBeenCalledWith(
+                '/heatmap',
+                expect.any(Object)
+            );
             expect(api.get).toHaveBeenCalledWith('/ghosts', expect.any(Object));
-            expect(api.get).toHaveBeenCalledWith('/suspicion', expect.any(Object));
-            expect(api.get).toHaveBeenCalledWith('/lurkers', expect.any(Object));
+            expect(api.get).toHaveBeenCalledWith(
+                '/suspicion',
+                expect.any(Object)
+            );
+            expect(api.get).toHaveBeenCalledWith(
+                '/lurkers',
+                expect.any(Object)
+            );
         });
     });
 
@@ -72,7 +81,7 @@ describe('Analytics Page', () => {
         });
 
         renderWithTheme(<Analytics />);
-        
+
         await waitFor(() => {
             expect(screen.getByText('Total Users')).toBeInTheDocument();
             expect(screen.getByText('Total Activity')).toBeInTheDocument();

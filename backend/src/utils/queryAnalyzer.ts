@@ -1,6 +1,6 @@
 /**
  * Query Analyzer Utility
- * 
+ *
  * Provides tools for analyzing query performance using EXPLAIN ANALYZE
  * and monitoring query execution plans.
  */
@@ -40,7 +40,9 @@ export function parseExplainOutput(output: string): QueryPlan {
         // Check for sequential scans (potential performance issue)
         if (line.includes('Seq Scan')) {
             hasSeqScan = true;
-            warnings.push('Sequential scan detected - consider adding an index');
+            warnings.push(
+                'Sequential scan detected - consider adding an index'
+            );
         }
 
         // Check for index scans (good)
@@ -61,11 +63,15 @@ export function parseExplainOutput(output: string): QueryPlan {
 
         // Check for expensive operations
         if (line.includes('Sort') && line.includes('Disk')) {
-            warnings.push('Sort operation spilling to disk - consider increasing work_mem');
+            warnings.push(
+                'Sort operation spilling to disk - consider increasing work_mem'
+            );
         }
 
         if (line.includes('Hash') && line.includes('Batches')) {
-            warnings.push('Hash join using multiple batches - consider increasing work_mem');
+            warnings.push(
+                'Hash join using multiple batches - consider increasing work_mem'
+            );
         }
     }
 
@@ -73,11 +79,15 @@ export function parseExplainOutput(output: string): QueryPlan {
 
     // Add performance warnings
     if (executionTime > 100) {
-        warnings.push(`Slow query: execution time ${executionTime.toFixed(2)}ms exceeds 100ms threshold`);
+        warnings.push(
+            `Slow query: execution time ${executionTime.toFixed(2)}ms exceeds 100ms threshold`
+        );
     }
 
     if (!hasIndexScan && hasSeqScan) {
-        warnings.push('Query uses sequential scans without index scans - review indexing strategy');
+        warnings.push(
+            'Query uses sequential scans without index scans - review indexing strategy'
+        );
     }
 
     return {
@@ -99,27 +109,39 @@ export function generateRecommendations(plan: QueryPlan): string[] {
     const recommendations: string[] = [];
 
     if (plan.hasSeqScan && !plan.hasIndexScan) {
-        recommendations.push('Add indexes on columns used in WHERE, JOIN, and ORDER BY clauses');
+        recommendations.push(
+            'Add indexes on columns used in WHERE, JOIN, and ORDER BY clauses'
+        );
     }
 
     if (plan.executionTime > 100) {
-        recommendations.push('Consider optimizing query logic or adding caching');
+        recommendations.push(
+            'Consider optimizing query logic or adding caching'
+        );
     }
 
     if (plan.executionTime > 50 && plan.executionTime <= 100) {
-        recommendations.push('Query performance is acceptable but could be improved');
+        recommendations.push(
+            'Query performance is acceptable but could be improved'
+        );
     }
 
     if (plan.planningTime > plan.executionTime) {
-        recommendations.push('Planning time is high - consider using prepared statements');
+        recommendations.push(
+            'Planning time is high - consider using prepared statements'
+        );
     }
 
-    if (plan.warnings.some(w => w.includes('work_mem'))) {
-        recommendations.push('Increase work_mem configuration parameter for this session or globally');
+    if (plan.warnings.some((w) => w.includes('work_mem'))) {
+        recommendations.push(
+            'Increase work_mem configuration parameter for this session or globally'
+        );
     }
 
     if (recommendations.length === 0 && plan.executionTime < 50) {
-        recommendations.push('Query performance is excellent - no optimization needed');
+        recommendations.push(
+            'Query performance is excellent - no optimization needed'
+        );
     }
 
     return recommendations;
@@ -131,27 +153,33 @@ export function generateRecommendations(plan: QueryPlan): string[] {
  */
 function validateSelectQuery(query: string): void {
     const trimmed = query.trim();
-    
+
     // Remove leading comments and whitespace
     const cleaned = trimmed
         .replace(/^\s*(\/\*[\s\S]*?\*\/\s*)*/g, '') // Remove leading block comments
         .replace(/^\s*(--.*\n\s*)*/g, '') // Remove leading line comments
         .trim();
-    
+
     // Must start with SELECT or WITH (for CTEs)
     if (!/^(SELECT|WITH)\b/i.test(cleaned)) {
-        throw new Error('Only SELECT or WITH (CTE) statements are allowed for analysis.');
+        throw new Error(
+            'Only SELECT or WITH (CTE) statements are allowed for analysis.'
+        );
     }
-    
+
     // Disallow semicolons (multiple statements), embedded comments, and dangerous keywords
     // Check for dangerous keywords outside of quoted strings
     const withoutStrings = cleaned.replace(/'[^']*'/g, ''); // Remove single-quoted strings
-    
+
     if (/;/.test(withoutStrings)) {
         throw new Error('Multiple statements are not allowed.');
     }
-    
-    if (/\b(INSERT|UPDATE|DELETE|DROP|ALTER|CREATE|TRUNCATE)\b/i.test(withoutStrings)) {
+
+    if (
+        /\b(INSERT|UPDATE|DELETE|DROP|ALTER|CREATE|TRUNCATE)\b/i.test(
+            withoutStrings
+        )
+    ) {
         throw new Error('Query contains potentially unsafe SQL keywords.');
     }
 }
@@ -165,19 +193,18 @@ export async function analyzeQuery(
 ): Promise<QueryAnalysis> {
     // Validate the query before analyzing
     validateSelectQuery(query);
-    
+
     // Prepare the EXPLAIN ANALYZE query
-    let explainQuery = `EXPLAIN (ANALYZE true, BUFFERS true, VERBOSE true, FORMAT text) ${query}`;
+    const explainQuery = `EXPLAIN (ANALYZE true, BUFFERS true, VERBOSE true, FORMAT text) ${query}`;
 
     try {
         // Execute EXPLAIN ANALYZE
-        const result = await db.$queryRawUnsafe<Array<{ 'QUERY PLAN': string }>>(
-            explainQuery,
-            ...(params || [])
-        );
+        const result = await db.$queryRawUnsafe<
+            Array<{ 'QUERY PLAN': string }>
+        >(explainQuery, ...(params || []));
 
         // Combine all lines of the query plan
-        const planOutput = result.map(row => row['QUERY PLAN']).join('\n');
+        const planOutput = result.map((row) => row['QUERY PLAN']).join('\n');
 
         // Parse the output
         const plan = parseExplainOutput(planOutput);
@@ -192,7 +219,9 @@ export async function analyzeQuery(
             recommendations,
         };
     } catch (error) {
-        throw new Error(`Failed to analyze query: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        throw new Error(
+            `Failed to analyze query: ${error instanceof Error ? error.message : 'Unknown error'}`
+        );
     }
 }
 
@@ -206,7 +235,7 @@ export async function analyzePrismaQuery(
     // For now, just execute the query
     // Full Prisma query analysis would require query event middleware
     const result = await queryFn();
-    
+
     return {
         result,
         analysis: undefined, // Would need to capture SQL from Prisma middleware
@@ -244,7 +273,7 @@ export async function getTableStatistics(tableName: string) {
     if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(tableName)) {
         throw new Error('Invalid table name');
     }
-    
+
     const stats = await db.$queryRaw<
         Array<{
             schemaname: string;
@@ -295,21 +324,21 @@ export function meetsPerformanceThreshold(
  */
 export function formatQueryAnalysis(analysis: QueryAnalysis): string {
     const { plan, recommendations } = analysis;
-    
+
     let output = '\n📊 Query Analysis\n';
     output += '─'.repeat(80) + '\n\n';
-    
+
     output += `Query: ${analysis.query.substring(0, 100)}${analysis.query.length > 100 ? '...' : ''}\n\n`;
-    
+
     output += '⏱️  Performance Metrics:\n';
     output += `   Planning Time: ${plan.planningTime.toFixed(2)}ms\n`;
     output += `   Execution Time: ${plan.executionTime.toFixed(2)}ms\n`;
     output += `   Total Time: ${plan.totalTime.toFixed(2)}ms\n\n`;
-    
+
     output += '🔍 Query Plan:\n';
     output += `   Sequential Scan: ${plan.hasSeqScan ? '❌ Yes' : '✅ No'}\n`;
     output += `   Index Scan: ${plan.hasIndexScan ? '✅ Yes' : '❌ No'}\n\n`;
-    
+
     if (plan.warnings.length > 0) {
         output += '⚠️  Warnings:\n';
         for (const warning of plan.warnings) {
@@ -317,7 +346,7 @@ export function formatQueryAnalysis(analysis: QueryAnalysis): string {
         }
         output += '\n';
     }
-    
+
     if (recommendations.length > 0) {
         output += '💡 Recommendations:\n';
         for (const rec of recommendations) {
@@ -325,8 +354,8 @@ export function formatQueryAnalysis(analysis: QueryAnalysis): string {
         }
         output += '\n';
     }
-    
+
     output += '─'.repeat(80) + '\n';
-    
+
     return output;
 }

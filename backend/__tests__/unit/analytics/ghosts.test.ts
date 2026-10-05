@@ -1,166 +1,67 @@
 import { getGhostScores } from '../../../src/analytics/ghosts';
 import { db } from '../../../src/db';
+import { cache } from '../../../src/services/cache';
 
-// Mock the database
-jest.mock('../../../src/db', () => ({
-    db: {
-        typingEvent: {
-            groupBy: jest.fn(),
-        },
-        messageEvent: {
-            groupBy: jest.fn(),
-        },
+jest.mock('../../../src/db', () => ({ db: { $queryRaw: jest.fn() } }));
+jest.mock('../../../src/services/cache', () => ({
+    cache: {
+        remember: jest.fn(
+            (_key: string, _ttl: number, load: () => Promise<unknown>) => load()
+        ),
     },
 }));
-
-describe('Analytics - Ghost Scores', () => {
-    beforeEach(() => {
-        jest.clearAllMocks();
+describe('getGhostScores SQL boundary', () => {
+    beforeEach(() => jest.clearAllMocks());
+    it('serializes PostgreSQL bigint counts for the API', async () => {
+        (db.$queryRaw as jest.Mock).mockResolvedValue([
+            {
+                userId: 'u1',
+                username: 'User',
+                typing_count: BigInt(10),
+                message_count: BigInt(2),
+                ghost_score: 10 / 3,
+            },
+        ]);
+        const result = await getGhostScores('guild-one');
+        expect(result).toEqual([
+            {
+                userId: 'u1',
+                username: 'User',
+                typingCount: 10,
+                messageCount: 2,
+                ghostScore: 10 / 3,
+            },
+        ]);
+        expect(() => JSON.stringify(result)).not.toThrow();
     });
-
-    describe('getGhostScores', () => {
-        it('should calculate ghost scores correctly', async () => {
-            const mockTypings = [
-                {
-                    userId: 'user1',
-                    username: 'User One',
-                    _count: { userId: 10 },
-                },
-                {
-                    userId: 'user2',
-                    username: 'User Two',
-                    _count: { userId: 5 },
-                },
-            ];
-
-            const mockMessages = [
-                {
-                    userId: 'user1',
-                    _count: { userId: 2 },
-                },
-                {
-                    userId: 'user2',
-                    _count: { userId: 10 },
-                },
-            ];
-
-            (db.typingEvent.groupBy as jest.Mock).mockResolvedValue(
-                mockTypings
-            );
-            (db.messageEvent.groupBy as jest.Mock).mockResolvedValue(
-                mockMessages
-            );
-
-            const result = await getGhostScores('test-guild-id');
-
-            expect(result).toHaveLength(2);
-            expect(result[0].userId).toBe('user1');
-            expect(result[0].username).toBe('User One');
-            expect(result[0].typingCount).toBe(10);
-            expect(result[0].messageCount).toBe(2);
-            expect(result[0].ghostScore).toBeCloseTo(10 / 3);
-
-            expect(result[1].userId).toBe('user2');
-            expect(result[1].ghostScore).toBeCloseTo(5 / 11);
-        });
-
-        it('should handle users with no messages', async () => {
-            const mockTypings = [
-                {
-                    userId: 'user1',
-                    username: 'Ghost User',
-                    _count: { userId: 20 },
-                },
-            ];
-
-            const mockMessages: any[] = [];
-
-            (db.typingEvent.groupBy as jest.Mock).mockResolvedValue(
-                mockTypings
-            );
-            (db.messageEvent.groupBy as jest.Mock).mockResolvedValue(
-                mockMessages
-            );
-
-            const result = await getGhostScores('test-guild-id');
-
-            expect(result).toHaveLength(1);
-            expect(result[0].userId).toBe('user1');
-            expect(result[0].messageCount).toBe(0);
-            expect(result[0].ghostScore).toBe(20);
-        });
-
-        it('should filter by date when provided', async () => {
-            const mockTypings: any[] = [];
-            const mockMessages: any[] = [];
-            const since = new Date('2024-01-01');
-
-            (db.typingEvent.groupBy as jest.Mock).mockResolvedValue(
-                mockTypings
-            );
-            (db.messageEvent.groupBy as jest.Mock).mockResolvedValue(
-                mockMessages
-            );
-
-            await getGhostScores('test-guild-id', since);
-
-            expect(db.typingEvent.groupBy).toHaveBeenCalledWith({
-                by: ['userId', 'username'],
-                where: {
-                    guildId: 'test-guild-id',
-                    createdAt: { gte: since },
-                },
-                _count: {
-                    userId: true,
-                },
-            });
-        });
-
-        it('should return empty array when no data', async () => {
-            (db.typingEvent.groupBy as jest.Mock).mockResolvedValue([]);
-            (db.messageEvent.groupBy as jest.Mock).mockResolvedValue([]);
-
-            const result = await getGhostScores('test-guild-id');
-
-            expect(result).toEqual([]);
-        });
-
-        it('should sort by ghost score descending', async () => {
-            const mockTypings = [
-                {
-                    userId: 'user1',
-                    username: 'Low Ghost',
-                    _count: { userId: 5 },
-                },
-                {
-                    userId: 'user2',
-                    username: 'High Ghost',
-                    _count: { userId: 20 },
-                },
-            ];
-
-            const mockMessages = [
-                {
-                    userId: 'user1',
-                    _count: { userId: 10 },
-                },
-                {
-                    userId: 'user2',
-                    _count: { userId: 2 },
-                },
-            ];
-
-            (db.typingEvent.groupBy as jest.Mock).mockResolvedValue(
-                mockTypings
-            );
-            (db.messageEvent.groupBy as jest.Mock).mockResolvedValue(
-                mockMessages
-            );
-
-            const result = await getGhostScores('test-guild-id');
-
-            expect(result[0].userId).toBe('user2'); // Higher ghost score
-            expect(result[1].userId).toBe('user1'); // Lower ghost score
-        });
+    it('binds guild and cutoff values instead of interpolating SQL text', async () => {
+        (db.$queryRaw as jest.Mock).mockResolvedValue([]);
+        const since = new Date('2025-01-01');
+        await getGhostScores("guild'quoted", since);
+        const [sql, ...values] = (db.$queryRaw as jest.Mock).mock.calls[0] as [
+            TemplateStringsArray,
+            ...unknown[],
+        ];
+        expect(sql.join('')).not.toContain("guild'quoted");
+        expect(values.filter((v) => v === "guild'quoted")).toHaveLength(2);
+        expect(values.filter((v) => v === since)).toHaveLength(2);
+        expect(cache.remember).toHaveBeenCalledWith(
+            `analytics:ghosts:guild'quoted:${since.getTime()}`,
+            300,
+            expect.any(Function),
+            { tags: ["guild:guild'quoted", 'analytics:ghosts'] }
+        );
+    });
+    it('returns an empty result for an empty server', async () => {
+        (db.$queryRaw as jest.Mock).mockResolvedValue([]);
+        expect(await getGhostScores('empty')).toEqual([]);
+    });
+    it('propagates database failure', async () => {
+        (db.$queryRaw as jest.Mock).mockRejectedValue(
+            new Error('database unavailable')
+        );
+        await expect(getGhostScores('guild')).rejects.toThrow(
+            'database unavailable'
+        );
     });
 });

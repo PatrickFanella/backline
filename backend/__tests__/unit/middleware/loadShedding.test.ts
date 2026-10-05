@@ -28,7 +28,7 @@ describe('Load Shedding Middleware', () => {
     let os: any;
 
     beforeEach(() => {
-        os = require('os');
+        os = jest.requireMock('os');
         mockRequest = {
             path: '/api/test',
         };

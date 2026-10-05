@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
 import { Search, X } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
 
 interface SearchBarProps {
     value: string;
@@ -7,7 +7,11 @@ interface SearchBarProps {
     placeholder?: string;
 }
 
-function SearchBar({ value, onChange, placeholder = 'Search events...' }: SearchBarProps) {
+function SearchBar({
+    value,
+    onChange,
+    placeholder = 'Search events...',
+}: SearchBarProps) {
     const [localValue, setLocalValue] = useState(value);
     const onChangeRef = useRef(onChange);
 

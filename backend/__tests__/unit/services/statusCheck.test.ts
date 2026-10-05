@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { db } from '../../../src/db';
 import {
     performHealthCheck,
@@ -39,7 +38,9 @@ describe('Status Check Service', () => {
             (db.$queryRaw as jest.Mock).mockResolvedValue([{ '?column?': 1 }]);
 
             // Mock successful Redis check (not configured)
-            const { getRedisClient } = require('../../../src/utils/redis');
+            const { getRedisClient } = jest.requireMock(
+                '../../../src/utils/redis'
+            );
             getRedisClient.mockReturnValue(null);
 
             // Mock successful Discord API check
@@ -63,7 +64,9 @@ describe('Status Check Service', () => {
             );
 
             // Mock successful Redis check (not configured)
-            const { getRedisClient } = require('../../../src/utils/redis');
+            const { getRedisClient } = jest.requireMock(
+                '../../../src/utils/redis'
+            );
             getRedisClient.mockReturnValue(null);
 
             // Mock successful Discord API check
@@ -86,7 +89,9 @@ describe('Status Check Service', () => {
             const mockRedis = {
                 ping: jest.fn().mockResolvedValue('PONG'),
             };
-            const { getRedisClient } = require('../../../src/utils/redis');
+            const { getRedisClient } = jest.requireMock(
+                '../../../src/utils/redis'
+            );
             getRedisClient.mockReturnValue(mockRedis);
 
             // Mock successful Discord API check
@@ -134,7 +139,11 @@ describe('Status Check Service', () => {
             const healthStatus = {
                 database: { healthy: true, latency: 10 },
                 redis: { healthy: false, latency: 100, error: 'Timeout' },
-                discord: { healthy: false, latency: 200, error: 'Network error' },
+                discord: {
+                    healthy: false,
+                    latency: 200,
+                    error: 'Network error',
+                },
                 overall: false,
             };
 
@@ -153,7 +162,11 @@ describe('Status Check Service', () => {
 
         it('should record a down status when database fails', async () => {
             const healthStatus = {
-                database: { healthy: false, latency: 500, error: 'Connection refused' },
+                database: {
+                    healthy: false,
+                    latency: 500,
+                    error: 'Connection refused',
+                },
                 redis: { healthy: true, latency: 5 },
                 discord: { healthy: true, latency: 50 },
                 overall: false,
@@ -182,7 +195,9 @@ describe('Status Check Service', () => {
             );
 
             // Should not throw
-            await expect(recordStatusCheck(healthStatus)).resolves.not.toThrow();
+            await expect(
+                recordStatusCheck(healthStatus)
+            ).resolves.not.toThrow();
         });
     });
 

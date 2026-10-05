@@ -8,6 +8,9 @@ import {
     saveSoundboard,
     storeClip,
 } from '../audio/clips';
+import { stationId } from '../audio/config';
+import { queueItems } from '../audio/queue';
+import { somaStations } from '../audio/stations';
 import {
     onboardingConfig,
     selfRolesConfig,
@@ -22,6 +25,7 @@ import {
 } from '../entertainment/catalog';
 import { renderTemplate } from '../entertainment/images';
 import { listManagedGuilds } from '../guilds/authorization';
+import { enqueueJob } from '../jobs/store';
 import { requireAuthOrApiKey, requireGuildAccess } from '../middleware';
 import { moduleOperatorReady, moduleRegistry } from '../modules/registry';
 import { exportSnapshot } from '../recovery/snapshots';
@@ -41,6 +45,143 @@ const updateSchema = z.object({
     config: z.unknown().default({}),
 });
 router.use('/guilds/:guildId/modules', requireAuthOrApiKey, requireGuildAccess);
+const audioActionInput = z.discriminatedUnion('action', [
+    z
+        .object({
+            action: z.literal('enqueue'),
+            station: stationId,
+            minutes: z.number().int().min(1).max(30),
+            requestId: z.string().uuid(),
+        })
+        .strict(),
+    z
+        .object({ action: z.literal('start'), requestId: z.string().uuid() })
+        .strict(),
+    z
+        .object({
+            action: z.literal('control'),
+            control: z.enum(['pause', 'resume', 'skip', 'stop']),
+            requestId: z.string().uuid(),
+        })
+        .strict(),
+    z
+        .object({
+            action: z.literal('volume'),
+            volume: z.number().int().min(0).max(100),
+            requestId: z.string().uuid(),
+        })
+        .strict(),
+    z
+        .object({
+            action: z.literal('queue-setting'),
+            setting: z.enum(['shuffle', 'loop', 'clear']),
+            enabled: z.boolean().optional(),
+            requestId: z.string().uuid(),
+        })
+        .strict(),
+    z
+        .object({
+            action: z.literal('playlist'),
+            operation: z.enum(['save', 'load', 'delete']),
+            name: z
+                .string()
+                .trim()
+                .regex(/^[\p{L}\p{N} _-]{1,40}$/u),
+            requestId: z.string().uuid(),
+        })
+        .strict(),
+]);
+router.get('/guilds/:guildId/modules/audio/diagnostics', async (req, res) => {
+    try {
+        const guildId = req.params.guildId;
+        const [queue, playlists, playback, jobs] = await Promise.all([
+            db.audioQueue.findUnique({ where: { guildId } }),
+            db.audioPlaylist.findMany({
+                where: { guildId },
+                orderBy: { name: 'asc' },
+                take: 20,
+                select: {
+                    id: true,
+                    name: true,
+                    createdBy: true,
+                    createdAt: true,
+                    items: true,
+                },
+            }),
+            db.voicePlayback.findMany({
+                where: { guildId },
+                orderBy: { startedAt: 'desc' },
+                take: 10,
+                select: {
+                    id: true,
+                    stationId: true,
+                    channelId: true,
+                    requesterId: true,
+                    state: true,
+                    detail: true,
+                    startedAt: true,
+                    finishedAt: true,
+                    playbackMs: true,
+                    daveProtocol: true,
+                },
+            }),
+            db.durableJob.findMany({
+                where: { guildId, kind: 'audio-dashboard' },
+                orderBy: { createdAt: 'desc' },
+                take: 20,
+                select: {
+                    id: true,
+                    state: true,
+                    lastError: true,
+                    createdAt: true,
+                    result: true,
+                },
+            }),
+        ]);
+        res.json({
+            stations: Object.entries(somaStations).map(([id, station]) => ({
+                id,
+                title: station.title,
+            })),
+            queue: queue
+                ? { ...queue, items: queueItems.parse(queue.items) }
+                : { items: [], state: 'IDLE', loop: false, shuffle: false },
+            playlists: playlists.map((playlist) => ({
+                ...playlist,
+                items: queueItems.parse(playlist.items),
+            })),
+            playback,
+            jobs,
+        });
+    } catch {
+        res.status(503).json({ error: 'Audio diagnostics unavailable' });
+    }
+});
+router.post('/guilds/:guildId/modules/audio/actions', async (req, res) => {
+    const input = audioActionInput.safeParse(req.body);
+    if (!input.success) {
+        res.status(400).json({ error: 'Invalid audio action' });
+        return;
+    }
+    try {
+        const job = await enqueueJob({
+            guildId: req.params.guildId,
+            actorId: req.user!.userId,
+            moduleId: 'audio',
+            kind: 'audio-dashboard',
+            idempotencyKey: `audio-dashboard:${req.user!.userId}:${input.data.requestId}`,
+            payload: { ...input.data, discordId: req.user!.discordId },
+            runAt: new Date(),
+            expiresAt: new Date(Date.now() + 300000),
+            maxAttempts: 1,
+        });
+        res.status(202).json({ id: job.id, state: job.state });
+    } catch {
+        res.status(409).json({
+            error: 'Audio action was not queued. Enable audio and retry from the intended voice channel.',
+        });
+    }
+});
 router.get('/guilds/:guildId/modules/audio/clips', async (req, res) => {
     try {
         res.json(

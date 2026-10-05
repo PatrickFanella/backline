@@ -26,6 +26,24 @@ import { getRedisClient } from '../utils/redis';
 const router = Router();
 const redis = getRedisClient();
 
+function isObjectRecord(value: unknown): value is Record<string, unknown> {
+    return typeof value === 'object' && value !== null;
+}
+
+function isExplainRequestBody(
+    value: unknown
+): value is { query: string; params?: unknown[] } {
+    if (!isObjectRecord(value)) {
+        return false;
+    }
+
+    const { query, params } = value;
+    return (
+        typeof query === 'string' &&
+        (params === undefined || Array.isArray(params))
+    );
+}
+
 // All routes require authentication and admin role
 router.use(requireAuth);
 router.use(requireRole(['ADMIN']));
@@ -440,7 +458,7 @@ router.get('/database/indexes', async (_req: Request, res: Response) => {
  * Get slow query logs from application monitoring
  * Supports pagination via ?limit=20&offset=0
  */
-router.get('/database/slow-queries', async (req: Request, res: Response) => {
+router.get('/database/slow-queries', (req: Request, res: Response) => {
     try {
         const limit = req.query.limit
             ? parseInt(req.query.limit as string, 10)
@@ -473,22 +491,19 @@ router.get('/database/slow-queries', async (req: Request, res: Response) => {
  * DELETE /api/admin/monitoring/database/slow-queries
  * Clear slow query logs
  */
-router.delete(
-    '/database/slow-queries',
-    async (_req: Request, res: Response) => {
-        try {
-            clearSlowQueryLogs();
-            res.json({
-                message: 'Slow query logs cleared successfully',
-            });
-        } catch (error) {
-            console.error('Failed to clear slow query logs:', error);
-            res.status(500).json({
-                error: 'Failed to clear slow query logs',
-            });
-        }
+router.delete('/database/slow-queries', (_req: Request, res: Response) => {
+    try {
+        clearSlowQueryLogs();
+        res.json({
+            message: 'Slow query logs cleared successfully',
+        });
+    } catch (error) {
+        console.error('Failed to clear slow query logs:', error);
+        res.status(500).json({
+            error: 'Failed to clear slow query logs',
+        });
     }
-);
+});
 
 /**
  * GET /api/admin/monitoring/database/pg-slow-queries
@@ -631,10 +646,7 @@ router.delete('/cache/invalidate/:tag', async (req: Request, res: Response) => {
 
         // Validate tag format - disallow Redis pattern special characters
         // to prevent unintended key matching
-        if (
-            !tag ||
-            !/^[a-zA-Z0-9:_-]+$/.test(tag)
-        ) {
+        if (!tag || !/^[a-zA-Z0-9:_-]+$/.test(tag)) {
             res.status(400).json({
                 error: 'Invalid tag format',
                 message:
@@ -662,14 +674,13 @@ router.delete('/cache/invalidate/:tag', async (req: Request, res: Response) => {
 /**
  * POST /api/admin/monitoring/database/explain
  * Analyze a SQL query using EXPLAIN ANALYZE
- * 
+ *
  * Security: Only SELECT statements are allowed to prevent data modification
  */
 router.post('/database/explain', async (req: Request, res: Response) => {
     try {
-        const { query, params } = req.body;
-
-        if (!query || typeof query !== 'string') {
+        const body: unknown = req.body;
+        if (!isExplainRequestBody(body) || !body.query.trim()) {
             res.status(400).json({
                 error: 'Query is required and must be a string',
             });
@@ -682,7 +693,7 @@ router.post('/database/explain', async (req: Request, res: Response) => {
         );
 
         // Query validation is now handled by analyzeQuery which has comprehensive security checks
-        const analysis = await analyzeQuery(query, params);
+        const analysis = await analyzeQuery(body.query, body.params);
 
         res.json({
             analysis,
@@ -712,7 +723,8 @@ router.get(
             if (!/^[A-Za-z0-9_]+$/.test(tableName)) {
                 res.status(400).json({
                     error: 'Invalid table name',
-                    message: 'Table name must only contain letters, numbers, and underscores',
+                    message:
+                        'Table name must only contain letters, numbers, and underscores',
                 });
                 return;
             }

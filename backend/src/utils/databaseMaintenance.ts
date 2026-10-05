@@ -142,7 +142,7 @@ export async function getSlowQueries(
     `;
 
         return result;
-    } catch (error) {
+    } catch (_error) {
         console.warn(
             'pg_stat_statements extension not available. Skipping slow query analysis.'
         );
@@ -178,7 +178,7 @@ export async function checkDatabaseHealth(): Promise<{
             activeConnections: Number(connectionsResult[0].count),
             maxConnections: parseInt(connectionsResult[0].setting, 10),
         };
-    } catch (error) {
+    } catch (_error) {
         return {
             connected: false,
             version: 'unknown',

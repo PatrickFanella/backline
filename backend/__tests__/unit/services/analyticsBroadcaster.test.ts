@@ -157,7 +157,8 @@ describe('AnalyticsBroadcaster', () => {
             await broadcaster.broadcastImmediate(mockGuildId);
 
             const emitCall = (
-                websocketModule.websocketService.emitAnalyticsUpdate as jest.Mock
+                websocketModule.websocketService
+                    .emitAnalyticsUpdate as jest.Mock
             ).mock.calls[0];
 
             expect(emitCall[1].ghosts).toHaveLength(10);
@@ -187,16 +188,16 @@ describe('AnalyticsBroadcaster', () => {
             ).mockResolvedValue(mockData.channels);
 
             // First call should execute immediately
-            await broadcaster.broadcastAnalyticsUpdate(mockGuildId);
-            await Promise.resolve(); // Wait for async operations
+            broadcaster.broadcastAnalyticsUpdate(mockGuildId);
+            await jest.advanceTimersByTimeAsync(0); // Wait for async operations
 
             expect(
                 websocketModule.websocketService.emitAnalyticsUpdate
             ).toHaveBeenCalledTimes(1);
 
             // Second call within 30 seconds should be throttled
-            await broadcaster.broadcastAnalyticsUpdate(mockGuildId);
-            await Promise.resolve();
+            broadcaster.broadcastAnalyticsUpdate(mockGuildId);
+            await jest.advanceTimersByTimeAsync(0);
 
             expect(
                 websocketModule.websocketService.emitAnalyticsUpdate
@@ -206,8 +207,8 @@ describe('AnalyticsBroadcaster', () => {
             jest.advanceTimersByTime(30000);
 
             // Third call after 30 seconds should execute
-            await broadcaster.broadcastAnalyticsUpdate(mockGuildId);
-            await Promise.resolve();
+            broadcaster.broadcastAnalyticsUpdate(mockGuildId);
+            await jest.advanceTimersByTimeAsync(0);
 
             expect(
                 websocketModule.websocketService.emitAnalyticsUpdate
@@ -218,7 +219,7 @@ describe('AnalyticsBroadcaster', () => {
     });
 
     describe('clearThrottles', () => {
-        it('should clear all throttled functions', async () => {
+        it('should clear all throttled functions', () => {
             const mockData = {
                 ghosts: [],
                 lurkers: [],
@@ -236,7 +237,7 @@ describe('AnalyticsBroadcaster', () => {
             ).mockResolvedValue(mockData.channels);
 
             // Create a throttled function
-            await broadcaster.broadcastAnalyticsUpdate(mockGuildId);
+            broadcaster.broadcastAnalyticsUpdate(mockGuildId);
 
             // Clear throttles
             broadcaster.clearThrottles();

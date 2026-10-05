@@ -49,6 +49,7 @@ jest.mock('../../../src/utils/env', () => ({
 }));
 
 import * as Sentry from '@sentry/node';
+
 import * as sentryModule from '../../../src/monitoring/sentry';
 
 describe('Sentry Monitoring', () => {
@@ -80,7 +81,11 @@ describe('Sentry Monitoring', () => {
             const error = new Error('Test error');
             const context = { userId: '123', action: 'test' };
 
-            const eventId = sentryModule.captureException(error, context, 'error');
+            const eventId = sentryModule.captureException(
+                error,
+                context,
+                'error'
+            );
 
             expect(Sentry.captureException).toHaveBeenCalledWith(error, {
                 level: 'error',
@@ -101,8 +106,6 @@ describe('Sentry Monitoring', () => {
                 contexts: undefined,
             });
         });
-
-
     });
 
     describe('captureMessage', () => {
@@ -110,7 +113,11 @@ describe('Sentry Monitoring', () => {
             const message = 'Test message';
             const context = { userId: '123' };
 
-            const eventId = sentryModule.captureMessage(message, context, 'info');
+            const eventId = sentryModule.captureMessage(
+                message,
+                context,
+                'info'
+            );
 
             expect(Sentry.captureMessage).toHaveBeenCalledWith(message, {
                 level: 'info',
@@ -145,8 +152,6 @@ describe('Sentry Monitoring', () => {
 
             expect(Sentry.setUser).toHaveBeenCalledWith(user);
         });
-
-
     });
 
     describe('clearUser', () => {
@@ -209,13 +214,19 @@ describe('Sentry Monitoring', () => {
 
             sentryModule.setContext('feature_flags', context);
 
-            expect(Sentry.setContext).toHaveBeenCalledWith('feature_flags', context);
+            expect(Sentry.setContext).toHaveBeenCalledWith(
+                'feature_flags',
+                context
+            );
         });
 
         it('should clear context when null is passed', () => {
             sentryModule.setContext('feature_flags', null);
 
-            expect(Sentry.setContext).toHaveBeenCalledWith('feature_flags', null);
+            expect(Sentry.setContext).toHaveBeenCalledWith(
+                'feature_flags',
+                null
+            );
         });
     });
 
@@ -223,7 +234,11 @@ describe('Sentry Monitoring', () => {
         it('should execute callback within a span', () => {
             const callback = jest.fn(() => 'result');
 
-            const result = sentryModule.withSpan('test-operation', 'task', callback);
+            const result = sentryModule.withSpan(
+                'test-operation',
+                'task',
+                callback
+            );
 
             expect(Sentry.startSpan).toHaveBeenCalledWith(
                 { name: 'test-operation', op: 'task' },
@@ -233,14 +248,16 @@ describe('Sentry Monitoring', () => {
         });
 
         it('should handle async callbacks', async () => {
-            const callback = jest.fn(async () => 'async-result');
+            const callback = jest.fn(() => Promise.resolve('async-result'));
 
-            const result = await sentryModule.withSpan('test-operation', 'task', callback);
+            const result = await sentryModule.withSpan(
+                'test-operation',
+                'task',
+                callback
+            );
 
             expect(result).toBe('async-result');
         });
-
-
     });
 
     describe('getSentryErrorHandler', () => {

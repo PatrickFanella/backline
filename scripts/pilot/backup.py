@@ -14,6 +14,9 @@ import sys
 from datetime import datetime, timezone
 
 MAX_BYTES = 64 * 1024 * 1024
+SOURCE_DATABASE = "backline_pilot"
+RESTORE_OWNER = "backline_pilot"
+DATABASE_USER = "postgres"
 DOCKER = [
     "rtk",
     "proxy",
@@ -44,7 +47,7 @@ def run(arguments: list[str], *, data: bytes | None = None, output=None) -> byte
 def dump(destination: Path, database: str) -> None:
     with destination.open("xb") as output:
         run(
-            ["pg_dump", "-U", "postgres", "-d", database, "--no-owner", "--no-acl"],
+            ["pg_dump", "-U", DATABASE_USER, "-d", database, "--no-owner", "--no-acl"],
             output=output,
         )
     if destination.stat().st_size > MAX_BYTES:
@@ -100,12 +103,12 @@ def verify(source: Path, expected: dict) -> dict:
     restored = source.parent / (database + ".sql")
     try:
         run(
-            ["psql", "-U", "postgres", "-d", "postgres", "-v", "ON_ERROR_STOP=1"],
-            data=f'CREATE DATABASE "{database}" OWNER backline_pilot;\n'.encode(),
+            ["psql", "-U", DATABASE_USER, "-d", "postgres", "-v", "ON_ERROR_STOP=1"],
+            data=f'CREATE DATABASE "{database}" OWNER "{RESTORE_OWNER}";\n'.encode(),
         )
         created = True
         run(
-            ["psql", "-U", "backline_pilot", "-d", database, "-v", "ON_ERROR_STOP=1"],
+            ["psql", "-U", RESTORE_OWNER, "-d", database, "-v", "ON_ERROR_STOP=1"],
             data=source.read_bytes(),
         )
         dump(restored, database)
@@ -127,7 +130,7 @@ def verify(source: Path, expected: dict) -> dict:
     finally:
         if created:
             run(
-                ["psql", "-U", "postgres", "-d", "postgres", "-v", "ON_ERROR_STOP=1"],
+                ["psql", "-U", DATABASE_USER, "-d", "postgres", "-v", "ON_ERROR_STOP=1"],
                 data=f'DROP DATABASE "{database}";\n'.encode(),
             )
         restored.unlink(missing_ok=True)
@@ -153,7 +156,7 @@ def backup(directory: Path) -> dict:
         name = "backline-" + datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
         source = directory / (name + ".sql")
         receipt = directory / (name + ".json")
-        dump(source, "backline_pilot")
+        dump(source, SOURCE_DATABASE)
         expected = manifest(source)
         receipt.write_text(
             json.dumps({"backup": source.name, "manifest": expected}, indent=2) + "\n",
@@ -199,7 +202,18 @@ def main() -> int:
     parser.add_argument(
         "--directory", type=Path, default=Path.home() / ".local/state/backline/backups"
     )
+    parser.add_argument("--context", default="kuznya")
+    parser.add_argument("--container", default="backline-pilot-postgres")
+    parser.add_argument("--database", default="backline_pilot")
+    parser.add_argument("--database-user", default="postgres")
+    parser.add_argument("--restore-owner", default="backline_pilot")
     args = parser.parse_args()
+    for value in [args.database, args.restore_owner, args.database_user]:
+        if not re.fullmatch(r"[a-zA-Z_][a-zA-Z_0-9]{0,62}", value):
+            parser.error("Database and restore owner must be PostgreSQL identifiers")
+    global DOCKER, SOURCE_DATABASE, RESTORE_OWNER, DATABASE_USER
+    DOCKER = ["rtk", "proxy", "docker", "--context", args.context, "exec", "-i", args.container]
+    SOURCE_DATABASE, RESTORE_OWNER, DATABASE_USER = args.database, args.restore_owner, args.database_user
     try:
         print(json.dumps(backup(args.directory)))
         return 0

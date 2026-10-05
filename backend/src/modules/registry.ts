@@ -541,9 +541,12 @@ moduleRegistry.register({
         publish: [
             PermissionFlagsBits.ViewChannel,
             PermissionFlagsBits.SendMessages,
+            PermissionFlagsBits.AddReactions,
+            PermissionFlagsBits.ReadMessageHistory,
         ],
     },
-    description: 'Offer eligible roles through buttons or a selection menu.',
+    description:
+        'Offer eligible roles through buttons, a selection menu or Unicode reactions.',
     version: 1,
     schema: selfRolesConfig,
     permissions: [],

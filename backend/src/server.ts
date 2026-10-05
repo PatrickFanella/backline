@@ -6,6 +6,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import express from 'express';
 
+import { closeDatabaseConnections } from './db';
 import { env } from './utils/env';
 import { sanitizeForLog } from './utils/security';
 
@@ -227,6 +228,28 @@ const allowedOrigins =
     } catch (err) {
         console.error('🔥 Failed to initialize WebSocket server:', err);
     }
+
+    let stopping = false;
+    const stop = () => {
+        if (stopping) return;
+        stopping = true;
+        const deadline = setTimeout(() => process.exit(1), 40000);
+        deadline.unref();
+        void (async () => {
+            const { websocketService } = await import('./services/websocket');
+            websocketService.close();
+            await new Promise<void>((resolve, reject) => {
+                httpServer.close((error) =>
+                    error ? reject(error) : resolve()
+                );
+                httpServer.closeIdleConnections();
+            });
+            await closeDatabaseConnections();
+            process.exit(0);
+        })().catch(() => process.exit(1));
+    };
+    process.once('SIGTERM', stop);
+    process.once('SIGINT', stop);
 
     httpServer.listen(PORT, env.HOST, () => {
         console.log(

@@ -15,6 +15,7 @@ import {
 import { z } from 'zod';
 
 import { db } from '../db';
+import { authorizeGuild } from '../guilds/authorization';
 import { JobHandler } from '../jobs/store';
 
 import { recoveryConfig, structureSchema } from './config';
@@ -487,6 +488,132 @@ export async function mapRecoveryResource(
             update: { targetId },
         });
     });
+}
+
+const previewJobPayload = z
+    .object({
+        snapshotId: z.string().uuid(),
+        requestId: z.string().uuid(),
+        selected: z.array(z.string().regex(/^\d{17,20}$/)).max(20),
+        discordId: z.string().regex(/^\d{17,20}$/),
+    })
+    .strict();
+const mapJobPayload = z
+    .object({
+        kind: z.enum(['role', 'channel']),
+        sourceId: z.string().regex(/^\d{17,20}$/),
+        targetId: z.string().regex(/^\d{17,20}$/),
+        discordId: z.string().regex(/^\d{17,20}$/),
+    })
+    .strict();
+const applyRequestPayload = z
+    .object({
+        planId: z.string().uuid(),
+        confirmation: z.string().max(200),
+        discordId: z.string().regex(/^\d{17,20}$/),
+    })
+    .strict();
+async function authorizeTransport(job: DurableJob, discordId: string) {
+    const account = await db.user.findUnique({
+        where: { id: job.actorId },
+        select: { discordId: true, role: true },
+    });
+    return (
+        !!account &&
+        account.discordId === discordId &&
+        account.role !== 'BANNED' &&
+        (await authorizeGuild(job.actorId, job.guildId))
+    );
+}
+
+export function restorePreviewHandler(client: Client): JobHandler {
+    return {
+        authorize: async (job) =>
+            authorizeTransport(
+                job,
+                previewJobPayload.parse(job.payload).discordId
+            ),
+        execute: async (job) => {
+            const payload = previewJobPayload.parse(job.payload);
+            if (!(await authorizeTransport(job, payload.discordId)))
+                return {
+                    state: 'CANCELLED',
+                    reason: 'Current application authorization required',
+                };
+            const plan = await previewRestore(
+                client,
+                job.guildId,
+                payload.discordId,
+                payload.snapshotId,
+                payload.requestId,
+                payload.selected
+            );
+            return { state: 'DELIVERED', result: { planId: plan.id } };
+        },
+        reconcile: () =>
+            Promise.resolve({
+                state: 'RECONCILE',
+                reason: 'Preview outcome requires inspection',
+            }),
+    };
+}
+export function restoreMapHandler(client: Client): JobHandler {
+    return {
+        authorize: async (job) =>
+            authorizeTransport(job, mapJobPayload.parse(job.payload).discordId),
+        execute: async (job) => {
+            const payload = mapJobPayload.parse(job.payload);
+            if (!(await authorizeTransport(job, payload.discordId)))
+                return {
+                    state: 'CANCELLED',
+                    reason: 'Current application authorization required',
+                };
+            const mapping = await mapRecoveryResource(
+                client,
+                job.guildId,
+                payload.discordId,
+                payload.kind,
+                payload.sourceId,
+                payload.targetId
+            );
+            return { state: 'DELIVERED', result: { mappingId: mapping.id } };
+        },
+        reconcile: () =>
+            Promise.resolve({
+                state: 'RECONCILE',
+                reason: 'Mapping outcome requires inspection',
+            }),
+    };
+}
+export function restoreApplyRequestHandler(client: Client): JobHandler {
+    return {
+        authorize: async (job) =>
+            authorizeTransport(
+                job,
+                applyRequestPayload.parse(job.payload).discordId
+            ),
+        execute: async (job) => {
+            const payload = applyRequestPayload.parse(job.payload);
+            if (!(await authorizeTransport(job, payload.discordId)))
+                return {
+                    state: 'CANCELLED',
+                    reason: 'Current application authorization required',
+                };
+            const queued = await queueRestore(
+                client,
+                job.guildId,
+                payload.discordId,
+                payload.planId,
+                payload.confirmation
+            );
+            return { state: 'DELIVERED', result: { jobId: queued.id } };
+        },
+        reconcile: () =>
+            Promise.resolve({
+                state: 'RECONCILE',
+                reason: 'Apply request outcome requires inspection',
+            }),
+    };
 }
 
 function channelOptions(

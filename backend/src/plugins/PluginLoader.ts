@@ -1,13 +1,15 @@
 import { EventEmitter } from 'events';
 import * as fs from 'fs';
+import { createRequire } from 'module';
 import * as path from 'path';
 
 import { Client } from 'discord.js';
 import { Express, Router } from 'express';
 
 import { db } from '../db';
-import { getRedisClient } from '../utils/redis';
 import { websocketService } from '../services/websocket';
+import { getRedisClient } from '../utils/redis';
+
 import {
     Plugin,
     PluginContext,
@@ -21,6 +23,44 @@ import {
     PluginPermission,
     PluginState,
 } from './types';
+
+const requirePluginModule = createRequire(__filename);
+const pluginPermissions = new Set<string>(Object.values(PluginPermission));
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+    return typeof value === 'object' && value !== null;
+}
+
+function isPluginManifest(value: unknown): value is PluginManifest {
+    return (
+        isRecord(value) &&
+        typeof value.id === 'string' &&
+        typeof value.name === 'string' &&
+        typeof value.version === 'string' &&
+        typeof value.author === 'string' &&
+        typeof value.description === 'string' &&
+        (value.dependencies === undefined ||
+            (Array.isArray(value.dependencies) &&
+                value.dependencies.every(
+                    (dependency) => typeof dependency === 'string'
+                ))) &&
+        (value.permissions === undefined ||
+            (Array.isArray(value.permissions) &&
+                value.permissions.every(
+                    (permission) =>
+                        typeof permission === 'string' &&
+                        pluginPermissions.has(permission)
+                )))
+    );
+}
+
+function isPlugin(value: unknown): value is Plugin {
+    return (
+        isRecord(value) &&
+        isPluginManifest(value.manifest) &&
+        typeof value.init === 'function'
+    );
+}
 
 /**
  * Plugin loader manages loading, initialization, and lifecycle of plugins
@@ -68,7 +108,7 @@ export class PluginLoader {
     /**
      * Discover plugins in the plugin directory
      */
-    async discoverPlugins(): Promise<string[]> {
+    discoverPlugins(): Promise<string[]> {
         const pluginDirs: string[] = [];
         const entries = fs.readdirSync(this.config.pluginDir, {
             withFileTypes: true,
@@ -87,7 +127,7 @@ export class PluginLoader {
             }
         }
 
-        return pluginDirs;
+        return Promise.resolve(pluginDirs);
     }
 
     /**
@@ -99,15 +139,13 @@ export class PluginLoader {
 
         // Load manifest
         const manifestData = fs.readFileSync(manifestPath, 'utf-8');
-        const manifest: PluginManifest = JSON.parse(manifestData);
+        const manifest: unknown = JSON.parse(manifestData);
+        this.validateManifest(manifest);
 
         // Check if plugin already loaded
         if (this.plugins.has(manifest.id)) {
             throw new Error(`Plugin ${manifest.id} is already loaded`);
         }
-
-        // Validate manifest
-        this.validateManifest(manifest);
 
         // Check dependencies
         await this.checkDependencies(manifest);
@@ -118,20 +156,29 @@ export class PluginLoader {
             throw new Error(`Plugin ${manifest.id} is missing index.js`);
         }
 
-        let pluginModule: { default?: Plugin } | Plugin;
+        let pluginModule: unknown;
         try {
-            // Dynamic import of the plugin
-            pluginModule = require(indexPath);
+            // The configured plugin directory is an operator-owned CommonJS extension boundary.
+            pluginModule = requirePluginModule(indexPath);
         } catch (error) {
             throw new Error(
                 `Failed to load plugin ${manifest.id}: ${error instanceof Error ? error.message : String(error)}`
             );
         }
 
-        const plugin: Plugin = 'default' in pluginModule ? pluginModule.default! : (pluginModule as Plugin);
+        const pluginCandidate =
+            isRecord(pluginModule) && 'default' in pluginModule
+                ? pluginModule.default
+                : pluginModule;
+        if (!isPlugin(pluginCandidate)) {
+            throw new Error(
+                `Plugin ${manifest.id} does not export a valid plugin`
+            );
+        }
+        const plugin = pluginCandidate;
 
         // Create plugin context
-        const context = this.createPluginContext(manifest, pluginPath);
+        const context = this.createPluginContext(manifest);
 
         // Create plugin instance
         const instance: PluginInstance = {
@@ -155,27 +202,20 @@ export class PluginLoader {
     /**
      * Validate plugin manifest
      */
-    private validateManifest(manifest: PluginManifest): void {
-        if (!manifest.id || typeof manifest.id !== 'string') {
-            throw new Error('Plugin manifest must have a valid id');
-        }
-        if (!manifest.name || typeof manifest.name !== 'string') {
-            throw new Error('Plugin manifest must have a valid name');
-        }
-        if (!manifest.version || typeof manifest.version !== 'string') {
-            throw new Error('Plugin manifest must have a valid version');
-        }
-        if (!manifest.author || typeof manifest.author !== 'string') {
-            throw new Error('Plugin manifest must have a valid author');
+    private validateManifest(
+        manifest: unknown
+    ): asserts manifest is PluginManifest {
+        if (!isPluginManifest(manifest)) {
+            throw new Error('Plugin manifest is invalid');
         }
     }
 
     /**
      * Check plugin dependencies
      */
-    private async checkDependencies(manifest: PluginManifest): Promise<void> {
+    private checkDependencies(manifest: PluginManifest): Promise<void> {
         if (!manifest.dependencies || manifest.dependencies.length === 0) {
-            return;
+            return Promise.resolve();
         }
 
         for (const depId of manifest.dependencies) {
@@ -185,15 +225,14 @@ export class PluginLoader {
                 );
             }
         }
+
+        return Promise.resolve();
     }
 
     /**
      * Create plugin context with appropriate permissions
      */
-    private createPluginContext(
-        manifest: PluginManifest,
-        pluginPath: string
-    ): PluginContext {
+    private createPluginContext(manifest: PluginManifest): PluginContext {
         const permissions = manifest.permissions || [];
         const pluginDataDir = path.join(this.config.dataDir, manifest.id);
 
@@ -317,7 +356,7 @@ export class PluginLoader {
     /**
      * Create hook registry for plugin
      */
-    private createHookRegistry(pluginId: string): PluginHookRegistry {
+    private createHookRegistry(_pluginId: string): PluginHookRegistry {
         return {
             register: (hook: PluginHookType, handler: PluginHookHandler) => {
                 if (!this.hooks.has(hook)) {
@@ -486,9 +525,13 @@ export class PluginLoader {
     /**
      * Get plugin health status
      */
-    async getPluginHealth(
-        pluginId: string
-    ): Promise<{ healthy: boolean; state?: PluginState; error?: string; message?: string; details?: Record<string, unknown> }> {
+    async getPluginHealth(pluginId: string): Promise<{
+        healthy: boolean;
+        state?: PluginState;
+        error?: string;
+        message?: string;
+        details?: Record<string, unknown>;
+    }> {
         const instance = this.plugins.get(pluginId);
         if (!instance) {
             throw new Error(`Plugin ${pluginId} not found`);

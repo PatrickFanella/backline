@@ -133,13 +133,23 @@ export const selfRolesConfig = z
     .object({
         channelId: id.optional(),
         title: z.string().min(1).max(100).default('Choose your roles'),
-        style: z.enum(['buttons', 'select']).default('buttons'),
+        style: z.enum(['buttons', 'select', 'reactions']).default('buttons'),
         roles: z
             .array(
                 z
                     .object({
                         roleId: id,
                         label: z.string().min(1).max(80),
+                        emoji: z
+                            .string()
+                            .trim()
+                            .min(1)
+                            .max(64)
+                            .refine(
+                                (value) => !/[<>&@]/.test(value),
+                                'Use a Unicode emoji, not a Discord mention or custom emoji'
+                            )
+                            .optional(),
                         group: z.string().max(40).optional(),
                         requires: z.array(id).max(10).default([]),
                     })
@@ -154,6 +164,14 @@ export const selfRolesConfig = z
             new Set(data.roles.map((role) => role.roleId)).size ===
             data.roles.length,
         'Duplicate roles'
+    )
+    .refine(
+        (data) =>
+            data.style !== 'reactions' ||
+            (data.roles.every((role) => !!role.emoji) &&
+                new Set(data.roles.map((role) => role.emoji)).size ===
+                    data.roles.length),
+        'Reaction panels require one unique Unicode emoji per role'
     );
 
 export const antiSpamConfig = z

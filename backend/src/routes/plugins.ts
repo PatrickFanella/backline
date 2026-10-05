@@ -1,7 +1,7 @@
 import { Router } from 'express';
 
-import { pluginManager } from '../plugins';
 import { requireAdmin } from '../middleware/auth';
+import { pluginManager } from '../plugins';
 
 const router = Router();
 

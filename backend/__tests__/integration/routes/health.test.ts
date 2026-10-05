@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-require-imports, @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-require-imports */
 import express, { Application } from 'express';
 import request from 'supertest';
 
@@ -86,7 +86,9 @@ describe('Health Check Routes', () => {
 
         it('should return 503 when database is unhealthy', async () => {
             // Mock failed database check
-            mockDb.$queryRaw.mockRejectedValue(new Error('Database connection failed'));
+            mockDb.$queryRaw.mockRejectedValue(
+                new Error('Database connection failed')
+            );
 
             // Mock successful Redis check
             const mockRedis = {
@@ -112,7 +114,9 @@ describe('Health Check Routes', () => {
 
             // Mock failed Redis check
             const mockRedis = {
-                ping: jest.fn().mockRejectedValue(new Error('Redis connection failed')),
+                ping: jest
+                    .fn()
+                    .mockRejectedValue(new Error('Redis connection failed')),
             };
             mockGetRedisClient.mockReturnValue(mockRedis);
 
@@ -139,7 +143,9 @@ describe('Health Check Routes', () => {
             mockGetRedisClient.mockReturnValue(mockRedis);
 
             // Mock failed Discord API check
-            (global.fetch as jest.Mock).mockRejectedValue(new Error('Discord API failed'));
+            (global.fetch as jest.Mock).mockRejectedValue(
+                new Error('Discord API failed')
+            );
 
             const response = await request(app).get('/health/ready');
 

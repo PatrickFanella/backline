@@ -28,7 +28,7 @@ describe('Validation Middleware', () => {
 
     describe('validateRequest', () => {
         it('should pass validation with valid data', () => {
-            mockReq.query = { code: 'valid-auth-code' };
+            mockReq.query = { code: 'valid-auth-code', state: 'a'.repeat(64) };
 
             const middleware = validateRequest(authSchemas.discordCallback);
             middleware(mockReq as Request, mockRes as Response, mockNext);
@@ -102,9 +102,7 @@ describe('Validation Middleware', () => {
         });
 
         it('should remove event handlers', () => {
-            expect(sanitizeString('onclick=alert("xss")')).toBe(
-                'alert("xss")'
-            );
+            expect(sanitizeString('onclick=alert("xss")')).toBe('alert("xss")');
         });
 
         it('should trim whitespace', () => {

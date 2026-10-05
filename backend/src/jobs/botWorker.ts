@@ -1,7 +1,7 @@
 import { Client } from 'discord.js';
 
 import { expireClips } from '../audio/clips';
-import { maintainQueues } from '../audio/queue';
+import { audioDashboardHandler, maintainQueues } from '../audio/queue';
 import { radioRuntime } from '../audio/radio';
 import { antiSpamHandler, recoverSpamDecisions } from '../community/antiSpam';
 import {
@@ -39,7 +39,13 @@ import {
 } from '../integrations/notifications';
 import { performModeration } from '../moderation/service';
 import { moduleRegistry } from '../modules/registry';
-import { maintainRestorePlans, restoreApplyHandler } from '../recovery/restore';
+import {
+    maintainRestorePlans,
+    restoreApplyHandler,
+    restoreApplyRequestHandler,
+    restoreMapHandler,
+    restorePreviewHandler,
+} from '../recovery/restore';
 import {
     maintainSnapshots,
     snapshotCaptureHandler,
@@ -60,6 +66,10 @@ export function createBotWorker(client: Client): JobWorker {
             ['workflow-message', workflowMessageHandler(client)],
             ['snapshot-capture', snapshotCaptureHandler(client)],
             ['restore-apply', restoreApplyHandler(client)],
+            ['restore-preview', restorePreviewHandler(client)],
+            ['restore-map', restoreMapHandler(client)],
+            ['restore-apply-request', restoreApplyRequestHandler(client)],
+            ['audio-dashboard', audioDashboardHandler(client)],
             ['native-poll', pollHandler(client)],
             ['suggestion-publish', suggestionHandler(client)],
             ['afk-notice', memberNoticeHandler(client)],
@@ -242,6 +252,7 @@ export function startJobPolling(
                             'workflow-message',
                             'snapshot-capture',
                             'restore-apply',
+                            'audio-dashboard',
                         ],
                     },
                 },

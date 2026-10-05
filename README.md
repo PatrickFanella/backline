@@ -82,17 +82,13 @@ Documentation is built with [VitePress](https://vitepress.dev/) and includes:
 - Code examples in multiple languages
 - Comprehensive guides for all features
 
-## 🔄 CI/CD Pipeline
+## 🔄 CI and releases
 
-This project uses GitHub Actions for continuous integration and deployment:
+Gitea is the source of record for Backline. Its action-compatible workflows run the backend, frontend, database, and image checks for pull requests and reviewed revisions.
 
-- **Backend CI**: TypeScript compilation, Prisma validation, and builds
-- **Frontend CI**: ESLint, TypeScript checks, and Vite builds
-- **Security Scanning**: CodeQL analysis, dependency scanning, and secret detection
-- **Automated Deployment**: Staging and production deployment workflows
-- **Dependabot**: Automated dependency updates
+Deployments are operator-controlled. Select immutable backend and dashboard image digests from the reviewed Gitea revision, run the migration barrier, and verify the bot heartbeat, API readiness, and dashboard health. Follow [Deploy a Backline release](./DEPLOYMENT.md) for the release procedure and proof boundaries.
 
-See [CI/CD Documentation](.github/CI_CD_DOCUMENTATION.md) for more details.
+The GitHub mirror and the legacy GitHub/AWS deployment workflows are not a release path.
 
 ## 🚀 Getting Started
 
@@ -587,69 +583,13 @@ Git hooks are automatically installed when you run `npm install` in the root dir
 
 See [CONTRIBUTING.md](./CONTRIBUTING.md) for detailed guidelines.
 
-## 🚀 Production Deployment
+## 🚀 Production deployment
 
-Spywatcher includes comprehensive production deployment infrastructure with Kubernetes, Terraform, and CI/CD automation.
+The supported release topology is [compose.release.yml](./compose.release.yml): PostgreSQL, Redis, one migration barrier, one API, one bot and job worker, and the compiled dashboard. The bot is a singleton because it owns the Discord Gateway session and durable job polling.
 
-### Deployment Strategies
+Use [Deploy a Backline release](./DEPLOYMENT.md) to prepare private environment files, build the dashboard with public Vite values, select immutable image digests, stage the release, migrate, and verify it. The guide also covers generic backup and disposable restore verification.
 
-- **Rolling Updates**: Zero-downtime gradual deployment (default)
-- **Blue-Green**: Instant traffic switching with quick rollback
-- **Canary**: Gradual rollout with automated error detection
-
-### Infrastructure as Code
-
-- **Terraform**: Complete AWS infrastructure modules
-    - VPC with multi-AZ setup
-    - EKS Kubernetes cluster
-    - RDS PostgreSQL (Multi-AZ, encrypted)
-    - ElastiCache Redis (encrypted, failover)
-    - Application Load Balancer with WAF
-- **Kubernetes**: Production-ready manifests
-    - Auto-scaling with HorizontalPodAutoscaler
-    - Health checks and pod disruption budgets
-    - Security contexts and network policies
-- **Helm Charts**: Simplified deployment and configuration
-
-### Quick Deployment
-
-```bash
-# Deploy with Terraform
-cd terraform
-terraform init
-terraform apply -var-file="environments/production/terraform.tfvars"
-
-# Deploy with Kubernetes
-kubectl apply -k k8s/overlays/production
-
-# Deploy with Helm
-helm install spywatcher ./helm/spywatcher -n spywatcher
-
-# Blue-green deployment
-./scripts/deployment/blue-green-deploy.sh
-
-# Canary deployment
-./scripts/deployment/canary-deploy.sh
-```
-
-### Documentation
-
-- **[DEPLOYMENT.md](./DEPLOYMENT.md)** - Complete deployment guide
-- **[INFRASTRUCTURE.md](./INFRASTRUCTURE.md)** - Architecture overview
-- **[terraform/README.md](./terraform/README.md)** - Infrastructure as Code guide
-- **[k8s/README.md](./k8s/README.md)** - Kubernetes manifests guide
-
-### CI/CD Pipeline
-
-GitHub Actions workflows for automated deployment:
-
-- Docker image building and pushing to GHCR
-- Database migrations
-- Multiple deployment strategy support
-- Automated smoke tests and health checks
-- Rollback on failure
-
-See [.github/workflows/deploy-production.yml](./.github/workflows/deploy-production.yml) for the complete pipeline.
+`docker-compose.prod.yml`, `deploy.yml`, and `deploy-production.yml` describe legacy paths. The AWS, Kubernetes, and GitHub Container Registry claims in those files are not current Backline deployment instructions. The two legacy deployment workflows are manual-only with no automatic push trigger; do not dispatch them until their infrastructure is separately rebuilt and qualified.
 
 ## 👥 Contributions
 

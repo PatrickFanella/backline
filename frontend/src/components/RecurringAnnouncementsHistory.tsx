@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 
 import api from '../lib/api';
 
@@ -18,14 +18,26 @@ export default function RecurringAnnouncementsHistory({
     const [series, setSeries] = useState<Series[]>([]);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(true);
+    const [busy, setBusy] = useState(false),
+        [notice, setNotice] = useState('');
+    const [channelId, setChannelId] = useState(''),
+        [local, setLocal] = useState(''),
+        [timeZone, setTimeZone] = useState('UTC'),
+        [cadence, setCadence] = useState('daily'),
+        [days, setDays] = useState(30),
+        [content, setContent] = useState('');
+    async function load() {
+        const response = await api.get<Series[]>(
+            `/guilds/${guildId}/automation/announcements`
+        );
+        setSeries(response.data);
+    }
     useEffect(() => {
         let active = true;
         setSeries([]);
         setError('');
         setLoading(true);
-        api.get<Series[]>(
-            `/guilds/${guildId}/modules/scheduled-utilities/series`
-        )
+        api.get<Series[]>(`/guilds/${guildId}/automation/announcements`)
             .then((response) => {
                 if (active) setSeries(response.data);
             })
@@ -40,13 +52,114 @@ export default function RecurringAnnouncementsHistory({
             active = false;
         };
     }, [guildId]);
+    async function action(message: string, fn: () => Promise<unknown>) {
+        setBusy(true);
+        setNotice('');
+        try {
+            await fn();
+            await load();
+            setNotice(message);
+        } catch {
+            setError(
+                'Announcement change was not saved. Check the module, current server access and schedule.'
+            );
+        } finally {
+            setBusy(false);
+        }
+    }
+    function create(event: FormEvent) {
+        event.preventDefault();
+        void action('Recurring announcement saved.', () =>
+            api.post(`/guilds/${guildId}/automation/announcements`, {
+                channelId,
+                local,
+                timeZone,
+                cadence,
+                days,
+                content,
+                disambiguation: 'earlier',
+            })
+        );
+    }
     return (
         <section aria-label="Recurring announcements" className="space-y-3">
             <p>
-                Use /announce series in the destination channel for daily or
-                weekly announcements. Choose the first local time, time zone,
-                earlier or later repeated time, and a duration of 1–365 days.
+                Create daily or weekly announcements here. Choose the first
+                local time, time zone, earlier or later repeated time, and a
+                duration of 1–365 days.
             </p>
+            <form
+                onSubmit={create}
+                className="space-y-2 border border-ctp-surface1 rounded p-3"
+            >
+                <legend>New recurring announcement</legend>
+                <label className="block">
+                    Destination channel ID
+                    <input
+                        required
+                        pattern="[0-9]{17,20}"
+                        value={channelId}
+                        onChange={(e) => setChannelId(e.target.value)}
+                        className="block w-full"
+                    />
+                </label>
+                <label className="block">
+                    First local time
+                    <input
+                        required
+                        type="datetime-local"
+                        value={local}
+                        onChange={(e) => setLocal(e.target.value)}
+                        className="block w-full"
+                    />
+                </label>
+                <label className="block">
+                    Time zone
+                    <input
+                        required
+                        value={timeZone}
+                        onChange={(e) => setTimeZone(e.target.value)}
+                        className="block w-full"
+                    />
+                </label>
+                <label className="block">
+                    Cadence
+                    <select
+                        value={cadence}
+                        onChange={(e) => setCadence(e.target.value)}
+                        className="block w-full"
+                    >
+                        <option value="daily">Daily</option>
+                        <option value="weekly">Weekly</option>
+                    </select>
+                </label>
+                <label className="block">
+                    Run for days
+                    <input
+                        required
+                        type="number"
+                        min={1}
+                        max={365}
+                        value={days}
+                        onChange={(e) => setDays(Number(e.target.value))}
+                        className="block w-full"
+                    />
+                </label>
+                <label className="block">
+                    Message
+                    <textarea
+                        required
+                        maxLength={1800}
+                        value={content}
+                        onChange={(e) => setContent(e.target.value)}
+                        className="block w-full"
+                    />
+                </label>
+                <button disabled={busy} type="submit">
+                    Save recurring announcement
+                </button>
+            </form>
+            {notice && <p role="status">{notice}</p>}
             <p>
                 Missing local times are skipped. Old occurrences are skipped
                 after a day. An uncertain delivery holds the series. Use
@@ -77,6 +190,46 @@ export default function RecurringAnnouncementsHistory({
                                 occurrences.
                             </p>
                         )}
+                        <p className="space-x-2">
+                            <button
+                                disabled={busy}
+                                type="button"
+                                onClick={() =>
+                                    void action(
+                                        row.state === 'PAUSED'
+                                            ? 'Announcement resumed.'
+                                            : 'Announcement paused; pending sends were cancelled.',
+                                        () =>
+                                            api.patch(
+                                                `/guilds/${guildId}/automation/announcements/${row.id}`,
+                                                {
+                                                    action:
+                                                        row.state === 'PAUSED'
+                                                            ? 'resume'
+                                                            : 'pause',
+                                                }
+                                            )
+                                    )
+                                }
+                            >
+                                {row.state === 'PAUSED' ? 'Resume' : 'Pause'}
+                            </button>
+                            <button
+                                disabled={busy}
+                                type="button"
+                                onClick={() =>
+                                    void action(
+                                        'Announcement deleted and pending sends cancelled.',
+                                        () =>
+                                            api.delete(
+                                                `/guilds/${guildId}/automation/announcements/${row.id}`
+                                            )
+                                    )
+                                }
+                            >
+                                Delete
+                            </button>
+                        </p>
                     </li>
                 ))}
             </ul>
