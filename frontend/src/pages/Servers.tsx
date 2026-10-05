@@ -7,6 +7,7 @@ import BirthdaysConfig from '../components/BirthdaysConfig';
 import CommunityReportsConfig from '../components/CommunityReportsConfig';
 import CustomCommandsConfig from '../components/CustomCommandsConfig';
 import EconomyConfig from '../components/EconomyConfig';
+import EntertainmentConfig from '../components/EntertainmentConfig';
 import GiveawayConfig from '../components/GiveawayConfig';
 import LevelingConfig from '../components/LevelingConfig';
 import OnboardingConfig from '../components/OnboardingConfig';
@@ -261,6 +262,31 @@ export default function Servers() {
                                     {module.id === 'workflows' && (
                                         <WorkflowsConfig
                                             key={`${guildId}:workflows:${JSON.stringify(module.settings.config)}`}
+                                            guildId={guildId}
+                                            enabled={module.settings.enabled}
+                                            config={module.settings.config}
+                                            onSaved={async () => {
+                                                const current =
+                                                    generation.current;
+                                                const response = await api.get<
+                                                    Module[]
+                                                >(`/guilds/${guildId}/modules`);
+                                                if (
+                                                    current ===
+                                                    generation.current
+                                                )
+                                                    setModules(response.data);
+                                            }}
+                                            onBusy={(value) =>
+                                                setBusy(
+                                                    value ? module.id : null
+                                                )
+                                            }
+                                        />
+                                    )}
+                                    {module.id === 'entertainment' && (
+                                        <EntertainmentConfig
+                                            key={`${guildId}:entertainment:${JSON.stringify(module.settings.config)}`}
                                             guildId={guildId}
                                             enabled={module.settings.enabled}
                                             config={module.settings.config}

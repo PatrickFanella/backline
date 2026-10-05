@@ -1230,6 +1230,7 @@ model RecoveryMapping {
 }
 
 model EconomyAccount {
+ lastCollectionAt DateTime?
  inventory EconomyInventory[]
  guildId String
  memberId String
@@ -1240,6 +1241,37 @@ model EconomyAccount {
  lastPlayedAt DateTime?
  createdAt DateTime @default(now())
  @@id([guildId, memberId])
+}
+
+model EntertainmentReceipt {
+ id String @id @default(uuid())
+ guildId String
+ memberId String
+ requestId String
+ fingerprint String
+ kind String
+ result String
+ createdAt DateTime @default(now())
+ @@unique([guildId, requestId])
+ @@index([guildId, memberId, createdAt])
+ @@index([createdAt])
+}
+model CollectionTrade {
+ id String @id @default(uuid())
+ guildId String
+ sellerId String
+ buyerId String
+ itemId String
+ quantity Int
+ price Int
+ requestId String
+ state String @default("PENDING")
+ expiresAt DateTime
+ completedAt DateTime?
+ createdAt DateTime @default(now())
+ @@unique([guildId, requestId])
+ @@index([guildId, sellerId, state])
+ @@index([expiresAt])
 }
 model EconomyEntry {
  id String @id @default(uuid())
