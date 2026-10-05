@@ -10,7 +10,10 @@ import { env } from '../../src/utils/env';
 
 jest.mock('axios');
 describe('provider adapters', () => {
-    afterEach(() => jest.restoreAllMocks());
+    afterEach(() => {
+        jest.restoreAllMocks();
+        jest.mocked(axios.get).mockReset();
+    });
     it('rejects private, loopback and mapped addresses while accepting public addresses', () => {
         for (const address of [
             '127.0.0.1',
@@ -62,6 +65,7 @@ describe('provider adapters', () => {
                 data: {
                     items: [
                         {
+                            statistics: { videoCount: '0' },
                             contentDetails: {
                                 relatedPlaylists: { uploads: 'UUtest' },
                             },
@@ -93,10 +97,62 @@ describe('provider adapters', () => {
             expect(
                 jest.mocked(axios.get).mock.calls[1][1]?.params.playlistId
             ).toBe('UUtest');
+            expect(jest.mocked(axios.get).mock.calls[0][1]?.params.part).toBe(
+                'contentDetails,statistics'
+            );
         } finally {
             env.YOUTUBE_API_KEY = prior;
         }
     });
+    it.each([
+        ['0', 404, 'playlistNotFound', true],
+        ['1', 404, 'playlistNotFound', false],
+        [undefined, 404, 'playlistNotFound', false],
+        ['0', 403, 'quotaExceeded', false],
+        ['0', 404, 'other', false],
+        ['0', undefined, undefined, false],
+    ])(
+        'handles missing uploads only for an explicitly empty channel (%s, %s, %s)',
+        async (count, status, reason, empty) => {
+            const prior = env.YOUTUBE_API_KEY;
+            env.YOUTUBE_API_KEY = 'test-api-key';
+            jest.mocked(axios.get)
+                .mockResolvedValueOnce({
+                    data: {
+                        items: [
+                            {
+                                statistics:
+                                    count === undefined
+                                        ? undefined
+                                        : { videoCount: count },
+                                contentDetails: {
+                                    relatedPlaylists: { uploads: 'UUtest' },
+                                },
+                            },
+                        ],
+                    },
+                })
+                .mockRejectedValueOnce({
+                    response: {
+                        status,
+                        data: { error: { errors: [{ reason }] } },
+                    },
+                });
+            try {
+                const result = pollProvider({
+                    provider: 'youtube',
+                    source: 'UC' + 'a'.repeat(22),
+                });
+                if (empty) await expect(result).resolves.toEqual([]);
+                else
+                    await expect(result).rejects.toThrow(
+                        'Provider unavailable; retry with backoff'
+                    );
+            } finally {
+                env.YOUTUBE_API_KEY = prior;
+            }
+        }
+    );
     it('redacts provider errors', async () => {
         jest.mocked(axios.get).mockRejectedValue(new Error('secret-key'));
         const prior = env.YOUTUBE_API_KEY;
