@@ -7,6 +7,7 @@ import {
     expireAuditContent,
     recoverAuditEvents,
 } from '../community/audit';
+import { giveawayHandlers, recoverGiveaways } from '../community/giveaways';
 import { onboardingHandler, recoverJourneys } from '../community/onboarding';
 import { expireRoleChoices } from '../community/selfRoles';
 import { expireTickets } from '../community/tickets';
@@ -20,6 +21,7 @@ import { JobWorker, JobHandler } from './store';
 export function createBotWorker(client: Client): JobWorker {
     return new JobWorker(
         new Map<string, JobHandler>([
+            ...giveawayHandlers(client),
             ['audit-log', auditHandler(client)],
             ['anti-spam', antiSpamHandler(client)],
             ['onboarding-join', onboardingHandler(client, 'join')],
@@ -150,10 +152,20 @@ export function startJobPolling(
                 if (client) await expireTickets(client);
                 await radioRuntime.expireHistory();
                 await recoverSpamDecisions();
+                await recoverGiveaways();
                 lastExpiry = Date.now();
             }
             const held = await db.durableJob.findMany({
-                where: { state: 'RECONCILE', kind: 'server-status' },
+                where: {
+                    state: 'RECONCILE',
+                    kind: {
+                        in: [
+                            'server-status',
+                            'giveaway-draw',
+                            'giveaway-reroll',
+                        ],
+                    },
+                },
                 take: 10,
             });
             for (const job of held) await worker.reconcile(job.id, job.guildId);

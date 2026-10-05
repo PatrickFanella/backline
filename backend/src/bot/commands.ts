@@ -14,6 +14,7 @@ import {
     onboardingConfig,
     selfRolesConfig,
 } from '../community/config';
+import { giveawayCommand, routeGiveaways } from '../community/giveaways';
 import { acknowledgeRules } from '../community/onboarding';
 import { rolePanelCommand, routeSelfRoles } from '../community/selfRoles';
 import { routeTickets, ticketCommands } from '../community/tickets';
@@ -141,6 +142,7 @@ export async function routeInteraction(
         }
         if (await acknowledgeRules(interaction)) return;
         if (await routeTickets(interaction)) return;
+        if (await routeGiveaways(interaction)) return;
         if (await routeRadio(interaction)) return;
         if (await routeSelfRoles(interaction)) return;
         if (!interaction.isChatInputCommand()) {
@@ -349,6 +351,7 @@ export async function registerGuildCommands(
             rolePanelCommand,
             ...ticketCommands,
             radioCommand,
+            giveawayCommand,
         ])
             await guild.commands.create(command);
     }

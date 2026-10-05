@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 
 import AntiSpamConfig from '../components/AntiSpamConfig';
 import AudioConfig from '../components/AudioConfig';
+import GiveawayConfig from '../components/GiveawayConfig';
 import OnboardingConfig from '../components/OnboardingConfig';
 import SelfRolesConfig from '../components/SelfRolesConfig';
 import ServerModuleConfig from '../components/ServerModuleConfig';
@@ -216,6 +217,31 @@ export default function Servers() {
                                     {module.id === 'audio' && (
                                         <AudioConfig
                                             key={`${guildId}:audio:${JSON.stringify(module.settings.config)}`}
+                                            guildId={guildId}
+                                            enabled={module.settings.enabled}
+                                            config={module.settings.config}
+                                            onBusy={(value) =>
+                                                setBusy(
+                                                    value ? module.id : null
+                                                )
+                                            }
+                                            onSaved={async () => {
+                                                const current =
+                                                    generation.current;
+                                                const response = await api.get<
+                                                    Module[]
+                                                >(`/guilds/${guildId}/modules`);
+                                                if (
+                                                    current ===
+                                                    generation.current
+                                                )
+                                                    setModules(response.data);
+                                            }}
+                                        />
+                                    )}
+                                    {module.id === 'giveaways' && (
+                                        <GiveawayConfig
+                                            key={`${guildId}:giveaways:${JSON.stringify(module.settings.config)}`}
                                             guildId={guildId}
                                             enabled={module.settings.enabled}
                                             config={module.settings.config}

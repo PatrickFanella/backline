@@ -1,6 +1,13 @@
 import { z } from 'zod';
 
 export const id = z.string().regex(/^\d{17,20}$/);
+export const giveawayConfig = z
+    .object({
+        maxActive: z.number().int().min(1).max(25).default(10),
+        maxEntries: z.number().int().min(1).max(1000).default(500),
+        retentionDays: z.number().int().min(1).max(90).default(30),
+    })
+    .strict();
 export const ticketConfig = z
     .object({
         categoryId: id.optional(),

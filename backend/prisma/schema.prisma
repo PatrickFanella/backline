@@ -10,6 +10,54 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model Giveaway {
+  id            String          @id @default(uuid())
+  guildId       String
+  channelId     String
+  creatorId     String
+  requestId     String
+  prize         String
+  winnerCount   Int
+  requiredRoles String[]
+  minJoinedDays Int             @default(0)
+  endsAt        DateTime        @db.Timestamptz
+  expiresAt     DateTime        @db.Timestamptz
+  state         String          @default("CREATING")
+  messageId     String?
+  createdAt     DateTime        @default(now()) @db.Timestamptz
+  entries       GiveawayEntry[]
+  draws         GiveawayDraw[]
+
+  @@unique([guildId, requestId])
+  @@index([guildId, state, endsAt])
+  @@index([expiresAt])
+}
+
+model GiveawayEntry {
+  giveawayId String
+  memberId   String
+  createdAt  DateTime @default(now()) @db.Timestamptz
+  giveaway   Giveaway @relation(fields: [giveawayId], references: [id], onDelete: Cascade)
+
+  @@id([giveawayId, memberId])
+}
+
+model GiveawayDraw {
+  id            String   @id @default(uuid())
+  giveawayId    String
+  round         Int
+  requestId     String
+  actorId       String
+  eligibleCount Int
+  winners       String[]
+  announcement  String   @default("PENDING")
+  createdAt     DateTime @default(now()) @db.Timestamptz
+  giveaway      Giveaway @relation(fields: [giveawayId], references: [id], onDelete: Cascade)
+
+  @@unique([giveawayId, round])
+  @@unique([giveawayId, requestId])
+}
+
 enum Role {
   USER
   ADMIN

@@ -9,6 +9,7 @@ import {
     onboardingConfig,
     selfRolesConfig,
     ticketConfig,
+    giveawayConfig,
 } from '../community/config';
 import { db } from '../db';
 import { env } from '../utils/env';
@@ -170,6 +171,25 @@ export class ModuleRegistry {
 }
 
 export const moduleRegistry = new ModuleRegistry();
+moduleRegistry.register({
+    id: 'giveaways',
+    description:
+        'Persistent giveaway entries, eligibility checks, scheduled draws and recorded rerolls.',
+    version: 1,
+    schema: giveawayConfig,
+    permissions: [],
+    intents: [],
+    commands: ['giveaway'],
+    pendingJobPolicy: 'cancel',
+    actionPermissions: {
+        publish: [
+            PermissionFlagsBits.ViewChannel,
+            PermissionFlagsBits.SendMessages,
+            PermissionFlagsBits.EmbedLinks,
+            PermissionFlagsBits.ReadMessageHistory,
+        ],
+    },
+});
 moduleRegistry.register({
     id: 'audio',
     description: 'Play approved SomaFM radio stations in your voice channel.',
