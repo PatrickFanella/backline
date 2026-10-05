@@ -40,6 +40,7 @@ import { feedCommand, routeFeed } from '../integrations/notifications';
 import { moderationCommands, routeModeration } from '../moderation/commands';
 import { moduleRegistry } from '../modules/registry';
 import { env } from '../utils/env';
+import { routeWorkflow, workflowCommand } from '../workflows/engine';
 
 function permissionNames(values: bigint[]): string {
     return values
@@ -166,6 +167,7 @@ export async function routeInteraction(
         if (await routeCustomCommands(interaction)) return;
         if (await routeScheduledUtilities(interaction)) return;
         if (await routeFeed(interaction)) return;
+        if (await routeWorkflow(interaction)) return;
         if (await routePolls(interaction)) return;
         if (await routeSuggestions(interaction)) return;
         if (await routeMemberUtilities(interaction)) return;
@@ -424,6 +426,7 @@ export async function registerGuildCommands(
             customCommand,
             ...scheduledUtilityCommands,
             feedCommand,
+            workflowCommand,
             pollCommand,
             suggestCommand,
             ...memberUtilityCommands,

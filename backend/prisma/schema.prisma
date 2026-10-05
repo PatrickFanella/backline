@@ -1168,3 +1168,20 @@ model ProviderEvent {
   @@unique([feedId, externalId])
   @@index([guildId, createdAt])
 }
+
+model WorkflowRun {
+ id String @id @default(uuid())
+ guildId String
+ ruleId String
+ eventId String
+ actorId String
+ fingerprint String
+ channelId String
+ memberId String?
+ content String
+ state String @default("PENDING")
+ messageId String?
+ createdAt DateTime @default(now())
+ @@unique([guildId, ruleId, eventId])
+ @@index([guildId, createdAt])
+}

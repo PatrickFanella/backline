@@ -24,6 +24,7 @@ import { db } from '../db';
 import { integrationsConfig } from '../integrations/config';
 import { env } from '../utils/env';
 import { toInputJson } from '../utils/prismaJson';
+import { workflowsConfig } from '../workflows/config';
 
 export interface ModuleDefinition {
     id: string;
@@ -60,7 +61,8 @@ export class ModuleRegistry {
         guildId: string,
         moduleId: string,
         enabled: boolean,
-        config: unknown
+        config: unknown,
+        actorId?: string
     ): Promise<void> {
         const definition = this.get(moduleId);
         if (env.BOT_GUILD_IDS.length && !env.BOT_GUILD_IDS.includes(guildId))
@@ -69,6 +71,30 @@ export class ModuleRegistry {
             throw new Error('Activity Gateway intents unavailable');
         if (enabled && !moduleOperatorReady(definition))
             throw new Error('Required Gateway intents unavailable');
+        if (moduleId === 'workflows') {
+            const raw = z
+                .object({
+                    rules: z
+                        .array(z.record(z.string(), z.unknown()))
+                        .max(10)
+                        .default([]),
+                })
+                .strict()
+                .parse(config);
+            if (raw.rules.length && !actorId)
+                throw new Error(
+                    'Workflow configuration requires manager attribution'
+                );
+            config = { rules: raw.rules.map((rule) => ({ ...rule, actorId })) };
+            if (
+                enabled &&
+                raw.rules.some((rule) => rule.trigger === 'member_join') &&
+                !env.BOT_MEMBER_INTENTS
+            )
+                throw new Error(
+                    'Member Gateway intent required for join workflows'
+                );
+        }
         const parsed = definition.schema.parse(config);
         if (
             enabled &&
@@ -97,7 +123,8 @@ export class ModuleRegistry {
             moduleId === 'suggestions' ||
             moduleId === 'afk' ||
             moduleId === 'birthdays' ||
-            moduleId === 'integrations'
+            moduleId === 'integrations' ||
+            moduleId === 'workflows'
         ) {
             await db.$transaction(async (tx) => {
                 await tx.$queryRaw(
@@ -544,5 +571,17 @@ moduleRegistry.register({
     permissions: [PermissionFlagsBits.SendMessages],
     intents: [],
     commands: ['feed'],
+    pendingJobPolicy: 'cancel',
+});
+
+moduleRegistry.register({
+    id: 'workflows',
+    description:
+        'Bounded join, provider and manual triggers with filtered, durable channel messages.',
+    version: 1,
+    schema: workflowsConfig,
+    permissions: [PermissionFlagsBits.SendMessages],
+    intents: [],
+    commands: ['workflow'],
     pendingJobPolicy: 'cancel',
 });

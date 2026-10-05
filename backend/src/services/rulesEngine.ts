@@ -39,7 +39,7 @@ export interface RuleAction {
  */
 export function evaluateCondition(
     data: Record<string, unknown>,
-    condition: RuleCondition,
+    condition: RuleCondition
 ): boolean {
     const fieldValue = data[condition.field];
     const conditionValue = condition.value;
@@ -101,7 +101,7 @@ export function evaluateCondition(
  */
 export function evaluateRuleConditions(
     data: Record<string, unknown>,
-    conditions: RuleCondition[],
+    conditions: RuleCondition[]
 ): boolean {
     return conditions.every((condition) => evaluateCondition(data, condition));
 }
@@ -111,7 +111,7 @@ export function evaluateRuleConditions(
  */
 export async function executeAction(
     action: RuleAction,
-    matchedData: Record<string, unknown>[],
+    matchedData: Record<string, unknown>[]
 ): Promise<boolean> {
     try {
         switch (action.type) {
@@ -126,34 +126,18 @@ export async function executeAction(
                 return true;
 
             case 'NOTIFICATION':
-                // Placeholder for notification system integration
-                logger.info('Notification action executed', {
-                    message: action.config.message,
-                    matchCount: matchedData.length,
-                });
-                return true;
-
             case 'EMAIL':
-                // Placeholder for email service integration
-                logger.info('Email action executed', {
-                    recipients: action.config.recipients,
-                    matchCount: matchedData.length,
-                });
-                return true;
-
             case 'DISCORD_MESSAGE':
-                // Placeholder for Discord bot integration
-                logger.info('Discord message action executed', {
-                    message: action.config.message,
-                    matchCount: matchedData.length,
+                logger.warn('Legacy rule action has no delivery adapter', {
+                    type: action.type,
                 });
-                return true;
+                return false;
 
             default:
                 throw new Error(`Unknown action type: ${String(action.type)}`);
         }
-    } catch (error) {
-        logger.error('Failed to execute action', { action, error });
+    } catch {
+        logger.error('Failed to execute action', { type: action.type });
         return false;
     }
 }
@@ -162,12 +146,12 @@ export async function executeAction(
  * Fetches analytics data based on rule configuration
  */
 export async function fetchAnalyticsData(
-    rule: AnalyticsRule,
+    rule: AnalyticsRule
 ): Promise<Record<string, unknown>[]> {
     // Extract metadata to determine what data to fetch
     const metadata = rule.metadata as Record<string, unknown> | null;
     const dataSource = (metadata?.dataSource as string) || 'ghosts';
-    
+
     // Allow configurable time window in hours via metadata, default to 24 hours
     const timeWindowHours =
         typeof metadata?.timeWindowHours === 'number' &&
@@ -274,7 +258,7 @@ export async function executeRule(ruleId: string): Promise<void> {
         // Evaluate conditions
         const conditions = rule.conditions as unknown as RuleCondition[];
         const matchedData = data.filter((item) =>
-            evaluateRuleConditions(item, conditions),
+            evaluateRuleConditions(item, conditions)
         );
 
         // Execute actions
@@ -293,7 +277,10 @@ export async function executeRule(ruleId: string): Promise<void> {
         await prisma.ruleExecution.update({
             where: { id: executionRecord.id },
             data: {
-                status: 'SUCCESS',
+                status:
+                    matchedData.length > 0 && actionsExecuted < actions.length
+                        ? 'FAILED'
+                        : 'SUCCESS',
                 matchedCount: matchedData.length,
                 actionsExecuted,
                 executionTimeMs,
@@ -321,7 +308,10 @@ export async function executeRule(ruleId: string): Promise<void> {
                 where: { id: executionRecord.id },
                 data: {
                     status: 'FAILED',
-                    error: error instanceof Error ? error.message : 'Unknown error',
+                    error:
+                        error instanceof Error
+                            ? error.message
+                            : 'Unknown error',
                     completedAt: new Date(),
                     executionTimeMs: Date.now() - startTime,
                 },

@@ -17,6 +17,7 @@ import ServerModuleConfig from '../components/ServerModuleConfig';
 import SuggestionsConfig from '../components/SuggestionsConfig';
 import TicketConfig from '../components/TicketConfig';
 import { ThemeToggle } from '../components/ui/ThemeToggle';
+import WorkflowsConfig from '../components/WorkflowsConfig';
 import api from '../lib/api';
 import { useGuild } from '../store/guild';
 
@@ -252,6 +253,31 @@ export default function Servers() {
                                         <ProviderHistory
                                             key={`${guildId}:integrations`}
                                             guildId={guildId}
+                                        />
+                                    )}
+                                    {module.id === 'workflows' && (
+                                        <WorkflowsConfig
+                                            key={`${guildId}:workflows:${JSON.stringify(module.settings.config)}`}
+                                            guildId={guildId}
+                                            enabled={module.settings.enabled}
+                                            config={module.settings.config}
+                                            onSaved={async () => {
+                                                const current =
+                                                    generation.current;
+                                                const response = await api.get<
+                                                    Module[]
+                                                >(`/guilds/${guildId}/modules`);
+                                                if (
+                                                    current ===
+                                                    generation.current
+                                                )
+                                                    setModules(response.data);
+                                            }}
+                                            onBusy={(value) =>
+                                                setBusy(
+                                                    value ? module.id : null
+                                                )
+                                            }
                                         />
                                     )}
                                     {module.id === 'audio' && (

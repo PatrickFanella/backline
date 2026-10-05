@@ -170,6 +170,42 @@ router.get(
         }
     }
 );
+router.get('/guilds/:guildId/modules/workflows/history', async (req, res) => {
+    try {
+        const runs = await db.workflowRun.findMany({
+            where: { guildId: req.params.guildId },
+            orderBy: { createdAt: 'desc' },
+            take: 100,
+            select: {
+                id: true,
+                ruleId: true,
+                state: true,
+                messageId: true,
+                createdAt: true,
+            },
+        });
+        const jobs = await db.durableJob.findMany({
+            where: {
+                guildId: req.params.guildId,
+                idempotencyKey: {
+                    in: runs.map((run) => 'workflow-run:' + run.id),
+                },
+            },
+            select: { idempotencyKey: true, state: true, lastError: true },
+        });
+        res.json(
+            runs.map((run) => ({
+                ...run,
+                delivery:
+                    jobs.find(
+                        (job) => job.idempotencyKey === 'workflow-run:' + run.id
+                    ) ?? null,
+            }))
+        );
+    } catch {
+        res.status(503).json({ error: 'Workflow history unavailable' });
+    }
+});
 router.get('/guilds/:guildId/modules/anti-spam/history', async (req, res) => {
     try {
         const decisions = await db.spamDecision.findMany({
@@ -410,7 +446,8 @@ router.put('/guilds/:guildId/modules/:moduleId', async (req, res) => {
             req.params.guildId,
             req.params.moduleId,
             body.data.enabled,
-            body.data.config
+            body.data.config,
+            req.user!.discordId
         );
         res.json({ success: true });
     } catch {

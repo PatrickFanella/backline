@@ -11,6 +11,7 @@ import { z } from 'zod';
 import { db } from '../db';
 import { JobHandler } from '../jobs/store';
 import { moduleRegistry } from '../modules/registry';
+import { reserveWorkflowRuns } from '../workflows/engine';
 
 import { pollProvider, ProviderItem, ProviderSource } from './adapters';
 import { feedInput, providerSource } from './config';
@@ -224,6 +225,26 @@ export async function recordProviderItems(
                     state: notify ? 'PENDING' : 'BASELINE',
                 },
             });
+            if (notify)
+                await reserveWorkflowRuns(tx, {
+                    guildId: feed.guildId,
+                    eventId: 'provider:' + event.id,
+                    trigger: 'provider_event',
+                    at: new Date(),
+                    provider: feed.provider as 'twitch' | 'youtube' | 'rss',
+                    title: item.title,
+                    url: item.url,
+                });
+            if (
+                notify &&
+                (await tx.durableJob.count({
+                    where: {
+                        guildId: feed.guildId,
+                        state: { in: ['PENDING', 'LEASED', 'RECONCILE'] },
+                    },
+                })) >= 1000
+            )
+                throw new Error('Server job capacity reached');
             if (notify)
                 await tx.durableJob.create({
                     data: {

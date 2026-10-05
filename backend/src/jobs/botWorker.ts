@@ -35,6 +35,10 @@ import {
 } from '../integrations/notifications';
 import { performModeration } from '../moderation/service';
 import { moduleRegistry } from '../modules/registry';
+import {
+    expireWorkflowRuns,
+    workflowMessageHandler,
+} from '../workflows/engine';
 
 import { JobWorker, JobHandler } from './store';
 
@@ -44,6 +48,7 @@ export function createBotWorker(client: Client): JobWorker {
             ...giveawayHandlers(client),
             ['scheduled-utility', scheduledUtilityHandler(client)],
             ['provider-notification', providerNotificationHandler(client)],
+            ['workflow-message', workflowMessageHandler(client)],
             ['native-poll', pollHandler(client)],
             ['suggestion-publish', suggestionHandler(client)],
             ['afk-notice', memberNoticeHandler(client)],
@@ -193,6 +198,7 @@ export function startJobPolling(
                 await recoverGiveaways();
                 await expireLeveling();
                 await expireScheduledUtilities();
+                await expireWorkflowRuns();
                 await materializeAnnouncementSeries();
                 await expirePollJobs();
                 await expireSuggestions();
@@ -214,6 +220,7 @@ export function startJobPolling(
                             'native-poll',
                             'suggestion-publish',
                             'provider-notification',
+                            'workflow-message',
                         ],
                     },
                 },

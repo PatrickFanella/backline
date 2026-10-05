@@ -1,0 +1,3 @@
+CREATE TABLE "WorkflowRun" ("id" TEXT NOT NULL,"guildId" TEXT NOT NULL,"ruleId" TEXT NOT NULL,"eventId" TEXT NOT NULL,"actorId" TEXT NOT NULL,"fingerprint" TEXT NOT NULL,"channelId" TEXT NOT NULL,"memberId" TEXT,"content" TEXT NOT NULL,"state" TEXT NOT NULL DEFAULT 'PENDING' CHECK("state" IN ('PENDING','DELIVERED','CANCELLED','UNCERTAIN','SKIPPED')),"messageId" TEXT,"createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,CONSTRAINT "WorkflowRun_pkey" PRIMARY KEY("id"));
+CREATE UNIQUE INDEX "WorkflowRun_guildId_ruleId_eventId_key" ON "WorkflowRun"("guildId","ruleId","eventId");
+CREATE INDEX "WorkflowRun_guildId_createdAt_idx" ON "WorkflowRun"("guildId","createdAt");
