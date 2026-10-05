@@ -103,3 +103,6 @@ grafana/data/
 
 # Python pilot utility bytecode
 scripts/pilot/__pycache__/
+
+# Isolated companion source checkouts
+.companion/

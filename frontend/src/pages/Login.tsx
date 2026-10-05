@@ -35,7 +35,11 @@ function Login() {
                             className="inline-flex items-center justify-center w-16 h-16 bg-ctp-blue/20 rounded-full mb-4"
                             aria-hidden="true"
                         >
-                            <Shield className="w-8 h-8 text-ctp-blue" />
+                            <img
+                                src="/brand/backline/mark.svg"
+                                alt=""
+                                className="w-10 h-10"
+                            />
                         </motion.div>
                         <motion.h1
                             id="login-heading"
@@ -44,7 +48,7 @@ function Login() {
                             transition={{ delay: 0.3 }}
                             className="text-3xl font-bold text-ctp-text mb-2"
                         >
-                            {t('app.name')}
+                            Backline
                         </motion.h1>
                         <motion.p
                             initial={{ y: -20, opacity: 0 }}
@@ -52,7 +56,7 @@ function Login() {
                             transition={{ delay: 0.4 }}
                             className="text-ctp-subtext0"
                         >
-                            {t('app.tagline')}
+                            Sign in to your pilot dashboard.
                         </motion.p>
                     </header>
 
@@ -70,7 +74,7 @@ function Login() {
                                 aria-hidden="true"
                             />
                             <span className="text-sm">
-                                {t('features.realTimeMonitoring')}
+                                Server setup and module configuration
                             </span>
                         </li>
                         <li className="flex items-center gap-3 text-ctp-subtext1">
@@ -79,7 +83,7 @@ function Login() {
                                 aria-hidden="true"
                             />
                             <span className="text-sm">
-                                {t('features.ghostDetection')}
+                                Moderation cases and action history
                             </span>
                         </li>
                         <li className="flex items-center gap-3 text-ctp-subtext1">
@@ -88,7 +92,7 @@ function Login() {
                                 aria-hidden="true"
                             />
                             <span className="text-sm">
-                                {t('features.advancedAnalytics')}
+                                Welcome, roles, and private support
                             </span>
                         </li>
                     </motion.ul>

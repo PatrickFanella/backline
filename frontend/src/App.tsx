@@ -19,6 +19,7 @@ import {
     Suspicion,
     UserTimeline,
 } from './pages';
+import BacklineLanding from './pages/BacklineLanding';
 import MetricsDashboard from './pages/MetricsDashboard';
 import Moderation from './pages/Moderation';
 import RuleEditor from './pages/RuleEditor';
@@ -41,12 +42,13 @@ function AppContent() {
                 {t('navigation.skipToContent')}
             </a>
             <Routes>
+                <Route path="/" element={<BacklineLanding />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/auth/callback" element={<AuthCallback />} />
                 <Route path="/status" element={<Status />} />
 
                 <Route element={<RequireAuth />}>
-                    <Route path="/" element={<Servers />} />
+                    <Route path="/servers" element={<Servers />} />
                     <Route path="/moderation" element={<Moderation />} />
                     <Route path="/observed-activity" element={<Dashboard />} />
                     <Route path="/analytics" element={<Analytics />} />
