@@ -1,110 +1,116 @@
-name: Security Scan
+name: Security qualification
 
 on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
-  schedule:
-    # Run daily at 2 AM UTC
-    - cron: '0 2 * * *'
+    push:
+        branches: [main]
+    pull_request:
+        branches: [main]
+    schedule:
+        - cron: '0 2 * * *'
 
 jobs:
-  codeql:
-    name: CodeQL Analysis
-    runs-on: ubuntu-latest
-    permissions:
-      actions: read
-      contents: read
-      security-events: write
+    codeql-github-only:
+        name: CodeQL analysis (GitHub only)
+        # CodeQL uploads results to GitHub's Security API. Gitea has no compatible endpoint.
+        # On Gitea this job is deliberately skipped; it is not a completed CodeQL scan.
+        if: github.server_url == 'https://github.com'
+        runs-on: ubuntu-latest
+        permissions:
+            actions: read
+            contents: read
+            security-events: write
 
-    strategy:
-      fail-fast: false
-      matrix:
-        language: [ 'javascript-typescript' ]
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v5
 
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v5
+            - name: Initialize CodeQL
+              uses: github/codeql-action/init@v4
+              with:
+                  languages: javascript-typescript
+                  queries: security-and-quality
 
-      - name: Initialize CodeQL
-        uses: github/codeql-action/init@v4
-        with:
-          languages: ${{ matrix.language }}
-          queries: security-and-quality
+            - name: Autobuild
+              uses: github/codeql-action/autobuild@v4
 
-      - name: Autobuild
-        uses: github/codeql-action/autobuild@v4
+            - name: Perform CodeQL analysis
+              uses: github/codeql-action/analyze@v4
+              with:
+                  category: /language:javascript-typescript
 
-      - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v4
-        with:
-          category: "/language:${{matrix.language}}"
+    dependency-audit-backend:
+        name: Backend dependency audit
+        runs-on: ubuntu-latest
+        defaults:
+            run:
+                working-directory: ./backend
 
-  dependency-check-backend:
-    name: Backend Dependency Scan
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./backend
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v5
 
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v5
+            - name: Setup Node.js
+              uses: actions/setup-node@v6
+              with:
+                  node-version: '22'
+                  cache: 'npm'
+                  cache-dependency-path: backend/package-lock.json
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: backend/package-lock.json
+            - name: Install dependencies
+              run: npm ci
 
-      - name: Install dependencies
-        run: npm ci
+            - name: Fail on high or critical production dependency vulnerabilities
+              run: npm audit --omit=dev --audit-level=high
 
-      - name: Run npm audit
-        run: npm audit --audit-level=moderate
-        continue-on-error: true
+    dependency-audit-frontend:
+        name: Frontend dependency audit
+        runs-on: ubuntu-latest
+        defaults:
+            run:
+                working-directory: ./frontend
 
-  dependency-check-frontend:
-    name: Frontend Dependency Scan
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./frontend
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v5
 
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v5
+            - name: Setup Node.js
+              uses: actions/setup-node@v6
+              with:
+                  node-version: '22'
+                  cache: 'npm'
+                  cache-dependency-path: frontend/package-lock.json
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: frontend/package-lock.json
+            - name: Install dependencies
+              run: npm ci
 
-      - name: Install dependencies
-        run: npm ci
+            - name: Fail on high or critical production dependency vulnerabilities
+              run: npm audit --omit=dev --audit-level=high
 
-      - name: Run npm audit
-        run: npm audit --audit-level=moderate
-        continue-on-error: true
+    secrets-scan:
+        name: Verified secrets scan
+        runs-on: ubuntu-latest
 
-  secrets-scan:
-    name: Secret Scanning
-    runs-on: ubuntu-latest
+        steps:
+            - name: Checkout complete history
+              uses: actions/checkout@v5
+              with:
+                  fetch-depth: 0
 
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v5
-        with:
-          fetch-depth: 0
-
-      - name: TruffleHog OSS
-        uses: trufflesecurity/trufflehog@main
-        with:
-          path: ./
-          base: ${{ github.event.repository.default_branch }}
-          head: HEAD
-          extra_args: --debug --only-verified
+            - name: Scan checked-out history for verified secrets
+              # Copy the repository through the Docker API. A bind mount would
+              # resolve on the daemon host, outside Gitea's job workspace volume.
+              run: |
+                  scan_container="backline-ci-secrets-${{ github.run_id }}"
+                  scan_log="$(mktemp)"
+                  trap 'docker rm -f "$scan_container" >/dev/null 2>&1; rm -f "$scan_log"' EXIT
+                  docker create --name "$scan_container" \
+                    ghcr.io/trufflesecurity/trufflehog@sha256:52e67fef4d054ecff5c2ce4b4ae376626d1ef54aa0898b53cac19c25e92e14db \
+                    git file:///scan --only-verified --fail --no-update --json
+                  docker cp . "$scan_container:/scan"
+                  if docker start --attach "$scan_container" > "$scan_log" 2>&1; then
+                    echo "Verified-secrets scan completed without findings."
+                  else
+                    status=$?
+                    echo "Verified-secrets scan failed (exit $status); raw output withheld to avoid exposing findings."
+                    exit "$status"
+                  fi

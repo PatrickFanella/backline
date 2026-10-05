@@ -1,7 +1,10 @@
 import axios from 'axios';
+import type { AxiosRequestConfig } from 'axios';
 
 import {
     parseFeed,
+    pinnedLookup,
+    MAX_RSS_BYTES,
     publicAddress,
     pollProvider,
 } from '../../src/integrations/adapters';
@@ -55,7 +58,24 @@ describe('provider adapters', () => {
         expect(() =>
             parseFeed('<!DOCTYPE rss [<!ENTITY x "oops">]><rss/>')
         ).toThrow();
-        expect(() => parseFeed('x'.repeat(512001))).toThrow();
+        expect(() => parseFeed('x'.repeat(MAX_RSS_BYTES + 1))).toThrow();
+    });
+    it('honors Node 22 lookup all requests and accepts bounded CDATA feeds', () => {
+        const callback = jest.fn();
+        pinnedLookup({ address: '8.8.8.8', family: 4 })(
+            'example.org',
+            { all: true },
+            callback
+        );
+        expect(callback).toHaveBeenCalledWith(null, [
+            { address: '8.8.8.8', family: 4 },
+        ]);
+        const cdata = 'x'.repeat(MAX_RSS_BYTES - 1000);
+        expect(
+            parseFeed(
+                `<rss><channel><item><guid>a</guid><title><![CDATA[${cdata}]]></title><link>https://example.org/a</link><pubDate>2026-10-04T10:00:00Z</pubDate></item></channel></rss>`
+            )
+        ).toHaveLength(1);
     });
     it('uses the channel uploads playlist for YouTube and constructs a fixed watch URL', async () => {
         const prior = env.YOUTUBE_API_KEY;
@@ -94,10 +114,12 @@ describe('provider adapters', () => {
             expect(items[0].url).toBe(
                 'https://www.youtube.com/watch?v=abcdefghijk'
             );
-            expect(
-                jest.mocked(axios.get).mock.calls[1][1]?.params.playlistId
-            ).toBe('UUtest');
-            expect(jest.mocked(axios.get).mock.calls[0][1]?.params.part).toBe(
+            const playlistRequest = jest.mocked(axios.get).mock
+                .calls[1][1] as AxiosRequestConfig;
+            const channelRequest = jest.mocked(axios.get).mock
+                .calls[0][1] as AxiosRequestConfig;
+            expect(playlistRequest.params?.playlistId).toBe('UUtest');
+            expect(channelRequest.params?.part).toBe(
                 'contentDetails,statistics'
             );
         } finally {

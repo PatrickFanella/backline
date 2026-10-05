@@ -2,7 +2,6 @@ import { NextFunction, Request, Response } from 'express';
 
 import { db } from '../db';
 import { verifyApiKey } from '../utils/apiKeys';
-import { AuthPayload } from '../utils/auth';
 
 /**
  * Middleware to authenticate using API key
@@ -58,7 +57,7 @@ export async function requireApiKey(
             username: `${user.username}#${user.discriminator}`,
             role: user.role,
             access: true,
-        } as AuthPayload;
+        };
 
         next();
     } catch (err) {

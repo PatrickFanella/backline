@@ -1,5 +1,11 @@
 import * as Sentry from '@sentry/node';
-import { Express, Request, Response, NextFunction } from 'express';
+import {
+    Express,
+    Request,
+    Response,
+    NextFunction,
+    ErrorRequestHandler,
+} from 'express';
 
 import { env } from '../utils/env';
 
@@ -137,8 +143,17 @@ export function getSentryTracingHandler() {
     return (req: Request, res: Response, next: NextFunction) => next();
 }
 
-export function getSentryErrorHandler() {
-    return Sentry.expressErrorHandler();
+export function getSentryErrorHandler(): ErrorRequestHandler {
+    const handler = Sentry.expressErrorHandler();
+    // Sentry's portable ExpressResponse types declare emit() returning this;
+    // Node's actual response returns boolean. Pass the original Express objects.
+    return (error: Parameters<typeof handler>[0], request, response, next) =>
+        handler(
+            error,
+            request as unknown as Parameters<typeof handler>[1],
+            response as unknown as Parameters<typeof handler>[2],
+            next
+        );
 }
 
 /**

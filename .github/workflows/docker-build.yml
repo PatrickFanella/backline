@@ -24,6 +24,9 @@ on:
 
 env:
     CI_DISCORD_CLIENT_ID: '1375864689577164911'
+    CI_BACKEND_IMAGE: backline-ci-backend:${{ github.run_id }}
+    CI_FRONTEND_IMAGE: backline-ci-dashboard:${{ github.run_id }}
+    CI_DASHBOARD_CONTAINER: backline-ci-dashboard-${{ github.run_id }}
 
 jobs:
     build-backend:
@@ -35,11 +38,11 @@ jobs:
               uses: actions/checkout@v5
 
             - name: Build backend image locally
-              run: docker build -t backline-ci-backend:qualification ./backend
+              run: docker build -t "$CI_BACKEND_IMAGE" ./backend
 
             - name: Verify packaged backend entrypoints and native dependencies
               run: |
-                  docker run --rm --entrypoint sh backline-ci-backend:qualification -ec '
+                  docker run --rm --entrypoint sh "$CI_BACKEND_IMAGE" -ec '
                     test -f dist/src/server.js
                     test -f dist/src/index.js
                     test -f scripts/migrate.cjs
@@ -61,17 +64,17 @@ jobs:
               run: |
                   docker build \
                     --build-arg VITE_DISCORD_CLIENT_ID="$CI_DISCORD_CLIENT_ID" \
-                    -t backline-ci-dashboard:qualification \
+                    -t "$CI_FRONTEND_IMAGE" \
                     ./frontend
 
             - name: Verify dashboard static health endpoint
               run: |
                   # This standalone probe supplies the release-time upstream name only.
                   # The API proxy is qualified by compose.release.yml, not this static health check.
-                  docker run --rm -d -p 8080:80 --add-host api:127.0.0.1 --name backline-ci-dashboard backline-ci-dashboard:qualification
-                  trap 'docker logs backline-ci-dashboard; docker rm -f backline-ci-dashboard' EXIT
+                  docker run --rm -d --add-host api:127.0.0.1 --name "$CI_DASHBOARD_CONTAINER" "$CI_FRONTEND_IMAGE"
+                  trap 'docker logs "$CI_DASHBOARD_CONTAINER"; docker rm -f "$CI_DASHBOARD_CONTAINER"' EXIT
                   for attempt in 1 2 3 4 5; do
-                    if curl --fail --silent --show-error http://127.0.0.1:8080/health; then
+                    if docker exec "$CI_DASHBOARD_CONTAINER" wget -q -O - http://127.0.0.1/health; then
                       exit 0
                     fi
                     sleep 1

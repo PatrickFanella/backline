@@ -93,9 +93,25 @@ router.get('/guilds/:guildId/automation/feeds', async (req, res) => {
                 select: { id: true, state: true },
             }),
         ]);
+        const jobs = await db.durableJob.findMany({
+            where: {
+                guildId: req.params.guildId,
+                idempotencyKey: {
+                    in: events.map((event) => `provider-event:${event.id}`),
+                },
+            },
+            select: { idempotencyKey: true, state: true, lastError: true },
+        });
         res.json({
             feeds,
-            events: events.map((event) => ({ ...event, delivery: null })),
+            events: events.map((event) => ({
+                ...event,
+                delivery:
+                    jobs.find(
+                        (job) =>
+                            job.idempotencyKey === `provider-event:${event.id}`
+                    ) ?? null,
+            })),
         });
     } catch {
         res.status(503).json({ error: 'Provider feeds unavailable' });
@@ -290,10 +306,11 @@ router.delete('/guilds/:guildId/automation/feeds/:id', async (req, res) => {
 
 const announcement = scheduledInput
     .extend({
-        kind: z.literal('ANNOUNCEMENT'),
+        kind: z.literal('ANNOUNCEMENT').default('ANNOUNCEMENT'),
         cadence: z.enum(['daily', 'weekly']),
         days: z.number().int().min(1).max(365),
         disambiguation: z.enum(['earlier', 'later']),
+        requestId: z.string().uuid(),
     })
     .strict();
 router.get('/guilds/:guildId/automation/announcements', async (req, res) => {
@@ -317,13 +334,30 @@ router.post('/guilds/:guildId/automation/announcements', async (req, res) => {
     }
     try {
         await enabled(req.params.guildId, 'scheduled-utilities');
-        const at = resolveLocalTime(input.data);
+        const at = resolveLocalTime({
+            local: input.data.local,
+            timeZone: input.data.timeZone,
+            disambiguation: input.data.disambiguation,
+        });
         if (
             at.getTime() < Date.now() + 10000 ||
             at.getTime() > Date.now() + 30 * 86400000
         )
             throw new Error('time');
         const series = await locked(req.params.guildId, async (tx) => {
+            const existing = await tx.announcementSeries.findUnique({
+                where: {
+                    guildId_requestId: {
+                        guildId: req.params.guildId,
+                        requestId: input.data.requestId,
+                    },
+                },
+            });
+            if (existing) {
+                if (existing.actorId !== req.user!.discordId)
+                    throw new Error('request owner');
+                return existing;
+            }
             if (
                 (await tx.announcementSeries.count({
                     where: { guildId: req.params.guildId },
@@ -334,7 +368,7 @@ router.post('/guilds/:guildId/automation/announcements', async (req, res) => {
                 data: {
                     guildId: req.params.guildId,
                     actorId: req.user!.discordId,
-                    requestId: crypto.randomUUID(),
+                    requestId: input.data.requestId,
                     channelId: input.data.channelId,
                     content: input.data.content,
                     timeZone: input.data.timeZone,

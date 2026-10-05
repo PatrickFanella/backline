@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 
 import api from '../lib/api';
 
@@ -22,16 +22,22 @@ export default function ProviderHistory({ guildId }: { guildId: string }) {
     const [provider, setProvider] = useState('rss'),
         [source, setSource] = useState(''),
         [channelId, setChannelId] = useState('');
+    const currentGuildId = useRef(guildId);
+    currentGuildId.current = guildId;
     async function load() {
         const response = await api.get<History>(
             `/guilds/${guildId}/automation/feeds`
         );
-        setHistory(response.data);
+        if (currentGuildId.current === guildId) setHistory(response.data);
     }
     useEffect(() => {
         let active = true;
         setHistory(null);
         setError('');
+        setNotice('');
+        setBusy(false);
+        setSource('');
+        setChannelId('');
         api.get<History>(`/guilds/${guildId}/automation/feeds`)
             .then((response) => {
                 if (active) setHistory(response.data);
@@ -44,18 +50,22 @@ export default function ProviderHistory({ guildId }: { guildId: string }) {
         };
     }, [guildId]);
     async function action(message: string, fn: () => Promise<unknown>) {
+        const requestedGuildId = guildId;
         setBusy(true);
         setNotice('');
+        setError('');
         try {
             await fn();
+            if (currentGuildId.current !== requestedGuildId) return;
             await load();
-            setNotice(message);
+            if (currentGuildId.current === requestedGuildId) setNotice(message);
         } catch {
-            setError(
-                'Provider change was not saved. Check the module, current server access and values.'
-            );
+            if (currentGuildId.current === requestedGuildId)
+                setError(
+                    'Provider change was not saved. Check the module, current server access and values.'
+                );
         } finally {
-            setBusy(false);
+            if (currentGuildId.current === requestedGuildId) setBusy(false);
         }
     }
     function create(event: FormEvent) {
@@ -85,9 +95,10 @@ export default function ProviderHistory({ guildId }: { guildId: string }) {
             </p>
             <form
                 onSubmit={create}
+                aria-label="Add provider feed"
                 className="space-y-2 border border-ctp-surface1 rounded p-3"
             >
-                <legend>Add provider feed</legend>
+                <h3>Add provider feed</h3>
                 <label className="block">
                     Provider
                     <select

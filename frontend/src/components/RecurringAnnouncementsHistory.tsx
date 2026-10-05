@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 
 import api from '../lib/api';
 
@@ -23,20 +23,36 @@ export default function RecurringAnnouncementsHistory({
     const [channelId, setChannelId] = useState(''),
         [local, setLocal] = useState(''),
         [timeZone, setTimeZone] = useState('UTC'),
+        [ambiguity, setAmbiguity] = useState<'earlier' | 'later'>('earlier'),
         [cadence, setCadence] = useState('daily'),
         [days, setDays] = useState(30),
         [content, setContent] = useState('');
+    const createRequest = useRef({
+        fingerprint: '',
+        requestId: crypto.randomUUID(),
+    });
+    const currentGuildId = useRef(guildId);
+    currentGuildId.current = guildId;
     async function load() {
         const response = await api.get<Series[]>(
             `/guilds/${guildId}/automation/announcements`
         );
-        setSeries(response.data);
+        if (currentGuildId.current === guildId) setSeries(response.data);
     }
     useEffect(() => {
         let active = true;
         setSeries([]);
         setError('');
         setLoading(true);
+        setNotice('');
+        setBusy(false);
+        setChannelId('');
+        setLocal('');
+        setContent('');
+        createRequest.current = {
+            fingerprint: '',
+            requestId: crypto.randomUUID(),
+        };
         api.get<Series[]>(`/guilds/${guildId}/automation/announcements`)
             .then((response) => {
                 if (active) setSeries(response.data);
@@ -53,33 +69,60 @@ export default function RecurringAnnouncementsHistory({
         };
     }, [guildId]);
     async function action(message: string, fn: () => Promise<unknown>) {
+        const requestedGuildId = guildId;
         setBusy(true);
         setNotice('');
+        setError('');
         try {
             await fn();
+            if (currentGuildId.current !== requestedGuildId) return;
             await load();
-            setNotice(message);
+            if (currentGuildId.current === requestedGuildId) setNotice(message);
         } catch {
-            setError(
-                'Announcement change was not saved. Check the module, current server access and schedule.'
-            );
+            if (currentGuildId.current === requestedGuildId)
+                setError(
+                    'Announcement change was not saved. Check the module, current server access and schedule.'
+                );
         } finally {
-            setBusy(false);
+            if (currentGuildId.current === requestedGuildId) setBusy(false);
         }
     }
     function create(event: FormEvent) {
         event.preventDefault();
-        void action('Recurring announcement saved.', () =>
-            api.post(`/guilds/${guildId}/automation/announcements`, {
-                channelId,
-                local,
-                timeZone,
-                cadence,
-                days,
-                content,
-                disambiguation: 'earlier',
-            })
-        );
+        const payload = {
+            channelId,
+            local,
+            timeZone,
+            cadence,
+            days,
+            content,
+            disambiguation: ambiguity,
+        };
+        const fingerprint = JSON.stringify(payload);
+        if (
+            createRequest.current.fingerprint &&
+            createRequest.current.fingerprint !== fingerprint
+        )
+            createRequest.current = {
+                fingerprint,
+                requestId: crypto.randomUUID(),
+            };
+        else createRequest.current.fingerprint = fingerprint;
+        const submission = createRequest.current;
+        void action('Recurring announcement saved.', async () => {
+            await api.post(`/guilds/${guildId}/automation/announcements`, {
+                ...payload,
+                requestId: submission.requestId,
+            });
+            if (
+                createRequest.current === submission &&
+                currentGuildId.current === guildId
+            )
+                createRequest.current = {
+                    fingerprint: '',
+                    requestId: crypto.randomUUID(),
+                };
+        });
     }
     return (
         <section aria-label="Recurring announcements" className="space-y-3">
@@ -90,9 +133,10 @@ export default function RecurringAnnouncementsHistory({
             </p>
             <form
                 onSubmit={create}
+                aria-label="New recurring announcement"
                 className="space-y-2 border border-ctp-surface1 rounded p-3"
             >
-                <legend>New recurring announcement</legend>
+                <h3>New recurring announcement</h3>
                 <label className="block">
                     Destination channel ID
                     <input
@@ -121,6 +165,21 @@ export default function RecurringAnnouncementsHistory({
                         onChange={(e) => setTimeZone(e.target.value)}
                         className="block w-full"
                     />
+                </label>
+                <label className="block">
+                    Repeated local time
+                    <select
+                        value={ambiguity}
+                        onChange={(e) =>
+                            setAmbiguity(
+                                e.target.value === 'later' ? 'later' : 'earlier'
+                            )
+                        }
+                        className="block w-full"
+                    >
+                        <option value="earlier">Earlier occurrence</option>
+                        <option value="later">Later occurrence</option>
+                    </select>
                 </label>
                 <label className="block">
                     Cadence

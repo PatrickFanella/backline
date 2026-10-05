@@ -114,6 +114,15 @@ databaseTests('managed automation routes', () => {
         await expect(
             db.providerEvent.findUniqueOrThrow({ where: { id: event.id } })
         ).resolves.toMatchObject({ state: 'CANCELLED' });
+        const history = await request(app)
+            .get(`/guilds/${guildId}/automation/feeds`)
+            .expect(200);
+        expect(history.body.events).toEqual([
+            expect.objectContaining({
+                id: event.id,
+                delivery: expect.objectContaining({ state: 'CANCELLED' }),
+            }),
+        ]);
         await expect(
             db.durableJob.findFirstOrThrow({ where: { guildId } })
         ).resolves.toMatchObject({ state: 'CANCELLED' });
@@ -157,5 +166,47 @@ databaseTests('managed automation routes', () => {
                 })
             ).localTime
         ).toBe(localTime);
+    });
+    it('keeps a repeated create request to one series, event, and job', async () => {
+        const local = new Date(Date.now() + 86400000)
+            .toISOString()
+            .slice(0, 16);
+        const body = {
+            channelId: '777777777777777864',
+            content: 'Once',
+            local,
+            timeZone: 'UTC',
+            cadence: 'daily',
+            days: 30,
+            disambiguation: 'earlier',
+            requestId: '11111111-1111-4111-8111-111111111111',
+        };
+        const first = await request(app)
+            .post(`/guilds/${guildId}/automation/announcements`)
+            .send(body);
+        expect(first.body).toEqual(
+            expect.objectContaining({ id: expect.any(String) })
+        );
+        const repeated = await request(app)
+            .post(`/guilds/${guildId}/automation/announcements`)
+            .send(body)
+            .expect(201);
+        await request(app)
+            .post(`/guilds/${guildId}/automation/announcements`)
+            .send({
+                ...body,
+                requestId: '22222222-2222-4222-8222-222222222222',
+            })
+            .expect(201);
+        expect(repeated.body.id).toBe(first.body.id);
+        expect(await db.announcementSeries.count({ where: { guildId } })).toBe(
+            2
+        );
+        expect(await db.scheduledUtility.count({ where: { guildId } })).toBe(2);
+        expect(
+            await db.durableJob.count({
+                where: { guildId, kind: 'scheduled-utility' },
+            })
+        ).toBe(2);
     });
 });

@@ -53,7 +53,7 @@ jobs:
                   FRONTEND_URL: http://localhost:5173
 
             - name: Upload backend coverage artifact
-              uses: actions/upload-artifact@v4
+              uses: actions/upload-artifact@v3
               with:
                   name: backend-coverage
                   path: backend/coverage/
@@ -88,7 +88,7 @@ jobs:
               run: npm run test:coverage
 
             - name: Upload frontend coverage artifact
-              uses: actions/upload-artifact@v4
+              uses: actions/upload-artifact@v3
               with:
                   name: frontend-coverage
                   path: frontend/coverage/
@@ -126,7 +126,7 @@ jobs:
                   VITE_DISCORD_CLIENT_ID: '1375864689577164911'
 
             - name: Upload Playwright Report
-              uses: actions/upload-artifact@v4
+              uses: actions/upload-artifact@v3
               if: always()
               with:
                   name: playwright-report

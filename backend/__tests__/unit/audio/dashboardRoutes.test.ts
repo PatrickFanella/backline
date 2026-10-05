@@ -15,7 +15,7 @@ jest.mock('../../../src/middleware', () => ({
             userId: 'internal-user',
             discordId: '123456789012345678',
             role: 'USER',
-        } as express.Request['user'];
+        };
         next();
     },
     requireGuildAccess: (
