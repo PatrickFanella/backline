@@ -22,6 +22,10 @@ import {
 } from '../community/customCommands';
 import { giveawayCommand, routeGiveaways } from '../community/giveaways';
 import { routeLeveling, xpCommand } from '../community/leveling';
+import {
+    memberUtilityCommands,
+    routeMemberUtilities,
+} from '../community/memberUtilities';
 import { acknowledgeRules } from '../community/onboarding';
 import { pollCommand, routePolls } from '../community/polls';
 import {
@@ -162,6 +166,7 @@ export async function routeInteraction(
         if (await routeScheduledUtilities(interaction)) return;
         if (await routePolls(interaction)) return;
         if (await routeSuggestions(interaction)) return;
+        if (await routeMemberUtilities(interaction)) return;
         if (await routeSelfRoles(interaction)) return;
         if (!interaction.isChatInputCommand()) {
             await interaction.editReply(
@@ -173,7 +178,7 @@ export async function routeInteraction(
         switch (interaction.commandName) {
             case 'help':
                 await interaction.editReply(
-                    '/help — commands\n/setup — server diagnostics\n/settings module enabled — configure a module\n/status — current module status\n/warn /timeout /kick /ban /unban /purge /cases — opt-in moderation\n/suggest — submit and review server ideas\n/poll — native channel polls\n/remind /announce — scheduled channel messages\n/custom [name] — configured private server replies\n/xp profile or leaderboard — server XP\n/giveaway — server giveaways\n/ticket /ticket-panel — support tickets\n/radio — approved radio\n/roles-panel — configured self-service roles\nSettings require current Manage Server permission. Modules are opt-in.'
+                    '/help — commands\n/setup — server diagnostics\n/settings module enabled — configure a module\n/status — current module status\n/warn /timeout /kick /ban /unban /purge /cases — opt-in moderation\n/afk /birthday — opt-in member sharing\n/suggest — submit and review server ideas\n/poll — native channel polls\n/remind /announce — scheduled channel messages\n/custom [name] — configured private server replies\n/xp profile or leaderboard — server XP\n/giveaway — server giveaways\n/ticket /ticket-panel — support tickets\n/radio — approved radio\n/roles-panel — configured self-service roles\nSettings require current Manage Server permission. Modules are opt-in.'
                 );
                 break;
             case 'setup': {
@@ -418,6 +423,7 @@ export async function registerGuildCommands(
             ...scheduledUtilityCommands,
             pollCommand,
             suggestCommand,
+            ...memberUtilityCommands,
         ])
             await guild.commands.create(command);
     }

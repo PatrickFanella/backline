@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 
 import AntiSpamConfig from '../components/AntiSpamConfig';
 import AudioConfig from '../components/AudioConfig';
+import BirthdaysConfig from '../components/BirthdaysConfig';
 import CommunityReportsConfig from '../components/CommunityReportsConfig';
 import CustomCommandsConfig from '../components/CustomCommandsConfig';
 import GiveawayConfig from '../components/GiveawayConfig';
@@ -242,6 +243,45 @@ export default function Servers() {
                                     {module.id === 'audio' && (
                                         <AudioConfig
                                             key={`${guildId}:audio:${JSON.stringify(module.settings.config)}`}
+                                            guildId={guildId}
+                                            enabled={module.settings.enabled}
+                                            config={module.settings.config}
+                                            onBusy={(value) =>
+                                                setBusy(
+                                                    value ? module.id : null
+                                                )
+                                            }
+                                            onSaved={async () => {
+                                                const current =
+                                                    generation.current;
+                                                const response = await api.get<
+                                                    Module[]
+                                                >(`/guilds/${guildId}/modules`);
+                                                if (
+                                                    current ===
+                                                    generation.current
+                                                )
+                                                    setModules(response.data);
+                                            }}
+                                        />
+                                    )}
+                                    {module.id === 'afk' && (
+                                        <p>
+                                            Use /afk set to share a temporary
+                                            away reason, /afk clear to remove
+                                            it, or /afk status to read a
+                                            member’s current status. Reasons
+                                            expire within twenty-four hours and
+                                            clear when the member speaks.
+                                            Mention notices are limited to five
+                                            members per message and throttled;
+                                            they do not send notification
+                                            mentions.
+                                        </p>
+                                    )}
+                                    {module.id === 'birthdays' && (
+                                        <BirthdaysConfig
+                                            key={`${guildId}:birthdays:${JSON.stringify(module.settings.config)}`}
                                             guildId={guildId}
                                             enabled={module.settings.enabled}
                                             config={module.settings.config}

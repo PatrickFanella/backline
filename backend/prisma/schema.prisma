@@ -1095,3 +1095,22 @@ model SuggestionVote {
   suggestion CommunitySuggestion @relation(fields:[suggestionId],references:[id],onDelete:Cascade)
   @@id([suggestionId, memberId])
 }
+
+model MemberAfk {
+  guildId String
+  memberId String
+  reason String
+  setAt DateTime @default(now()) @db.Timestamptz
+  expiresAt DateTime @db.Timestamptz
+  lastNoticeAt DateTime? @db.Timestamptz
+  @@id([guildId,memberId])
+  @@index([expiresAt])
+}
+model MemberBirthday {
+  guildId String
+  memberId String
+  month Int
+  day Int
+  updatedAt DateTime @updatedAt @db.Timestamptz
+  @@id([guildId,memberId])
+}

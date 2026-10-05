@@ -9,6 +9,10 @@ import {
 } from '../community/audit';
 import { giveawayHandlers, recoverGiveaways } from '../community/giveaways';
 import { expireLeveling, levelingHandler } from '../community/leveling';
+import {
+    maintainMemberUtilities,
+    memberNoticeHandler,
+} from '../community/memberUtilities';
 import { onboardingHandler, recoverJourneys } from '../community/onboarding';
 import { expirePollJobs, pollHandler } from '../community/polls';
 import {
@@ -36,6 +40,8 @@ export function createBotWorker(client: Client): JobWorker {
             ['scheduled-utility', scheduledUtilityHandler(client)],
             ['native-poll', pollHandler(client)],
             ['suggestion-publish', suggestionHandler(client)],
+            ['afk-notice', memberNoticeHandler(client)],
+            ['birthday-notice', memberNoticeHandler(client)],
             ['level-reward', levelingHandler(client)],
             ['community-counter', communityCounterHandler(client)],
             ['audit-log', auditHandler(client)],
@@ -173,6 +179,7 @@ export function startJobPolling(
                 await expireScheduledUtilities();
                 await expirePollJobs();
                 await expireSuggestions();
+                await maintainMemberUtilities();
                 await maintainCommunityReports();
                 lastExpiry = Date.now();
             }

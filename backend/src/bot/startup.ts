@@ -6,6 +6,7 @@ import { radioRuntime } from '../audio/radio';
 import { registerAntiSpamEvents } from '../community/antiSpam';
 import { registerAuditEvents } from '../community/audit';
 import { registerLevelingEvents } from '../community/leveling';
+import { registerMemberUtilityEvents } from '../community/memberUtilities';
 import { registerOnboardingEvents } from '../community/onboarding';
 import { registerCommunityReportEvents } from '../community/reports';
 import { db } from '../db';
@@ -25,6 +26,7 @@ export async function startBot(): Promise<Client> {
         partials: [Partials.Message, Partials.Channel, Partials.GuildMember],
     });
     registerAuditEvents(client);
+    registerMemberUtilityEvents(client);
     registerAntiSpamEvents(client);
     registerOnboardingEvents(client);
     registerCollectors(client);
