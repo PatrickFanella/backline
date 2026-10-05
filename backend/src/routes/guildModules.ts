@@ -83,6 +83,34 @@ router.get(
         }
     }
 );
+router.get(
+    '/guilds/:guildId/modules/scheduled-utilities/series',
+    async (req, res) => {
+        try {
+            res.json(
+                await db.announcementSeries.findMany({
+                    where: { guildId: req.params.guildId },
+                    orderBy: { createdAt: 'desc' },
+                    take: 100,
+                    select: {
+                        id: true,
+                        state: true,
+                        cadence: true,
+                        localTime: true,
+                        timeZone: true,
+                        nextAt: true,
+                        endsAt: true,
+                        lastEventId: true,
+                    },
+                })
+            );
+        } catch {
+            res.status(503).json({
+                error: 'Recurring announcements unavailable',
+            });
+        }
+    }
+);
 router.get('/guilds/:guildId/modules/anti-spam/history', async (req, res) => {
     try {
         const decisions = await db.spamDecision.findMany({

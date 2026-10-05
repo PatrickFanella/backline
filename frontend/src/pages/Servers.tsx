@@ -9,6 +9,7 @@ import CustomCommandsConfig from '../components/CustomCommandsConfig';
 import GiveawayConfig from '../components/GiveawayConfig';
 import LevelingConfig from '../components/LevelingConfig';
 import OnboardingConfig from '../components/OnboardingConfig';
+import RecurringAnnouncementsHistory from '../components/RecurringAnnouncementsHistory';
 import ScheduledUtilitiesHistory from '../components/ScheduledUtilitiesHistory';
 import SelfRolesConfig from '../components/SelfRolesConfig';
 import ServerModuleConfig from '../components/ServerModuleConfig';
@@ -235,10 +236,16 @@ export default function Servers() {
                                         </p>
                                     )}
                                     {module.id === 'scheduled-utilities' && (
-                                        <ScheduledUtilitiesHistory
-                                            key={`${guildId}:scheduled-utilities`}
-                                            guildId={guildId}
-                                        />
+                                        <>
+                                            <ScheduledUtilitiesHistory
+                                                key={`${guildId}:scheduled-utilities`}
+                                                guildId={guildId}
+                                            />
+                                            <RecurringAnnouncementsHistory
+                                                key={`${guildId}:recurring-announcements`}
+                                                guildId={guildId}
+                                            />
+                                        </>
                                     )}
                                     {module.id === 'audio' && (
                                         <AudioConfig

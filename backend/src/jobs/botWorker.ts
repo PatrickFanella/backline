@@ -21,6 +21,7 @@ import {
 } from '../community/reports';
 import {
     expireScheduledUtilities,
+    materializeAnnouncementSeries,
     scheduledUtilityHandler,
 } from '../community/scheduledUtilities';
 import { expireRoleChoices } from '../community/selfRoles';
@@ -177,6 +178,7 @@ export function startJobPolling(
                 await recoverGiveaways();
                 await expireLeveling();
                 await expireScheduledUtilities();
+                await materializeAnnouncementSeries();
                 await expirePollJobs();
                 await expireSuggestions();
                 await maintainMemberUtilities();

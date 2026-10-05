@@ -1066,6 +1066,8 @@ model ScheduledUtility {
   state String @default("PENDING")
   messageId String?
   createdAt DateTime @default(now()) @db.Timestamptz
+  seriesId String?
+  @@index([seriesId])
   @@unique([guildId, requestId])
   @@index([guildId, state, runAt])
   @@index([expiresAt])
@@ -1113,4 +1115,25 @@ model MemberBirthday {
   day Int
   updatedAt DateTime @updatedAt @db.Timestamptz
   @@id([guildId,memberId])
+}
+
+model AnnouncementSeries {
+  id String @id @default(uuid())
+  guildId String
+  actorId String
+  requestId String
+  channelId String
+  content String
+  timeZone String
+  localTime String
+  cadence String
+  ambiguity String
+  nextAt DateTime @db.Timestamptz
+  endsAt DateTime @db.Timestamptz
+  state String @default("ACTIVE")
+  lastEventId String?
+  createdAt DateTime @default(now()) @db.Timestamptz
+  @@unique([guildId,requestId])
+  @@index([state,nextAt])
+  @@index([guildId,createdAt])
 }
