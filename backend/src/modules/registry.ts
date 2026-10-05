@@ -22,6 +22,7 @@ import { customCommandsConfig } from '../community/utilityTemplates';
 import { scheduledUtilitiesConfig } from '../community/utilityTime';
 import { db } from '../db';
 import { integrationsConfig } from '../integrations/config';
+import { recoveryConfig } from '../recovery/config';
 import { env } from '../utils/env';
 import { toInputJson } from '../utils/prismaJson';
 import { workflowsConfig } from '../workflows/config';
@@ -124,7 +125,8 @@ export class ModuleRegistry {
             moduleId === 'afk' ||
             moduleId === 'birthdays' ||
             moduleId === 'integrations' ||
-            moduleId === 'workflows'
+            moduleId === 'workflows' ||
+            moduleId === 'recovery'
         ) {
             await db.$transaction(async (tx) => {
                 await tx.$queryRaw(
@@ -583,5 +585,17 @@ moduleRegistry.register({
     permissions: [PermissionFlagsBits.SendMessages],
     intents: [],
     commands: ['workflow'],
+    pendingJobPolicy: 'cancel',
+});
+
+moduleRegistry.register({
+    id: 'recovery',
+    description:
+        'Versioned server structure snapshots, scheduled capture and reusable templates.',
+    version: 1,
+    schema: recoveryConfig,
+    permissions: [],
+    intents: [],
+    commands: ['snapshot'],
     pendingJobPolicy: 'cancel',
 });

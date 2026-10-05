@@ -10,6 +10,7 @@ import GiveawayConfig from '../components/GiveawayConfig';
 import LevelingConfig from '../components/LevelingConfig';
 import OnboardingConfig from '../components/OnboardingConfig';
 import ProviderHistory from '../components/ProviderHistory';
+import RecoveryConfig from '../components/RecoveryConfig';
 import RecurringAnnouncementsHistory from '../components/RecurringAnnouncementsHistory';
 import ScheduledUtilitiesHistory from '../components/ScheduledUtilitiesHistory';
 import SelfRolesConfig from '../components/SelfRolesConfig';
@@ -258,6 +259,31 @@ export default function Servers() {
                                     {module.id === 'workflows' && (
                                         <WorkflowsConfig
                                             key={`${guildId}:workflows:${JSON.stringify(module.settings.config)}`}
+                                            guildId={guildId}
+                                            enabled={module.settings.enabled}
+                                            config={module.settings.config}
+                                            onSaved={async () => {
+                                                const current =
+                                                    generation.current;
+                                                const response = await api.get<
+                                                    Module[]
+                                                >(`/guilds/${guildId}/modules`);
+                                                if (
+                                                    current ===
+                                                    generation.current
+                                                )
+                                                    setModules(response.data);
+                                            }}
+                                            onBusy={(value) =>
+                                                setBusy(
+                                                    value ? module.id : null
+                                                )
+                                            }
+                                        />
+                                    )}
+                                    {module.id === 'recovery' && (
+                                        <RecoveryConfig
+                                            key={`${guildId}:recovery:${JSON.stringify(module.settings.config)}`}
                                             guildId={guildId}
                                             enabled={module.settings.enabled}
                                             config={module.settings.config}

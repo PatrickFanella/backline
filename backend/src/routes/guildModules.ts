@@ -13,6 +13,7 @@ import { db } from '../db';
 import { listManagedGuilds } from '../guilds/authorization';
 import { requireAuthOrApiKey, requireGuildAccess } from '../middleware';
 import { moduleOperatorReady, moduleRegistry } from '../modules/registry';
+import { exportSnapshot } from '../recovery/snapshots';
 
 const router = Router();
 router.get('/guilds', requireAuthOrApiKey, async (req, res) => {
@@ -206,6 +207,45 @@ router.get('/guilds/:guildId/modules/workflows/history', async (req, res) => {
         res.status(503).json({ error: 'Workflow history unavailable' });
     }
 });
+router.get('/guilds/:guildId/modules/recovery/snapshots', async (req, res) => {
+    try {
+        res.json(
+            await db.serverSnapshot.findMany({
+                where: {
+                    guildId: req.params.guildId,
+                    expiresAt: { gt: new Date() },
+                },
+                orderBy: { createdAt: 'desc' },
+                take: 10,
+                select: {
+                    id: true,
+                    kind: true,
+                    checksum: true,
+                    createdAt: true,
+                    expiresAt: true,
+                },
+            })
+        );
+    } catch {
+        res.status(503).json({ error: 'Snapshot history unavailable' });
+    }
+});
+router.get(
+    '/guilds/:guildId/modules/recovery/snapshots/:id/export',
+    async (req, res) => {
+        try {
+            const exported = await exportSnapshot(
+                req.params.guildId,
+                req.params.id
+            );
+            res.attachment(
+                'backline-' + req.params.guildId + '-snapshot-v1.json'
+            ).json(exported);
+        } catch {
+            res.status(404).json({ error: 'Snapshot export unavailable' });
+        }
+    }
+);
 router.get('/guilds/:guildId/modules/anti-spam/history', async (req, res) => {
     try {
         const decisions = await db.spamDecision.findMany({

@@ -1185,3 +1185,18 @@ model WorkflowRun {
  @@unique([guildId, ruleId, eventId])
  @@index([guildId, createdAt])
 }
+
+model ServerSnapshot {
+ id String @id @default(uuid())
+ guildId String
+ actorId String?
+ requestId String
+ kind String @default("MANUAL")
+ manifest Json @db.JsonB
+ checksum String
+ expiresAt DateTime
+ createdAt DateTime @default(now())
+ @@unique([guildId, requestId])
+ @@index([guildId, createdAt])
+ @@index([expiresAt])
+}

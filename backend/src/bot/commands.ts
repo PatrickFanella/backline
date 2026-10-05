@@ -39,6 +39,7 @@ import { db } from '../db';
 import { feedCommand, routeFeed } from '../integrations/notifications';
 import { moderationCommands, routeModeration } from '../moderation/commands';
 import { moduleRegistry } from '../modules/registry';
+import { routeSnapshot, snapshotCommand } from '../recovery/snapshots';
 import { env } from '../utils/env';
 import { routeWorkflow, workflowCommand } from '../workflows/engine';
 
@@ -168,6 +169,7 @@ export async function routeInteraction(
         if (await routeScheduledUtilities(interaction)) return;
         if (await routeFeed(interaction)) return;
         if (await routeWorkflow(interaction)) return;
+        if (await routeSnapshot(interaction)) return;
         if (await routePolls(interaction)) return;
         if (await routeSuggestions(interaction)) return;
         if (await routeMemberUtilities(interaction)) return;
@@ -427,6 +429,7 @@ export async function registerGuildCommands(
             ...scheduledUtilityCommands,
             feedCommand,
             workflowCommand,
+            snapshotCommand,
             pollCommand,
             suggestCommand,
             ...memberUtilityCommands,

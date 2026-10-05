@@ -36,6 +36,10 @@ import {
 import { performModeration } from '../moderation/service';
 import { moduleRegistry } from '../modules/registry';
 import {
+    maintainSnapshots,
+    snapshotCaptureHandler,
+} from '../recovery/snapshots';
+import {
     expireWorkflowRuns,
     workflowMessageHandler,
 } from '../workflows/engine';
@@ -49,6 +53,7 @@ export function createBotWorker(client: Client): JobWorker {
             ['scheduled-utility', scheduledUtilityHandler(client)],
             ['provider-notification', providerNotificationHandler(client)],
             ['workflow-message', workflowMessageHandler(client)],
+            ['snapshot-capture', snapshotCaptureHandler(client)],
             ['native-poll', pollHandler(client)],
             ['suggestion-publish', suggestionHandler(client)],
             ['afk-notice', memberNoticeHandler(client)],
@@ -199,6 +204,7 @@ export function startJobPolling(
                 await expireLeveling();
                 await expireScheduledUtilities();
                 await expireWorkflowRuns();
+                await maintainSnapshots();
                 await materializeAnnouncementSeries();
                 await expirePollJobs();
                 await expireSuggestions();
@@ -221,6 +227,7 @@ export function startJobPolling(
                             'suggestion-publish',
                             'provider-notification',
                             'workflow-message',
+                            'snapshot-capture',
                         ],
                     },
                 },
