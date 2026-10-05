@@ -21,6 +21,7 @@ import {
 import { customCommandsConfig } from '../community/utilityTemplates';
 import { scheduledUtilitiesConfig } from '../community/utilityTime';
 import { db } from '../db';
+import { economyConfig } from '../economy/config';
 import { integrationsConfig } from '../integrations/config';
 import { recoveryConfig } from '../recovery/config';
 import { env } from '../utils/env';
@@ -126,7 +127,8 @@ export class ModuleRegistry {
             moduleId === 'birthdays' ||
             moduleId === 'integrations' ||
             moduleId === 'workflows' ||
-            moduleId === 'recovery'
+            moduleId === 'recovery' ||
+            moduleId === 'economy'
         ) {
             await db.$transaction(async (tx) => {
                 await tx.$queryRaw(
@@ -597,5 +599,17 @@ moduleRegistry.register({
     permissions: [],
     intents: [],
     commands: ['snapshot', 'restore'],
+    pendingJobPolicy: 'cancel',
+});
+
+moduleRegistry.register({
+    id: 'economy',
+    description:
+        'Opt-in fictional points, daily rewards, inventories and small games.',
+    version: 1,
+    schema: economyConfig,
+    permissions: [],
+    intents: [],
+    commands: ['economy'],
     pendingJobPolicy: 'cancel',
 });

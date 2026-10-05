@@ -30,6 +30,29 @@ const updateSchema = z.object({
     config: z.unknown().default({}),
 });
 router.use('/guilds/:guildId/modules', requireAuthOrApiKey, requireGuildAccess);
+router.get('/guilds/:guildId/modules/economy/ledger', async (req, res) => {
+    try {
+        res.json(
+            await db.economyEntry.findMany({
+                where: { guildId: req.params.guildId },
+                orderBy: { createdAt: 'desc' },
+                take: 100,
+                select: {
+                    id: true,
+                    memberId: true,
+                    actorId: true,
+                    kind: true,
+                    delta: true,
+                    balanceAfter: true,
+                    reason: true,
+                    createdAt: true,
+                },
+            })
+        );
+    } catch {
+        res.status(503).json({ error: 'Economy ledger unavailable' });
+    }
+});
 router.get(
     '/guilds/:guildId/modules/scheduled-utilities/history',
     async (req, res) => {
