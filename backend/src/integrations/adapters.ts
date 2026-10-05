@@ -299,7 +299,7 @@ export async function pollProvider(
                 ...options,
                 params: {
                     id: source.source,
-                    part: 'contentDetails',
+                    part: 'contentDetails,statistics',
                     key: env.YOUTUBE_API_KEY,
                 },
             }
@@ -309,6 +309,11 @@ export async function pollProvider(
                 items: z
                     .array(
                         z.object({
+                            statistics: z
+                                .object({
+                                    videoCount: z.string().regex(/^\d+$/),
+                                })
+                                .optional(),
                             contentDetails: z.object({
                                 relatedPlaylists: z.object({
                                     uploads: z.string(),
@@ -319,9 +324,8 @@ export async function pollProvider(
                     .length(1),
             })
             .parse(channels.data);
-        const response = await axios.get(
-            'https://www.googleapis.com/youtube/v3/playlistItems',
-            {
+        const response = await axios
+            .get('https://www.googleapis.com/youtube/v3/playlistItems', {
                 ...options,
                 params: {
                     playlistId:
@@ -331,8 +335,34 @@ export async function pollProvider(
                     maxResults: 50,
                     key: env.YOUTUBE_API_KEY,
                 },
-            }
-        );
+            })
+            .catch((error: unknown) => {
+                const missing = z
+                    .object({
+                        response: z.object({
+                            status: z.literal(404),
+                            data: z.object({
+                                error: z.object({
+                                    errors: z.array(
+                                        z.object({ reason: z.string() })
+                                    ),
+                                }),
+                            }),
+                        }),
+                    })
+                    .safeParse(error);
+                // An empty channel can advertise an uploads playlist that does not
+                // exist yet. Keep all other failures visible to provider backoff.
+                if (
+                    channel.items[0].statistics?.videoCount === '0' &&
+                    missing.success &&
+                    missing.data.response.data.error.errors.some(
+                        (entry) => entry.reason === 'playlistNotFound'
+                    )
+                )
+                    return { data: { items: [] } };
+                throw error;
+            });
         const parsed = z
             .object({
                 items: z

@@ -35,6 +35,11 @@ import {
 } from '../integrations/notifications';
 import { performModeration } from '../moderation/service';
 import { moduleRegistry } from '../modules/registry';
+import { maintainRestorePlans, restoreApplyHandler } from '../recovery/restore';
+import {
+    maintainSnapshots,
+    snapshotCaptureHandler,
+} from '../recovery/snapshots';
 import {
     expireWorkflowRuns,
     workflowMessageHandler,
@@ -49,6 +54,8 @@ export function createBotWorker(client: Client): JobWorker {
             ['scheduled-utility', scheduledUtilityHandler(client)],
             ['provider-notification', providerNotificationHandler(client)],
             ['workflow-message', workflowMessageHandler(client)],
+            ['snapshot-capture', snapshotCaptureHandler(client)],
+            ['restore-apply', restoreApplyHandler(client)],
             ['native-poll', pollHandler(client)],
             ['suggestion-publish', suggestionHandler(client)],
             ['afk-notice', memberNoticeHandler(client)],
@@ -174,6 +181,7 @@ export function startJobPolling(
 ): () => Promise<void> {
     let active: Promise<unknown> | undefined;
     let lastExpiry = 0;
+    let reconcileCursor: string | undefined;
     let providerActive: Promise<unknown> | undefined;
     let lastProviderPoll = 0;
     const interval = setInterval(() => {
@@ -199,6 +207,8 @@ export function startJobPolling(
                 await expireLeveling();
                 await expireScheduledUtilities();
                 await expireWorkflowRuns();
+                await maintainSnapshots();
+                await maintainRestorePlans();
                 await materializeAnnouncementSeries();
                 await expirePollJobs();
                 await expireSuggestions();
@@ -209,6 +219,7 @@ export function startJobPolling(
             const held = await db.durableJob.findMany({
                 where: {
                     state: 'RECONCILE',
+                    ...(reconcileCursor ? { id: { gt: reconcileCursor } } : {}),
                     kind: {
                         in: [
                             'server-status',
@@ -221,11 +232,15 @@ export function startJobPolling(
                             'suggestion-publish',
                             'provider-notification',
                             'workflow-message',
+                            'snapshot-capture',
+                            'restore-apply',
                         ],
                     },
                 },
+                orderBy: { id: 'asc' },
                 take: 10,
             });
+            reconcileCursor = held.length === 10 ? held[9].id : undefined;
             for (const job of held) await worker.reconcile(job.id, job.guildId);
             return worker.tick();
         })()
