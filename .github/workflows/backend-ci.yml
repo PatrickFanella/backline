@@ -1,219 +1,219 @@
 name: Backend CI
 
 on:
-  push:
-    paths:
-      - 'backend/**'
-      - '.github/workflows/**'
-  pull_request:
-    paths:
-      - 'backend/**'
-      - '.github/workflows/**'
+    push:
+        paths:
+            - 'backend/**'
+            - '.github/workflows/**'
+    pull_request:
+        paths:
+            - 'backend/**'
+            - '.github/workflows/**'
 
 jobs:
-  lint:
-    name: Lint
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./backend
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v5
-      
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: '22'
-          cache: 'npm'
-          cache-dependency-path: backend/package-lock.json
-      
-      - name: Install dependencies
-        run: npm ci
-      
-      - name: Run lint
-        run: npm run lint
+    lint:
+        name: Lint
+        runs-on: ubuntu-latest
+        defaults:
+            run:
+                working-directory: ./backend
 
-  typecheck:
-    name: TypeScript Check
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./backend
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v5
-      
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: '22'
-          cache: 'npm'
-          cache-dependency-path: backend/package-lock.json
-      
-      - name: Install dependencies
-        run: npm ci
-      
-      - name: Run TypeScript check
-        run: npm run type-check
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v5
 
-  prisma:
-    name: Prisma Validation
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./backend
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v5
-      
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: '22'
-          cache: 'npm'
-          cache-dependency-path: backend/package-lock.json
-      
-      - name: Install dependencies
-        run: npm ci
-      
-      - name: Validate Prisma schema
-        run: npm run prisma:validate
-        env:
-          DATABASE_URL: "postgresql://spywatcher:test_password@localhost:5432/spywatcher_test"
-      
-      - name: Generate Prisma client
-        run: npm run prisma:generate
-        env:
-          DATABASE_URL: "postgresql://spywatcher:test_password@localhost:5432/spywatcher_test"
+            - name: Setup Node.js
+              uses: actions/setup-node@v6
+              with:
+                  node-version: '22'
+                  cache: 'npm'
+                  cache-dependency-path: backend/package-lock.json
 
-  test:
-    name: Run Tests
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./backend
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v5
-      
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: '22'
-          cache: 'npm'
-          cache-dependency-path: backend/package-lock.json
-      
-      - name: Install dependencies
-        run: npm ci
-      
-      - name: Run tests
-        run: npm test
-        env:
-          DATABASE_URL: "postgresql://spywatcher:test_password@localhost:5432/spywatcher_test"
+            - name: Install dependencies
+              run: npm ci
 
-  database-integration:
-    name: PostgreSQL migrations and integration suite
-    runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:15
-        env:
-          POSTGRES_USER: spywatcher
-          POSTGRES_PASSWORD: test_password
-          POSTGRES_DB: spywatcher_test
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v5
-      
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: '22'
-          cache: 'npm'
-          cache-dependency-path: backend/package-lock.json
-      
-      - name: Install dependencies
-        working-directory: backend
-        run: npm ci
-      
-      - name: Generate Prisma client
-        working-directory: backend
-        run: npm run prisma:generate
+            - name: Run lint
+              run: npm run lint
 
-      - name: Check fresh and existing PostgreSQL baselines
-        env:
-          PGPASSWORD: test_password
-          BASELINE_FRESH_DATABASE_URL: postgresql://spywatcher:test_password@localhost:5432/spywatcher_test
-          BASELINE_EXISTING_DATABASE_URL: postgresql://spywatcher:test_password@localhost:5432/spywatcher_existing
-        run: |
-          createdb -h localhost -U spywatcher spywatcher_existing
-          node scripts/check-postgresql-baseline.mjs
+    typecheck:
+        name: TypeScript Check
+        runs-on: ubuntu-latest
+        defaults:
+            run:
+                working-directory: ./backend
 
-      - name: Create a fresh integration database
-        env:
-          PGPASSWORD: test_password
-        run: createdb -h localhost -U spywatcher spywatcher_integration
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v5
 
-      - name: Apply every migration to the integration database
-        working-directory: backend
-        env:
-          DATABASE_URL: postgresql://spywatcher:test_password@localhost:5432/spywatcher_integration
-        run: npm run prisma:migrate
+            - name: Setup Node.js
+              uses: actions/setup-node@v6
+              with:
+                  node-version: '22'
+                  cache: 'npm'
+                  cache-dependency-path: backend/package-lock.json
 
-      - name: Run every PostgreSQL integration suite
-        working-directory: backend
-        env:
-          RUN_DATABASE_TESTS: "true"
-          DATABASE_URL: postgresql://spywatcher:test_password@localhost:5432/spywatcher_integration
-        run: npm test -- --runInBand __tests__/integration/database
+            - name: Install dependencies
+              run: npm ci
 
-  build:
-    name: Build
-    runs-on: ubuntu-latest
-    needs: [lint, typecheck, prisma, test, database-integration]
-    defaults:
-      run:
-        working-directory: ./backend
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v5
-      
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: '22'
-          cache: 'npm'
-          cache-dependency-path: backend/package-lock.json
-      
-      - name: Install dependencies
-        run: npm ci
-      
-      - name: Generate Prisma client
-        run: npm run prisma:generate
-        env:
-          DATABASE_URL: "postgresql://spywatcher:test_password@localhost:5432/spywatcher_test"
-      
-      - name: Build
-        run: npm run build
-      
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: backend-dist
-          path: backend/dist
-          retention-days: 7
-          if-no-files-found: error
+            - name: Run TypeScript check
+              run: npm run type-check
+
+    prisma:
+        name: Prisma Validation
+        runs-on: ubuntu-latest
+        defaults:
+            run:
+                working-directory: ./backend
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v5
+
+            - name: Setup Node.js
+              uses: actions/setup-node@v6
+              with:
+                  node-version: '22'
+                  cache: 'npm'
+                  cache-dependency-path: backend/package-lock.json
+
+            - name: Install dependencies
+              run: npm ci
+
+            - name: Validate Prisma schema
+              run: npm run prisma:validate
+              env:
+                  DATABASE_URL: 'postgresql://spywatcher:test_password@localhost:5432/spywatcher_test'
+
+            - name: Generate Prisma client
+              run: npm run prisma:generate
+              env:
+                  DATABASE_URL: 'postgresql://spywatcher:test_password@localhost:5432/spywatcher_test'
+
+    test:
+        name: Run Tests
+        runs-on: ubuntu-latest
+        defaults:
+            run:
+                working-directory: ./backend
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v5
+
+            - name: Setup Node.js
+              uses: actions/setup-node@v6
+              with:
+                  node-version: '22'
+                  cache: 'npm'
+                  cache-dependency-path: backend/package-lock.json
+
+            - name: Install dependencies
+              run: npm ci
+
+            - name: Run tests
+              run: npm test
+              env:
+                  DATABASE_URL: 'postgresql://spywatcher:test_password@localhost:5432/spywatcher_test'
+
+    database-integration:
+        name: PostgreSQL migrations and integration suite
+        runs-on: ubuntu-latest
+        services:
+            postgres:
+                image: postgres:15
+                env:
+                    POSTGRES_USER: spywatcher
+                    POSTGRES_PASSWORD: test_password
+                    POSTGRES_DB: spywatcher_test
+                ports:
+                    - 5432:5432
+                options: >-
+                    --health-cmd pg_isready
+                    --health-interval 10s
+                    --health-timeout 5s
+                    --health-retries 5
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v5
+
+            - name: Setup Node.js
+              uses: actions/setup-node@v6
+              with:
+                  node-version: '22'
+                  cache: 'npm'
+                  cache-dependency-path: backend/package-lock.json
+
+            - name: Install dependencies
+              working-directory: backend
+              run: npm ci
+
+            - name: Generate Prisma client
+              working-directory: backend
+              run: npm run prisma:generate
+
+            - name: Check fresh and existing PostgreSQL baselines
+              env:
+                  PGPASSWORD: test_password
+                  BASELINE_FRESH_DATABASE_URL: postgresql://spywatcher:test_password@localhost:5432/spywatcher_test
+                  BASELINE_EXISTING_DATABASE_URL: postgresql://spywatcher:test_password@localhost:5432/spywatcher_existing
+              run: |
+                  createdb -h localhost -U spywatcher spywatcher_existing
+                  node scripts/check-postgresql-baseline.mjs
+
+            - name: Create a fresh integration database
+              env:
+                  PGPASSWORD: test_password
+              run: createdb -h localhost -U spywatcher spywatcher_integration
+
+            - name: Apply every migration to the integration database
+              working-directory: backend
+              env:
+                  DATABASE_URL: postgresql://spywatcher:test_password@localhost:5432/spywatcher_integration
+              run: npm run prisma:migrate
+
+            - name: Run every PostgreSQL integration suite
+              working-directory: backend
+              env:
+                  RUN_DATABASE_TESTS: 'true'
+                  DATABASE_URL: postgresql://spywatcher:test_password@localhost:5432/spywatcher_integration
+              run: npm test -- --runInBand __tests__/integration/database
+
+    build:
+        name: Build
+        runs-on: ubuntu-latest
+        needs: [lint, typecheck, prisma, test, database-integration]
+        defaults:
+            run:
+                working-directory: ./backend
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v5
+
+            - name: Setup Node.js
+              uses: actions/setup-node@v6
+              with:
+                  node-version: '22'
+                  cache: 'npm'
+                  cache-dependency-path: backend/package-lock.json
+
+            - name: Install dependencies
+              run: npm ci
+
+            - name: Generate Prisma client
+              run: npm run prisma:generate
+              env:
+                  DATABASE_URL: 'postgresql://spywatcher:test_password@localhost:5432/spywatcher_test'
+
+            - name: Build
+              run: npm run build
+
+            - name: Upload build artifacts
+              uses: actions/upload-artifact@v3
+              with:
+                  name: backend-dist
+                  path: backend/dist
+                  retention-days: 7
+                  if-no-files-found: error

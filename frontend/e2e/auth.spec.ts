@@ -1,39 +1,66 @@
-import { test, expect } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 
-test.describe('Authentication Flow', () => {
-    test('should display login page', async ({ page }) => {
-        await page.goto('/');
+test.describe('authentication boundaries', () => {
+    test('shows the Discord sign-in link and consent requirements on /login', async ({
+        page,
+    }) => {
+        await page.goto('/login');
 
-        // Check if login button OR link exists using Playwright's .or() locator
-        const loginElement = page
-            .getByRole('button', { name: /login/i })
-            .or(page.getByRole('link', { name: /login/i }));
-
-        await expect(loginElement).toBeVisible();
+        await expect(
+            page.getByRole('heading', { name: 'Backline' })
+        ).toBeVisible();
+        await expect(
+            page.getByRole('link', { name: 'Login with Discord' })
+        ).toHaveAttribute(
+            'href',
+            'http://localhost:3001/api/auth/discord/start'
+        );
+        await expect(
+            page.getByText('By logging in, you agree to our terms of service')
+        ).toBeVisible();
+        await expect(
+            page.getByRole('heading', { name: 'Analytics & Privacy' })
+        ).toBeVisible();
+        await expect(
+            page.getByRole('button', { name: 'Accept' })
+        ).toBeVisible();
+        await expect(
+            page.getByRole('button', { name: 'Decline' })
+        ).toBeVisible();
     });
 
-    test('should have Discord login button', async ({ page }) => {
-        await page.goto('/');
+    test('redirects an anonymous server route to login after navigation and reload', async ({
+        page,
+    }) => {
+        await page.goto('/servers');
 
-        // Use locator to find Discord login element
-        const discordLogin = page.getByRole('link', { name: /discord/i });
+        await expect(page).toHaveURL(/\/login$/);
+        await expect(
+            page.getByRole('link', { name: 'Login with Discord' })
+        ).toBeVisible();
 
-        await expect(discordLogin).toBeVisible();
+        await page.reload();
+
+        await expect(page).toHaveURL(/\/login$/);
+        await expect(
+            page.getByRole('heading', { name: 'Backline' })
+        ).toBeVisible();
     });
 });
 
-test.describe('Navigation', () => {
-    test('should load the home page', async ({ page }) => {
+test.describe('landing page', () => {
+    test('loads the published Backline title and hero heading', async ({
+        page,
+    }) => {
         await page.goto('/');
 
-        // Verify page loaded successfully
-        await expect(page).toHaveURL(/localhost/);
-    });
-
-    test('should have proper page title', async ({ page }) => {
-        await page.goto('/');
-
-        // Title should exist and not be empty
-        await expect(page).toHaveTitle(/.+/);
+        await expect(page).toHaveTitle(
+            'Backline — The tools behind your community'
+        );
+        await expect(
+            page.getByRole('heading', {
+                name: /KEEP YOUR\s+PEOPLE\s+TOGETHER\./,
+            })
+        ).toBeVisible();
     });
 });
