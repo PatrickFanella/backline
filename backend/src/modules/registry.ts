@@ -13,7 +13,11 @@ import {
     levelingConfig,
     communityReportsConfig,
 } from '../community/config';
-import { suggestionsConfig } from '../community/memberUtilityConfig';
+import {
+    afkConfig,
+    birthdaysConfig,
+    suggestionsConfig,
+} from '../community/memberUtilityConfig';
 import { customCommandsConfig } from '../community/utilityTemplates';
 import { scheduledUtilitiesConfig } from '../community/utilityTime';
 import { db } from '../db';
@@ -89,7 +93,9 @@ export class ModuleRegistry {
             moduleId === 'community-reports' ||
             moduleId === 'scheduled-utilities' ||
             moduleId === 'polls' ||
-            moduleId === 'suggestions'
+            moduleId === 'suggestions' ||
+            moduleId === 'afk' ||
+            moduleId === 'birthdays'
         ) {
             await db.$transaction(async (tx) => {
                 await tx.$queryRaw(
@@ -212,6 +218,39 @@ export class ModuleRegistry {
 }
 
 export const moduleRegistry = new ModuleRegistry();
+moduleRegistry.register({
+    id: 'afk',
+    description:
+        'Temporary shared away reasons that clear on activity or expire.',
+    version: 1,
+    schema: afkConfig,
+    permissions: [],
+    intents: [GatewayIntentBits.GuildMessages],
+    commands: ['afk'],
+    pendingJobPolicy: 'cancel',
+    actionPermissions: {
+        notice: [
+            PermissionFlagsBits.ViewChannel,
+            PermissionFlagsBits.SendMessages,
+        ],
+    },
+});
+moduleRegistry.register({
+    id: 'birthdays',
+    description: 'Opt-in month/day birthday messages without birth years.',
+    version: 1,
+    schema: birthdaysConfig,
+    permissions: [],
+    intents: [GatewayIntentBits.GuildMembers],
+    commands: ['birthday'],
+    pendingJobPolicy: 'cancel',
+    actionPermissions: {
+        notice: [
+            PermissionFlagsBits.ViewChannel,
+            PermissionFlagsBits.SendMessages,
+        ],
+    },
+});
 moduleRegistry.register({
     id: 'suggestions',
     description: 'Member ideas with changeable votes and staff decisions.',
