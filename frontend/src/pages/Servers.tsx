@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import AntiSpamConfig from '../components/AntiSpamConfig';
+import AudioClips from '../components/AudioClips';
 import AudioConfig from '../components/AudioConfig';
 import BirthdaysConfig from '../components/BirthdaysConfig';
 import CommunityReportsConfig from '../components/CommunityReportsConfig';
@@ -388,6 +389,17 @@ export default function Servers() {
                                                 )
                                                     setModules(response.data);
                                             }}
+                                        />
+                                    )}
+                                    {module.id === 'audio' && (
+                                        <AudioClips
+                                            key={`${guildId}:audio-clips`}
+                                            guildId={guildId}
+                                            onBusy={(value) =>
+                                                setBusy(
+                                                    value ? module.id : null
+                                                )
+                                            }
                                         />
                                     )}
                                     {module.id === 'afk' && (

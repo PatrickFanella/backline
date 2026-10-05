@@ -22,6 +22,9 @@ export default function AudioConfig({
     const [roles, setRoles] = useState(
         Array.isArray(config.djRoles) ? config.djRoles.join(', ') : ''
     );
+    const [clipsEnabled, setClipsEnabled] = useState(
+        config.clipsEnabled === true
+    );
     const [queuesEnabled, setQueuesEnabled] = useState(
         config.queuesEnabled === true
     );
@@ -40,6 +43,7 @@ export default function AudioConfig({
                 enabled,
                 config: {
                     queuesEnabled,
+                    clipsEnabled,
                     defaultStation: station,
                     djRoles: roles.split(/[\s,]+/).filter(Boolean),
                     volume,
@@ -67,6 +71,16 @@ export default function AudioConfig({
         >
             <fieldset disabled={busy} className="space-y-3">
                 <legend className="font-medium">SomaFM radio settings</legend>
+                <label className="block">
+                    <input
+                        type="checkbox"
+                        checked={clipsEnabled}
+                        onChange={(event) =>
+                            setClipsEnabled(event.target.checked)
+                        }
+                    />{' '}
+                    Enable manager-approved short audio clips
+                </label>
                 <label className="block">
                     <input
                         type="checkbox"

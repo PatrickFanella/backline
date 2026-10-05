@@ -1,0 +1,6 @@
+CREATE TABLE "AudioClip" ("id" TEXT PRIMARY KEY, "guildId" TEXT NOT NULL, "title" TEXT NOT NULL, "data" BYTEA NOT NULL, "byteSize" INTEGER NOT NULL, "durationMs" INTEGER NOT NULL, "sha256" TEXT NOT NULL, "source" TEXT NOT NULL, "license" TEXT NOT NULL, "rights" TEXT NOT NULL, "approvedBy" TEXT NOT NULL, "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP, "lastUsedAt" TIMESTAMP(3), CONSTRAINT "AudioClip_bytes_check" CHECK ("byteSize" = octet_length("data") AND "byteSize" BETWEEN 44 AND 3145728), CONSTRAINT "AudioClip_duration_check" CHECK ("durationMs" BETWEEN 50 AND 15000));
+CREATE UNIQUE INDEX "AudioClip_guildId_sha256_key" ON "AudioClip"("guildId","sha256");
+CREATE INDEX "AudioClip_guildId_title_idx" ON "AudioClip"("guildId","title");
+CREATE INDEX "AudioClip_lastUsedAt_createdAt_idx" ON "AudioClip"("lastUsedAt","createdAt");
+CREATE TABLE "AudioSoundboard" ("id" TEXT PRIMARY KEY, "guildId" TEXT NOT NULL, "name" TEXT NOT NULL, "clipIds" JSONB NOT NULL, "updatedBy" TEXT NOT NULL, "updatedAt" TIMESTAMP(3) NOT NULL, CONSTRAINT "AudioSoundboard_clips_check" CHECK (jsonb_typeof("clipIds") = 'array' AND jsonb_array_length("clipIds") BETWEEN 1 AND 20));
+CREATE UNIQUE INDEX "AudioSoundboard_guildId_name_key" ON "AudioSoundboard"("guildId","name");

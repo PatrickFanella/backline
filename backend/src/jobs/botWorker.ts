@@ -1,5 +1,6 @@
 import { Client } from 'discord.js';
 
+import { expireClips } from '../audio/clips';
 import { maintainQueues } from '../audio/queue';
 import { radioRuntime } from '../audio/radio';
 import { antiSpamHandler, recoverSpamDecisions } from '../community/antiSpam';
@@ -206,6 +207,7 @@ export function startJobPolling(
                 await expireRoleChoices();
                 if (client) await expireTickets(client);
                 await radioRuntime.expireHistory();
+                await expireClips();
                 await recoverSpamDecisions();
                 await recoverGiveaways();
                 await expireLeveling();

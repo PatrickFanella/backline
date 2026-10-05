@@ -159,6 +159,10 @@ export default defineConfig({
           items: [
             { text: 'System Architecture', link: '/developer/architecture' },
             { text: 'Community Bot Roadmap', link: '/developer/bot-expansion-roadmap' },
+            { text: 'Virtual Economy', link: '/developer/virtual-economy' },
+            { text: 'Original Entertainment', link: '/developer/curated-entertainment' },
+            { text: 'Audio Queues', link: '/developer/audio-queues' },
+            { text: 'Approved Audio Clips', link: '/developer/audio-clips' },
             { text: 'Database Schema', link: '/developer/database-schema' },
             { text: 'API Architecture', link: '/developer/api-architecture' },
             { text: 'Authentication Flow', link: '/developer/auth-flow' },

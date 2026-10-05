@@ -1,7 +1,13 @@
 import { PermissionFlagsBits } from 'discord.js';
-import { Router } from 'express';
+import { Router, raw } from 'express';
 import { z } from 'zod';
 
+import {
+    clipSelect,
+    deleteClip,
+    saveSoundboard,
+    storeClip,
+} from '../audio/clips';
 import {
     onboardingConfig,
     selfRolesConfig,
@@ -35,6 +41,103 @@ const updateSchema = z.object({
     config: z.unknown().default({}),
 });
 router.use('/guilds/:guildId/modules', requireAuthOrApiKey, requireGuildAccess);
+router.get('/guilds/:guildId/modules/audio/clips', async (req, res) => {
+    try {
+        res.json(
+            await db.audioClip.findMany({
+                where: { guildId: req.params.guildId },
+                select: clipSelect,
+                orderBy: { title: 'asc' },
+                take: 100,
+            })
+        );
+    } catch {
+        res.status(503).json({ error: 'Clip catalog unavailable' });
+    }
+});
+router.post(
+    '/guilds/:guildId/modules/audio/clips',
+    raw({ type: ['audio/wav', 'audio/x-wav'], limit: '3mb' }),
+    async (req, res) => {
+        try {
+            if (!Buffer.isBuffer(req.body)) {
+                res.status(400).json({
+                    error: 'Upload a canonical 16-bit PCM WAV as audio/wav',
+                });
+                return;
+            }
+            const metadata = {
+                title: req.query.title,
+                source: req.query.source,
+                license: req.query.license,
+                rights: req.query.rights,
+                confirmed: req.query.confirmed === 'true',
+            };
+            res.status(201).json(
+                await storeClip(
+                    req.params.guildId,
+                    req.user!.discordId,
+                    req.body,
+                    metadata
+                )
+            );
+        } catch {
+            res.status(400).json({
+                error: 'Clip was not approved or stored. Check format, duration, provenance, enabled clip setting and quota.',
+            });
+        }
+    }
+);
+router.delete('/guilds/:guildId/modules/audio/clips/:id', async (req, res) => {
+    try {
+        await deleteClip(req.params.guildId, req.params.id);
+        res.json({ success: true });
+    } catch {
+        res.status(400).json({ error: 'Clip withdrawal failed' });
+    }
+});
+router.get('/guilds/:guildId/modules/audio/soundboards', async (req, res) => {
+    try {
+        res.json(
+            await db.audioSoundboard.findMany({
+                where: { guildId: req.params.guildId },
+                orderBy: { name: 'asc' },
+                take: 20,
+            })
+        );
+    } catch {
+        res.status(503).json({ error: 'Soundboards unavailable' });
+    }
+});
+router.put('/guilds/:guildId/modules/audio/soundboards', async (req, res) => {
+    try {
+        res.json(
+            await saveSoundboard(
+                req.params.guildId,
+                req.user!.discordId,
+                req.body
+            )
+        );
+    } catch {
+        res.status(400).json({
+            error: 'Soundboard was not saved. Select one to twenty approved clips from this server.',
+        });
+    }
+});
+router.delete(
+    '/guilds/:guildId/modules/audio/soundboards/:id',
+    async (req, res) => {
+        try {
+            const id = z.string().uuid().parse(req.params.id);
+            await db.audioSoundboard.deleteMany({
+                where: { guildId: req.params.guildId, id },
+            });
+            res.json({ success: true });
+        } catch {
+            res.status(400).json({ error: 'Soundboard deletion failed' });
+        }
+    }
+);
 router.get('/guilds/:guildId/modules/entertainment/catalog', (_req, res) => {
     res.json(
         Object.entries(originalTemplates).map(([id, template]) => ({

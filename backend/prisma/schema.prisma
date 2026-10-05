@@ -1319,3 +1319,31 @@ model AudioPlaylist {
   @@unique([guildId,name])
   @@index([guildId,createdAt])
 }
+
+model AudioClip {
+ id String @id @default(uuid())
+ guildId String
+ title String
+ data Bytes
+ byteSize Int
+ durationMs Int
+ sha256 String
+ source String
+ license String
+ rights String
+ approvedBy String
+ createdAt DateTime @default(now())
+ lastUsedAt DateTime?
+ @@unique([guildId,sha256])
+ @@index([guildId,title])
+ @@index([lastUsedAt,createdAt])
+}
+model AudioSoundboard {
+ id String @id @default(uuid())
+ guildId String
+ name String
+ clipIds Json
+ updatedBy String
+ updatedAt DateTime @updatedAt
+ @@unique([guildId,name])
+}
