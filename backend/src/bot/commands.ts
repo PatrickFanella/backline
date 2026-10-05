@@ -36,6 +36,7 @@ import { rolePanelCommand, routeSelfRoles } from '../community/selfRoles';
 import { routeSuggestions, suggestCommand } from '../community/suggestions';
 import { routeTickets, ticketCommands } from '../community/tickets';
 import { db } from '../db';
+import { feedCommand, routeFeed } from '../integrations/notifications';
 import { moderationCommands, routeModeration } from '../moderation/commands';
 import { moduleRegistry } from '../modules/registry';
 import { env } from '../utils/env';
@@ -164,6 +165,7 @@ export async function routeInteraction(
         if (await routeLeveling(interaction)) return;
         if (await routeCustomCommands(interaction)) return;
         if (await routeScheduledUtilities(interaction)) return;
+        if (await routeFeed(interaction)) return;
         if (await routePolls(interaction)) return;
         if (await routeSuggestions(interaction)) return;
         if (await routeMemberUtilities(interaction)) return;
@@ -421,6 +423,7 @@ export async function registerGuildCommands(
             xpCommand,
             customCommand,
             ...scheduledUtilityCommands,
+            feedCommand,
             pollCommand,
             suggestCommand,
             ...memberUtilityCommands,
