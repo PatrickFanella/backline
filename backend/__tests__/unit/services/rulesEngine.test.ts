@@ -1,4 +1,5 @@
 import {
+    executeAction,
     evaluateCondition,
     evaluateRuleConditions,
     RuleCondition,
@@ -13,11 +14,11 @@ describe('Rules Engine', () => {
                 value: 'testuser',
             };
 
+            expect(evaluateCondition({ username: 'testuser' }, condition)).toBe(
+                true
+            );
             expect(
-                evaluateCondition({ username: 'testuser' }, condition),
-            ).toBe(true);
-            expect(
-                evaluateCondition({ username: 'otheruser' }, condition),
+                evaluateCondition({ username: 'otheruser' }, condition)
             ).toBe(false);
         });
 
@@ -53,10 +54,10 @@ describe('Rules Engine', () => {
             };
 
             expect(
-                evaluateCondition({ message: 'this is a test' }, condition),
+                evaluateCondition({ message: 'this is a test' }, condition)
             ).toBe(true);
             expect(
-                evaluateCondition({ message: 'no match here' }, condition),
+                evaluateCondition({ message: 'no match here' }, condition)
             ).toBe(false);
         });
 
@@ -67,10 +68,14 @@ describe('Rules Engine', () => {
                 value: ['active', 'pending'],
             };
 
-            expect(evaluateCondition({ status: 'active' }, condition)).toBe(true);
-            expect(evaluateCondition({ status: 'pending' }, condition)).toBe(true);
+            expect(evaluateCondition({ status: 'active' }, condition)).toBe(
+                true
+            );
+            expect(evaluateCondition({ status: 'pending' }, condition)).toBe(
+                true
+            );
             expect(evaluateCondition({ status: 'inactive' }, condition)).toBe(
-                false,
+                false
             );
         });
 
@@ -114,20 +119,20 @@ describe('Rules Engine', () => {
             expect(
                 evaluateRuleConditions(
                     { score: 75, status: 'active' },
-                    conditions,
-                ),
+                    conditions
+                )
             ).toBe(true);
             expect(
                 evaluateRuleConditions(
                     { score: 25, status: 'active' },
-                    conditions,
-                ),
+                    conditions
+                )
             ).toBe(false);
             expect(
                 evaluateRuleConditions(
                     { score: 75, status: 'inactive' },
-                    conditions,
-                ),
+                    conditions
+                )
             ).toBe(false);
         });
 
@@ -161,8 +166,8 @@ describe('Rules Engine', () => {
                         messageCount: 5,
                         typingCount: 60,
                     },
-                    conditions,
-                ),
+                    conditions
+                )
             ).toBe(true);
 
             expect(
@@ -172,9 +177,22 @@ describe('Rules Engine', () => {
                         messageCount: 15,
                         typingCount: 60,
                     },
-                    conditions,
-                ),
+                    conditions
+                )
             ).toBe(false);
         });
+    });
+});
+
+describe('legacy rule delivery status', () => {
+    it('does not claim delivery for unimplemented notification adapters', async () => {
+        for (const type of [
+            'NOTIFICATION',
+            'EMAIL',
+            'DISCORD_MESSAGE',
+        ] as const)
+            expect(
+                await executeAction({ type, config: { message: 'test' } }, [])
+            ).toBe(false);
     });
 });

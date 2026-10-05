@@ -83,6 +83,129 @@ router.get(
         }
     }
 );
+router.get(
+    '/guilds/:guildId/modules/scheduled-utilities/series',
+    async (req, res) => {
+        try {
+            res.json(
+                await db.announcementSeries.findMany({
+                    where: { guildId: req.params.guildId },
+                    orderBy: { createdAt: 'desc' },
+                    take: 100,
+                    select: {
+                        id: true,
+                        state: true,
+                        cadence: true,
+                        localTime: true,
+                        timeZone: true,
+                        nextAt: true,
+                        endsAt: true,
+                        lastEventId: true,
+                    },
+                })
+            );
+        } catch {
+            res.status(503).json({
+                error: 'Recurring announcements unavailable',
+            });
+        }
+    }
+);
+router.get(
+    '/guilds/:guildId/modules/integrations/history',
+    async (req, res) => {
+        try {
+            const feeds = await db.providerFeed.findMany({
+                where: { guildId: req.params.guildId },
+                orderBy: { createdAt: 'desc' },
+                take: 20,
+                select: {
+                    id: true,
+                    provider: true,
+                    source: true,
+                    channelId: true,
+                    enabled: true,
+                    baselineAt: true,
+                    nextPollAt: true,
+                    failures: true,
+                    lastError: true,
+                },
+            });
+            const events = await db.providerEvent.findMany({
+                where: { guildId: req.params.guildId },
+                orderBy: { createdAt: 'desc' },
+                take: 100,
+                select: {
+                    id: true,
+                    feedId: true,
+                    state: true,
+                    messageId: true,
+                    publishedAt: true,
+                    createdAt: true,
+                },
+            });
+            const jobs = await db.durableJob.findMany({
+                where: {
+                    guildId: req.params.guildId,
+                    idempotencyKey: {
+                        in: events.map((event) => 'provider-event:' + event.id),
+                    },
+                },
+                select: { idempotencyKey: true, state: true, lastError: true },
+            });
+            res.json({
+                feeds,
+                events: events.map((event) => ({
+                    ...event,
+                    delivery:
+                        jobs.find(
+                            (job) =>
+                                job.idempotencyKey ===
+                                'provider-event:' + event.id
+                        ) ?? null,
+                })),
+            });
+        } catch {
+            res.status(503).json({ error: 'Provider history unavailable' });
+        }
+    }
+);
+router.get('/guilds/:guildId/modules/workflows/history', async (req, res) => {
+    try {
+        const runs = await db.workflowRun.findMany({
+            where: { guildId: req.params.guildId },
+            orderBy: { createdAt: 'desc' },
+            take: 100,
+            select: {
+                id: true,
+                ruleId: true,
+                state: true,
+                messageId: true,
+                createdAt: true,
+            },
+        });
+        const jobs = await db.durableJob.findMany({
+            where: {
+                guildId: req.params.guildId,
+                idempotencyKey: {
+                    in: runs.map((run) => 'workflow-run:' + run.id),
+                },
+            },
+            select: { idempotencyKey: true, state: true, lastError: true },
+        });
+        res.json(
+            runs.map((run) => ({
+                ...run,
+                delivery:
+                    jobs.find(
+                        (job) => job.idempotencyKey === 'workflow-run:' + run.id
+                    ) ?? null,
+            }))
+        );
+    } catch {
+        res.status(503).json({ error: 'Workflow history unavailable' });
+    }
+});
 router.get('/guilds/:guildId/modules/anti-spam/history', async (req, res) => {
     try {
         const decisions = await db.spamDecision.findMany({
@@ -323,7 +446,8 @@ router.put('/guilds/:guildId/modules/:moduleId', async (req, res) => {
             req.params.guildId,
             req.params.moduleId,
             body.data.enabled,
-            body.data.config
+            body.data.config,
+            req.user!.discordId
         );
         res.json({ success: true });
     } catch {

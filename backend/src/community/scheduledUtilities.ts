@@ -124,64 +124,77 @@ export async function scheduleUtility(
             Prisma.sql`SELECT pg_advisory_xact_lock(hashtext(${guildId})::bigint)::text`
         );
         await current(tx, guildId);
-        const previous = await tx.scheduledUtility.findUnique({
-            where: { guildId_requestId: { guildId, requestId } },
-        });
-        if (previous) {
-            if (previous.actorId !== actorId)
-                throw new Error('Request belongs to another member');
-            return previous;
-        }
-        if (
-            (await tx.scheduledUtility.count({ where: { guildId } })) >= 1000 ||
-            (await tx.scheduledUtility.count({
-                where: {
-                    guildId,
-                    state: { in: ['PENDING', 'STARTED', 'UNCERTAIN'] },
-                },
-            })) >= 100 ||
-            (await tx.scheduledUtility.count({
-                where: { guildId, actorId, state: 'PENDING' },
-            })) >= 10
-        )
-            throw new Error('Schedule capacity reached');
-        if (
-            (await tx.durableJob.count({
-                where: {
-                    guildId,
-                    state: { in: ['PENDING', 'LEASED', 'RECONCILE'] },
-                },
-            })) >= 1000
-        )
-            throw new Error('Server action capacity reached');
-        const event = await tx.scheduledUtility.create({
-            data: {
-                guildId,
-                actorId,
-                requestId,
-                kind: parsed.kind,
-                channelId: parsed.channelId,
-                content: parsed.content,
-                localTime: parsed.local,
-                timeZone: parsed.timeZone,
-                runAt,
-                expiresAt: new Date(runAt.getTime() + 86400000),
-            },
-        });
-        await tx.durableJob.create({
-            data: {
-                guildId,
-                actorId,
-                moduleId: 'scheduled-utilities',
-                kind: 'scheduled-utility',
-                idempotencyKey: 'scheduled-utility:' + event.id,
-                payload: { eventId: event.id },
-                runAt,
-                expiresAt: event.expiresAt,
-            },
-        });
-        return event;
+        return reserveUtility(tx, guildId, actorId, requestId, parsed, runAt);
     });
+}
+
+async function reserveUtility(
+    tx: Prisma.TransactionClient,
+    guildId: string,
+    actorId: string,
+    requestId: string,
+    parsed: z.output<typeof scheduledInput>,
+    runAt: Date,
+    seriesId?: string
+) {
+    const previous = await tx.scheduledUtility.findUnique({
+        where: { guildId_requestId: { guildId, requestId } },
+    });
+    if (previous) {
+        if (previous.actorId !== actorId)
+            throw new Error('Request belongs to another member');
+        return previous;
+    }
+    if (
+        (await tx.scheduledUtility.count({ where: { guildId } })) >= 1000 ||
+        (await tx.scheduledUtility.count({
+            where: {
+                guildId,
+                state: { in: ['PENDING', 'STARTED', 'UNCERTAIN'] },
+            },
+        })) >= 100 ||
+        (await tx.scheduledUtility.count({
+            where: { guildId, actorId, state: 'PENDING' },
+        })) >= 10
+    )
+        throw new Error('Schedule capacity reached');
+    if (
+        (await tx.durableJob.count({
+            where: {
+                guildId,
+                state: { in: ['PENDING', 'LEASED', 'RECONCILE'] },
+            },
+        })) >= 1000
+    )
+        throw new Error('Server action capacity reached');
+    const event = await tx.scheduledUtility.create({
+        data: {
+            guildId,
+            actorId,
+            requestId,
+            kind: parsed.kind,
+            channelId: parsed.channelId,
+            content: parsed.content,
+            localTime: parsed.local,
+            timeZone: parsed.timeZone,
+            runAt,
+            seriesId,
+            expiresAt: new Date(runAt.getTime() + 86400000),
+        },
+    });
+    await tx.durableJob.create({
+        data: {
+            guildId,
+            actorId,
+            moduleId: 'scheduled-utilities',
+            kind: 'scheduled-utility',
+            idempotencyKey: 'scheduled-utility:' + event.id,
+            payload: { eventId: event.id },
+            runAt,
+            expiresAt: event.expiresAt,
+        },
+    });
+    return event;
 }
 
 export async function cancelUtility(
@@ -291,6 +304,11 @@ export function scheduledUtilityHandler(client: Client): JobHandler {
                                 messageId: fresh.messageId,
                                 eventId: fresh.id,
                             },
+                        };
+                    if (fresh.state === 'CANCELLED')
+                        return {
+                            state: 'CANCELLED',
+                            reason: 'Schedule cancelled',
                         };
                     if (fresh.state !== 'PENDING')
                         return {
@@ -458,6 +476,309 @@ export async function expireScheduledUtilities() {
         });
 }
 
+export function nextRecurringTime(
+    local: string,
+    timeZone: string,
+    cadence: 'daily' | 'weekly',
+    ambiguity: 'earlier' | 'later'
+) {
+    let candidate = local;
+    for (let attempt = 0; attempt < 8; attempt++) {
+        const date = new Date(candidate + ':00Z');
+        date.setUTCDate(date.getUTCDate() + (cadence === 'daily' ? 1 : 7));
+        candidate = date.toISOString().slice(0, 16);
+        try {
+            return {
+                local: candidate,
+                at: resolveLocalTime({
+                    local: candidate,
+                    timeZone,
+                    disambiguation: ambiguity,
+                }),
+            };
+        } catch (error) {
+            if (
+                !(error instanceof Error) ||
+                !error.message.includes('does not exist')
+            )
+                throw error;
+        }
+    }
+    throw new Error('No valid recurring time in the selected zone');
+}
+export async function createAnnouncementSeries(
+    client: Client,
+    guildId: string,
+    actorId: string,
+    requestId: string,
+    input: unknown
+) {
+    const parsed = scheduledInput
+        .extend({
+            kind: z.literal('ANNOUNCEMENT'),
+            cadence: z.enum(['daily', 'weekly']),
+            disambiguation: z.enum(['earlier', 'later']),
+            days: z.number().int().min(1).max(365).default(30),
+        })
+        .strict()
+        .parse(input);
+    const runAt = resolveLocalTime({
+        local: parsed.local,
+        timeZone: parsed.timeZone,
+        disambiguation: parsed.disambiguation,
+    });
+    if (
+        runAt.getTime() < Date.now() + 10000 ||
+        runAt.getTime() > Date.now() + 30 * 86400000
+    )
+        throw new Error('Choose a future start within thirty days');
+    if (!requestId || requestId.length > 100)
+        throw new Error('Invalid request');
+    await destination(
+        client,
+        guildId,
+        actorId,
+        parsed.channelId,
+        'ANNOUNCEMENT'
+    );
+    const next = nextRecurringTime(
+        parsed.local,
+        parsed.timeZone,
+        parsed.cadence,
+        parsed.disambiguation
+    );
+    return db.$transaction(async (tx) => {
+        await tx.$queryRaw(
+            Prisma.sql`SELECT pg_advisory_xact_lock(hashtext(${guildId})::bigint)::text`
+        );
+        await current(tx, guildId);
+        const prior = await tx.announcementSeries.findUnique({
+            where: { guildId_requestId: { guildId, requestId } },
+        });
+        if (prior) {
+            if (prior.actorId !== actorId)
+                throw new Error('Request belongs to another member');
+            return prior;
+        }
+        if (
+            (await tx.announcementSeries.count({ where: { guildId } })) >=
+                100 ||
+            (await tx.announcementSeries.count({
+                where: { guildId, actorId, state: 'ACTIVE' },
+            })) >= 10
+        )
+            throw new Error('Series capacity reached');
+        const series = await tx.announcementSeries.create({
+            data: {
+                guildId,
+                actorId,
+                requestId,
+                channelId: parsed.channelId,
+                content: parsed.content,
+                timeZone: parsed.timeZone,
+                localTime: next.local,
+                cadence: parsed.cadence,
+                ambiguity: parsed.disambiguation,
+                nextAt: next.at,
+                endsAt: new Date(runAt.getTime() + parsed.days * 86400000),
+            },
+        });
+        const first = await reserveUtility(
+            tx,
+            guildId,
+            actorId,
+            'series:' + series.id + ':' + runAt.toISOString(),
+            scheduledInput.parse({
+                kind: parsed.kind,
+                channelId: parsed.channelId,
+                content: parsed.content,
+                local: parsed.local,
+                timeZone: parsed.timeZone,
+                disambiguation: parsed.disambiguation,
+            }),
+            runAt,
+            series.id
+        );
+        return tx.announcementSeries.update({
+            where: { id: series.id },
+            data: { lastEventId: first.id },
+        });
+    });
+}
+export async function cancelAnnouncementSeries(
+    client: Client,
+    guildId: string,
+    actorId: string,
+    seriesId: string
+) {
+    const series = await db.announcementSeries.findFirstOrThrow({
+        where: { id: seriesId, guildId },
+    });
+    await destination(
+        client,
+        guildId,
+        actorId,
+        series.channelId,
+        'ANNOUNCEMENT'
+    );
+    await db.$transaction(async (tx) => {
+        await tx.$queryRaw(
+            Prisma.sql`SELECT pg_advisory_xact_lock(hashtext(${guildId})::bigint)::text`
+        );
+        await tx.announcementSeries.updateMany({
+            where: { id: seriesId, guildId },
+            data: { state: 'CANCELLED', content: '' },
+        });
+        const pending = await tx.scheduledUtility.findMany({
+            where: { guildId, seriesId, state: 'PENDING' },
+            select: { id: true },
+        });
+        await tx.scheduledUtility.updateMany({
+            where: { guildId, seriesId, state: 'PENDING' },
+            data: { state: 'CANCELLED', content: '' },
+        });
+        await tx.durableJob.updateMany({
+            where: {
+                guildId,
+                state: 'PENDING',
+                idempotencyKey: {
+                    in: pending.map((row) => 'scheduled-utility:' + row.id),
+                },
+            },
+            data: {
+                state: 'CANCELLED',
+                lastError: 'Announcement series cancelled',
+            },
+        });
+    });
+}
+let recurringCursor: string | undefined;
+export async function materializeAnnouncementSeries(now = new Date()) {
+    const due = await db.announcementSeries.findMany({
+        where: {
+            state: 'ACTIVE',
+            nextAt: { lte: now },
+            ...(recurringCursor ? { id: { gt: recurringCursor } } : {}),
+        },
+        orderBy: { id: 'asc' },
+        take: 100,
+    });
+    recurringCursor = due.length === 100 ? due[due.length - 1].id : undefined;
+    for (const row of due) {
+        try {
+            await db.$transaction(
+                async (tx) => {
+                    await tx.$queryRaw(
+                        Prisma.sql`SELECT pg_advisory_xact_lock(hashtext(${row.guildId})::bigint)::text`
+                    );
+                    await current(tx, row.guildId);
+                    const series =
+                        await tx.announcementSeries.findUniqueOrThrow({
+                            where: { id: row.id },
+                        });
+                    if (series.state !== 'ACTIVE' || series.nextAt > now)
+                        return;
+                    if (series.lastEventId) {
+                        const previous = await tx.durableJob.findUnique({
+                            where: {
+                                guildId_idempotencyKey: {
+                                    guildId: series.guildId,
+                                    idempotencyKey:
+                                        'scheduled-utility:' +
+                                        series.lastEventId,
+                                },
+                            },
+                        });
+                        if (
+                            previous &&
+                            ['RECONCILE', 'FAILED', 'CANCELLED'].includes(
+                                previous.state
+                            )
+                        ) {
+                            await tx.announcementSeries.update({
+                                where: { id: series.id },
+                                data: { state: 'HELD' },
+                            });
+                            return;
+                        }
+                        if (previous && previous.state !== 'DELIVERED') return;
+                    }
+                    let local = series.localTime,
+                        runAt = series.nextAt;
+                    for (
+                        let skipped = 0;
+                        runAt.getTime() + 86400000 <= now.getTime() &&
+                        skipped < 367;
+                        skipped++
+                    ) {
+                        const next = nextRecurringTime(
+                            local,
+                            series.timeZone,
+                            series.cadence as 'daily' | 'weekly',
+                            series.ambiguity as 'earlier' | 'later'
+                        );
+                        local = next.local;
+                        runAt = next.at;
+                    }
+                    if (runAt > series.endsAt) {
+                        await tx.announcementSeries.update({
+                            where: { id: series.id },
+                            data: { state: 'COMPLETED', content: '' },
+                        });
+                        return;
+                    }
+                    if (runAt > now) {
+                        await tx.announcementSeries.update({
+                            where: { id: series.id },
+                            data: { localTime: local, nextAt: runAt },
+                        });
+                        return;
+                    }
+                    const event = await reserveUtility(
+                        tx,
+                        series.guildId,
+                        series.actorId,
+                        'series:' + series.id + ':' + runAt.toISOString(),
+                        scheduledInput.parse({
+                            kind: 'ANNOUNCEMENT',
+                            channelId: series.channelId,
+                            content: series.content,
+                            local,
+                            timeZone: series.timeZone,
+                            disambiguation: series.ambiguity,
+                        }),
+                        runAt,
+                        series.id
+                    );
+                    const next = nextRecurringTime(
+                        local,
+                        series.timeZone,
+                        series.cadence as 'daily' | 'weekly',
+                        series.ambiguity as 'earlier' | 'later'
+                    );
+                    await tx.announcementSeries.update({
+                        where: { id: series.id },
+                        data: {
+                            lastEventId: event.id,
+                            localTime: next.local,
+                            nextAt: next.at,
+                        },
+                    });
+                },
+                { timeout: 10000 }
+            );
+        } catch {
+            console.warn('Announcement series reservation deferred');
+        }
+    }
+    await db.announcementSeries.deleteMany({
+        where: {
+            state: { in: ['CANCELLED', 'COMPLETED'] },
+            endsAt: { lt: new Date(now.getTime() - 30 * 86400000) },
+        },
+    });
+}
+
 export const scheduledUtilityCommands = ['remind', 'announce'].map((name) => {
     const command = new SlashCommandBuilder()
         .setName(name)
@@ -470,6 +791,79 @@ export const scheduledUtilityCommands = ['remind', 'announce'].map((name) => {
         .setIntegrationTypes(0);
     if (name === 'announce')
         command.setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild);
+    if (name === 'announce') {
+        command.addSubcommand((s) =>
+            s
+                .setName('series')
+                .setDescription(
+                    'Create daily or weekly messages for a bounded period'
+                )
+                .addStringOption((o) =>
+                    o
+                        .setName('time')
+                        .setDescription('First local time YYYY-MM-DDTHH:mm')
+                        .setRequired(true)
+                )
+                .addStringOption((o) =>
+                    o
+                        .setName('timezone')
+                        .setDescription('IANA time zone')
+                        .setRequired(true)
+                )
+                .addStringOption((o) =>
+                    o
+                        .setName('message')
+                        .setDescription('Announcement text')
+                        .setMaxLength(1800)
+                        .setRequired(true)
+                )
+                .addStringOption((o) =>
+                    o
+                        .setName('cadence')
+                        .setDescription('Repeat at the same local time')
+                        .setRequired(true)
+                        .addChoices(
+                            { name: 'Daily', value: 'daily' },
+                            { name: 'Weekly', value: 'weekly' }
+                        )
+                )
+                .addStringOption((o) =>
+                    o
+                        .setName('ambiguity')
+                        .setDescription('Repeated daylight-saving time policy')
+                        .setRequired(true)
+                        .addChoices(
+                            { name: 'Earlier', value: 'earlier' },
+                            { name: 'Later', value: 'later' }
+                        )
+                )
+                .addIntegerOption((o) =>
+                    o
+                        .setName('days')
+                        .setDescription(
+                            'Series length 1–365 days; defaults to 30'
+                        )
+                        .setMinValue(1)
+                        .setMaxValue(365)
+                )
+        );
+        command.addSubcommand((s) =>
+            s
+                .setName('series-list')
+                .setDescription('List the server’s recurring announcements')
+        );
+        command.addSubcommand((s) =>
+            s
+                .setName('series-cancel')
+                .setDescription('Cancel a series and pending messages')
+                .addStringOption((o) =>
+                    o
+                        .setName('id')
+                        .setDescription('Announcement series ID')
+                        .setRequired(true)
+                )
+        );
+    }
     command.addSubcommand((sub) =>
         sub
             .setName('create')
@@ -556,6 +950,61 @@ export async function routeScheduledUtilities(
         kind
     );
     const action = interaction.options.getSubcommand();
+    if (action === 'series') {
+        const series = await createAnnouncementSeries(
+            interaction.client,
+            guildId,
+            actorId,
+            interaction.id,
+            {
+                kind: 'ANNOUNCEMENT',
+                channelId: interaction.channelId,
+                content: interaction.options.getString('message', true),
+                local: interaction.options.getString('time', true),
+                timeZone: interaction.options.getString('timezone', true),
+                cadence: interaction.options.getString('cadence', true),
+                disambiguation: interaction.options.getString(
+                    'ambiguity',
+                    true
+                ),
+                days: interaction.options.getInteger('days') ?? 30,
+            }
+        );
+        await interaction.editReply(
+            `Announcement series saved: ${series.id}. Missing local times are skipped; uncertain delivery holds the series.`
+        );
+        return true;
+    }
+    if (action === 'series-cancel') {
+        await cancelAnnouncementSeries(
+            interaction.client,
+            guildId,
+            actorId,
+            interaction.options.getString('id', true)
+        );
+        await interaction.editReply(
+            'Series cancelled; pending messages were cleared.'
+        );
+        return true;
+    }
+    if (action === 'series-list') {
+        const series = await db.announcementSeries.findMany({
+            where: { guildId },
+            orderBy: { createdAt: 'desc' },
+            take: 10,
+        });
+        await interaction.editReply(
+            series.length
+                ? series
+                      .map(
+                          (row) =>
+                              `${row.id}: ${row.cadence}, ${row.state}, next ${row.localTime} ${row.timeZone}`
+                      )
+                      .join('\n')
+                : 'No announcement series are recorded.'
+        );
+        return true;
+    }
     if (action === 'create') {
         try {
             resolveLocalTime({

@@ -9,6 +9,10 @@ import {
 } from '../community/audit';
 import { giveawayHandlers, recoverGiveaways } from '../community/giveaways';
 import { expireLeveling, levelingHandler } from '../community/leveling';
+import {
+    maintainMemberUtilities,
+    memberNoticeHandler,
+} from '../community/memberUtilities';
 import { onboardingHandler, recoverJourneys } from '../community/onboarding';
 import { expirePollJobs, pollHandler } from '../community/polls';
 import {
@@ -17,14 +21,24 @@ import {
 } from '../community/reports';
 import {
     expireScheduledUtilities,
+    materializeAnnouncementSeries,
     scheduledUtilityHandler,
 } from '../community/scheduledUtilities';
 import { expireRoleChoices } from '../community/selfRoles';
+import { expireSuggestions, suggestionHandler } from '../community/suggestions';
 import { expireTickets } from '../community/tickets';
 import { db } from '../db';
 import { authorizeGuild } from '../guilds/authorization';
+import {
+    maintainProviderFeeds,
+    providerNotificationHandler,
+} from '../integrations/notifications';
 import { performModeration } from '../moderation/service';
 import { moduleRegistry } from '../modules/registry';
+import {
+    expireWorkflowRuns,
+    workflowMessageHandler,
+} from '../workflows/engine';
 
 import { JobWorker, JobHandler } from './store';
 
@@ -33,7 +47,12 @@ export function createBotWorker(client: Client): JobWorker {
         new Map<string, JobHandler>([
             ...giveawayHandlers(client),
             ['scheduled-utility', scheduledUtilityHandler(client)],
+            ['provider-notification', providerNotificationHandler(client)],
+            ['workflow-message', workflowMessageHandler(client)],
             ['native-poll', pollHandler(client)],
+            ['suggestion-publish', suggestionHandler(client)],
+            ['afk-notice', memberNoticeHandler(client)],
+            ['birthday-notice', memberNoticeHandler(client)],
             ['level-reward', levelingHandler(client)],
             ['community-counter', communityCounterHandler(client)],
             ['audit-log', auditHandler(client)],
@@ -155,7 +174,17 @@ export function startJobPolling(
 ): () => Promise<void> {
     let active: Promise<unknown> | undefined;
     let lastExpiry = 0;
+    let providerActive: Promise<unknown> | undefined;
+    let lastProviderPoll = 0;
     const interval = setInterval(() => {
+        if (!providerActive && Date.now() - lastProviderPoll > 60000) {
+            lastProviderPoll = Date.now();
+            providerActive = maintainProviderFeeds()
+                .catch(() => console.warn('Provider polling failed'))
+                .finally(() => {
+                    providerActive = undefined;
+                });
+        }
         if (active) return;
         active = (async () => {
             if (Date.now() - lastExpiry > 60000) {
@@ -169,7 +198,11 @@ export function startJobPolling(
                 await recoverGiveaways();
                 await expireLeveling();
                 await expireScheduledUtilities();
+                await expireWorkflowRuns();
+                await materializeAnnouncementSeries();
                 await expirePollJobs();
+                await expireSuggestions();
+                await maintainMemberUtilities();
                 await maintainCommunityReports();
                 lastExpiry = Date.now();
             }
@@ -185,6 +218,9 @@ export function startJobPolling(
                             'community-counter',
                             'scheduled-utility',
                             'native-poll',
+                            'suggestion-publish',
+                            'provider-notification',
+                            'workflow-message',
                         ],
                     },
                 },
@@ -201,5 +237,6 @@ export function startJobPolling(
     return async () => {
         clearInterval(interval);
         await active;
+        await providerActive;
     };
 }

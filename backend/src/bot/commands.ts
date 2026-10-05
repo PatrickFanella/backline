@@ -22,6 +22,10 @@ import {
 } from '../community/customCommands';
 import { giveawayCommand, routeGiveaways } from '../community/giveaways';
 import { routeLeveling, xpCommand } from '../community/leveling';
+import {
+    memberUtilityCommands,
+    routeMemberUtilities,
+} from '../community/memberUtilities';
 import { acknowledgeRules } from '../community/onboarding';
 import { pollCommand, routePolls } from '../community/polls';
 import {
@@ -29,11 +33,14 @@ import {
     scheduledUtilityCommands,
 } from '../community/scheduledUtilities';
 import { rolePanelCommand, routeSelfRoles } from '../community/selfRoles';
+import { routeSuggestions, suggestCommand } from '../community/suggestions';
 import { routeTickets, ticketCommands } from '../community/tickets';
 import { db } from '../db';
+import { feedCommand, routeFeed } from '../integrations/notifications';
 import { moderationCommands, routeModeration } from '../moderation/commands';
 import { moduleRegistry } from '../modules/registry';
 import { env } from '../utils/env';
+import { routeWorkflow, workflowCommand } from '../workflows/engine';
 
 function permissionNames(values: bigint[]): string {
     return values
@@ -159,7 +166,11 @@ export async function routeInteraction(
         if (await routeLeveling(interaction)) return;
         if (await routeCustomCommands(interaction)) return;
         if (await routeScheduledUtilities(interaction)) return;
+        if (await routeFeed(interaction)) return;
+        if (await routeWorkflow(interaction)) return;
         if (await routePolls(interaction)) return;
+        if (await routeSuggestions(interaction)) return;
+        if (await routeMemberUtilities(interaction)) return;
         if (await routeSelfRoles(interaction)) return;
         if (!interaction.isChatInputCommand()) {
             await interaction.editReply(
@@ -171,7 +182,7 @@ export async function routeInteraction(
         switch (interaction.commandName) {
             case 'help':
                 await interaction.editReply(
-                    '/help — commands\n/setup — server diagnostics\n/settings module enabled — configure a module\n/status — current module status\n/warn /timeout /kick /ban /unban /purge /cases — opt-in moderation\n/poll — native channel polls\n/remind /announce — scheduled channel messages\n/custom [name] — configured private server replies\n/xp profile or leaderboard — server XP\n/giveaway — server giveaways\n/ticket /ticket-panel — support tickets\n/radio — approved radio\n/roles-panel — configured self-service roles\nSettings require current Manage Server permission. Modules are opt-in.'
+                    '/help — commands\n/setup — server diagnostics\n/settings module enabled — configure a module\n/status — current module status\n/warn /timeout /kick /ban /unban /purge /cases — opt-in moderation\n/afk /birthday — opt-in member sharing\n/suggest — submit and review server ideas\n/poll — native channel polls\n/remind /announce — scheduled channel messages\n/custom [name] — configured private server replies\n/xp profile or leaderboard — server XP\n/giveaway — server giveaways\n/ticket /ticket-panel — support tickets\n/radio — approved radio\n/roles-panel — configured self-service roles\nSettings require current Manage Server permission. Modules are opt-in.'
                 );
                 break;
             case 'setup': {
@@ -414,7 +425,11 @@ export async function registerGuildCommands(
             xpCommand,
             customCommand,
             ...scheduledUtilityCommands,
+            feedCommand,
+            workflowCommand,
             pollCommand,
+            suggestCommand,
+            ...memberUtilityCommands,
         ])
             await guild.commands.create(command);
     }

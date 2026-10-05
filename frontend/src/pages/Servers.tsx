@@ -3,16 +3,21 @@ import { Link } from 'react-router-dom';
 
 import AntiSpamConfig from '../components/AntiSpamConfig';
 import AudioConfig from '../components/AudioConfig';
+import BirthdaysConfig from '../components/BirthdaysConfig';
 import CommunityReportsConfig from '../components/CommunityReportsConfig';
 import CustomCommandsConfig from '../components/CustomCommandsConfig';
 import GiveawayConfig from '../components/GiveawayConfig';
 import LevelingConfig from '../components/LevelingConfig';
 import OnboardingConfig from '../components/OnboardingConfig';
+import ProviderHistory from '../components/ProviderHistory';
+import RecurringAnnouncementsHistory from '../components/RecurringAnnouncementsHistory';
 import ScheduledUtilitiesHistory from '../components/ScheduledUtilitiesHistory';
 import SelfRolesConfig from '../components/SelfRolesConfig';
 import ServerModuleConfig from '../components/ServerModuleConfig';
+import SuggestionsConfig from '../components/SuggestionsConfig';
 import TicketConfig from '../components/TicketConfig';
 import { ThemeToggle } from '../components/ui/ThemeToggle';
+import WorkflowsConfig from '../components/WorkflowsConfig';
 import api from '../lib/api';
 import { useGuild } from '../store/guild';
 
@@ -233,14 +238,115 @@ export default function Servers() {
                                         </p>
                                     )}
                                     {module.id === 'scheduled-utilities' && (
-                                        <ScheduledUtilitiesHistory
-                                            key={`${guildId}:scheduled-utilities`}
+                                        <>
+                                            <ScheduledUtilitiesHistory
+                                                key={`${guildId}:scheduled-utilities`}
+                                                guildId={guildId}
+                                            />
+                                            <RecurringAnnouncementsHistory
+                                                key={`${guildId}:recurring-announcements`}
+                                                guildId={guildId}
+                                            />
+                                        </>
+                                    )}
+                                    {module.id === 'integrations' && (
+                                        <ProviderHistory
+                                            key={`${guildId}:integrations`}
                                             guildId={guildId}
+                                        />
+                                    )}
+                                    {module.id === 'workflows' && (
+                                        <WorkflowsConfig
+                                            key={`${guildId}:workflows:${JSON.stringify(module.settings.config)}`}
+                                            guildId={guildId}
+                                            enabled={module.settings.enabled}
+                                            config={module.settings.config}
+                                            onSaved={async () => {
+                                                const current =
+                                                    generation.current;
+                                                const response = await api.get<
+                                                    Module[]
+                                                >(`/guilds/${guildId}/modules`);
+                                                if (
+                                                    current ===
+                                                    generation.current
+                                                )
+                                                    setModules(response.data);
+                                            }}
+                                            onBusy={(value) =>
+                                                setBusy(
+                                                    value ? module.id : null
+                                                )
+                                            }
                                         />
                                     )}
                                     {module.id === 'audio' && (
                                         <AudioConfig
                                             key={`${guildId}:audio:${JSON.stringify(module.settings.config)}`}
+                                            guildId={guildId}
+                                            enabled={module.settings.enabled}
+                                            config={module.settings.config}
+                                            onBusy={(value) =>
+                                                setBusy(
+                                                    value ? module.id : null
+                                                )
+                                            }
+                                            onSaved={async () => {
+                                                const current =
+                                                    generation.current;
+                                                const response = await api.get<
+                                                    Module[]
+                                                >(`/guilds/${guildId}/modules`);
+                                                if (
+                                                    current ===
+                                                    generation.current
+                                                )
+                                                    setModules(response.data);
+                                            }}
+                                        />
+                                    )}
+                                    {module.id === 'afk' && (
+                                        <p>
+                                            Use /afk set to share a temporary
+                                            away reason, /afk clear to remove
+                                            it, or /afk status to read a
+                                            member’s current status. Reasons
+                                            expire within twenty-four hours and
+                                            clear when the member speaks.
+                                            Mention notices are limited to five
+                                            members per message and throttled;
+                                            they do not send notification
+                                            mentions.
+                                        </p>
+                                    )}
+                                    {module.id === 'birthdays' && (
+                                        <BirthdaysConfig
+                                            key={`${guildId}:birthdays:${JSON.stringify(module.settings.config)}`}
+                                            guildId={guildId}
+                                            enabled={module.settings.enabled}
+                                            config={module.settings.config}
+                                            onBusy={(value) =>
+                                                setBusy(
+                                                    value ? module.id : null
+                                                )
+                                            }
+                                            onSaved={async () => {
+                                                const current =
+                                                    generation.current;
+                                                const response = await api.get<
+                                                    Module[]
+                                                >(`/guilds/${guildId}/modules`);
+                                                if (
+                                                    current ===
+                                                    generation.current
+                                                )
+                                                    setModules(response.data);
+                                            }}
+                                        />
+                                    )}
+                                    {module.id === 'suggestions' && (
+                                        <SuggestionsConfig
+                                            key={`${guildId}:suggestions:${JSON.stringify(module.settings.config)}`}
                                             guildId={guildId}
                                             enabled={module.settings.enabled}
                                             config={module.settings.config}
