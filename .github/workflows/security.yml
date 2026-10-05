@@ -96,10 +96,21 @@ jobs:
               with:
                   fetch-depth: 0
 
-            - name: Scan event history for verified secrets
-              # Omitted refs use push before/after or pull-request base/head.
-              # Scheduled runs scan history; explicit equal refs would fail.
-              uses: trufflesecurity/trufflehog@main
-              with:
-                  path: ./
-                  extra_args: --only-verified
+            - name: Scan checked-out history for verified secrets
+              # Copy the repository through the Docker API. A bind mount would
+              # resolve on the daemon host, outside Gitea's job workspace volume.
+              run: |
+                  scan_container="backline-ci-secrets-${{ github.run_id }}"
+                  scan_log="$(mktemp)"
+                  trap 'docker rm -f "$scan_container" >/dev/null 2>&1; rm -f "$scan_log"' EXIT
+                  docker create --name "$scan_container" \
+                    ghcr.io/trufflesecurity/trufflehog@sha256:52e67fef4d054ecff5c2ce4b4ae376626d1ef54aa0898b53cac19c25e92e14db \
+                    git file:///scan --only-verified --fail --no-update --json
+                  docker cp . "$scan_container:/scan"
+                  if docker start --attach "$scan_container" > "$scan_log" 2>&1; then
+                    echo "Verified-secrets scan completed without findings."
+                  else
+                    status=$?
+                    echo "Verified-secrets scan failed (exit $status); raw output withheld to avoid exposing findings."
+                    exit "$status"
+                  fi
