@@ -9,6 +9,9 @@ import {
     onboardingConfig,
     selfRolesConfig,
     ticketConfig,
+    giveawayConfig,
+    levelingConfig,
+    communityReportsConfig,
 } from '../community/config';
 import { db } from '../db';
 import { env } from '../utils/env';
@@ -65,12 +68,42 @@ export class ModuleRegistry {
             !auditConfig.parse(parsed).channelId
         )
             throw new Error('Audit channel required');
+        if (
+            enabled &&
+            moduleId === 'leveling' &&
+            levelingConfig.parse(parsed).voiceEnabled &&
+            !env.BOT_VOICE_INTENT
+        )
+            throw new Error('Voice Gateway intent unavailable');
         const validated = toInputJson(definition.schema.parse(config));
         const installation = await db.guildInstallation.findUnique({
             where: { guildId },
         });
         if (!installation?.active)
             throw new Error('Bot installation unavailable');
+        if (moduleId === 'leveling' || moduleId === 'community-reports') {
+            await db.$transaction(async (tx) => {
+                await tx.$queryRaw(
+                    Prisma.sql`SELECT pg_advisory_xact_lock(hashtext(${guildId})::bigint)::text`
+                );
+                await tx.guildModuleConfig.upsert({
+                    where: { guildId_moduleId: { guildId, moduleId } },
+                    create: {
+                        guildId,
+                        moduleId,
+                        enabled,
+                        config: validated,
+                        version: definition.version,
+                    },
+                    update: {
+                        enabled,
+                        config: validated,
+                        version: definition.version,
+                    },
+                });
+            });
+            return;
+        }
         if (moduleId === 'tickets') {
             if (ticketConfig.parse(parsed).staffRoles.includes(guildId))
                 throw new Error('Everyone cannot be ticket staff');
@@ -170,6 +203,52 @@ export class ModuleRegistry {
 }
 
 export const moduleRegistry = new ModuleRegistry();
+moduleRegistry.register({
+    id: 'community-reports',
+    description:
+        'Observed community totals, collection coverage, join cohorts and scheduled channel counters.',
+    version: 1,
+    schema: communityReportsConfig,
+    permissions: [],
+    intents: [GatewayIntentBits.GuildMessages, GatewayIntentBits.GuildMembers],
+    commands: [],
+    pendingJobPolicy: 'cancel',
+    actionPermissions: { counters: [PermissionFlagsBits.ManageChannels] },
+});
+moduleRegistry.register({
+    id: 'leveling',
+    description:
+        'Message and optional voice XP, server leaderboards and eligible role rewards.',
+    version: 1,
+    schema: levelingConfig,
+    permissions: [],
+    intents: [
+        GatewayIntentBits.GuildMessages,
+        GatewayIntentBits.MessageContent,
+    ],
+    commands: ['xp'],
+    pendingJobPolicy: 'cancel',
+    actionPermissions: { rewards: [PermissionFlagsBits.ManageRoles] },
+});
+moduleRegistry.register({
+    id: 'giveaways',
+    description:
+        'Persistent giveaway entries, eligibility checks, scheduled draws and recorded rerolls.',
+    version: 1,
+    schema: giveawayConfig,
+    permissions: [],
+    intents: [],
+    commands: ['giveaway'],
+    pendingJobPolicy: 'cancel',
+    actionPermissions: {
+        publish: [
+            PermissionFlagsBits.ViewChannel,
+            PermissionFlagsBits.SendMessages,
+            PermissionFlagsBits.EmbedLinks,
+            PermissionFlagsBits.ReadMessageHistory,
+        ],
+    },
+});
 moduleRegistry.register({
     id: 'audio',
     description: 'Play approved SomaFM radio stations in your voice channel.',

@@ -7,7 +7,13 @@ import {
     expireAuditContent,
     recoverAuditEvents,
 } from '../community/audit';
+import { giveawayHandlers, recoverGiveaways } from '../community/giveaways';
+import { expireLeveling, levelingHandler } from '../community/leveling';
 import { onboardingHandler, recoverJourneys } from '../community/onboarding';
+import {
+    communityCounterHandler,
+    maintainCommunityReports,
+} from '../community/reports';
 import { expireRoleChoices } from '../community/selfRoles';
 import { expireTickets } from '../community/tickets';
 import { db } from '../db';
@@ -20,6 +26,9 @@ import { JobWorker, JobHandler } from './store';
 export function createBotWorker(client: Client): JobWorker {
     return new JobWorker(
         new Map<string, JobHandler>([
+            ...giveawayHandlers(client),
+            ['level-reward', levelingHandler(client)],
+            ['community-counter', communityCounterHandler(client)],
             ['audit-log', auditHandler(client)],
             ['anti-spam', antiSpamHandler(client)],
             ['onboarding-join', onboardingHandler(client, 'join')],
@@ -150,10 +159,24 @@ export function startJobPolling(
                 if (client) await expireTickets(client);
                 await radioRuntime.expireHistory();
                 await recoverSpamDecisions();
+                await recoverGiveaways();
+                await expireLeveling();
+                await maintainCommunityReports();
                 lastExpiry = Date.now();
             }
             const held = await db.durableJob.findMany({
-                where: { state: 'RECONCILE', kind: 'server-status' },
+                where: {
+                    state: 'RECONCILE',
+                    kind: {
+                        in: [
+                            'server-status',
+                            'giveaway-draw',
+                            'giveaway-reroll',
+                            'level-reward',
+                            'community-counter',
+                        ],
+                    },
+                },
                 take: 10,
             });
             for (const job of held) await worker.reconcile(job.id, job.guildId);

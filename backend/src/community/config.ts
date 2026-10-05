@@ -1,6 +1,82 @@
 import { z } from 'zod';
 
 export const id = z.string().regex(/^\d{17,20}$/);
+export const communityReportsConfig = z
+    .object({
+        retentionDays: z.number().int().min(1).max(90).default(30),
+        excludedChannels: z.array(id).max(100).default([]),
+        counters: z
+            .array(
+                z
+                    .object({
+                        channelId: id,
+                        metric: z.enum(['messages', 'joins', 'departures']),
+                        days: z.number().int().min(1).max(30).default(1),
+                        intervalMinutes: z
+                            .number()
+                            .int()
+                            .min(60)
+                            .max(1440)
+                            .default(60),
+                    })
+                    .strict()
+            )
+            .max(5)
+            .default([]),
+    })
+    .strict()
+    .refine(
+        (config) =>
+            new Set(config.counters.map((counter) => counter.channelId))
+                .size === config.counters.length,
+        'Duplicate counter channels'
+    )
+    .refine(
+        (config) =>
+            config.counters.every(
+                (counter) => counter.days <= config.retentionDays
+            ),
+        'Counter windows must fit retained history'
+    );
+export const levelingConfig = z
+    .object({
+        messageXp: z.number().int().min(1).max(100).default(15),
+        cooldownSeconds: z.number().int().min(30).max(3600).default(60),
+        minMessageLength: z.number().int().min(1).max(100).default(8),
+        excludedChannels: z.array(id).max(100).default([]),
+        excludedRoles: z.array(id).max(100).default([]),
+        voiceEnabled: z.boolean().default(false),
+        voiceXp: z.number().int().min(1).max(10).default(3),
+        excludeDeafened: z.boolean().default(true),
+        excludeMuted: z.boolean().default(true),
+        excludeSolo: z.boolean().default(true),
+        retentionDays: z.number().int().min(1).max(365).default(90),
+        rewards: z
+            .array(
+                z
+                    .object({
+                        roleId: id,
+                        level: z.number().int().min(1).max(1000),
+                    })
+                    .strict()
+            )
+            .max(10)
+            .default([]),
+    })
+    .strict()
+    .refine(
+        (data) =>
+            new Set(data.rewards.map((reward) => reward.roleId)).size ===
+            data.rewards.length,
+        'Duplicate reward roles'
+    );
+export const giveawayConfig = z
+    .object({
+        maxActive: z.number().int().min(1).max(25).default(10),
+        maxEntries: z.number().int().min(1).max(1000).default(500),
+        retentionDays: z.number().int().min(1).max(90).default(30),
+    })
+    .strict();
 export const ticketConfig = z
     .object({
         categoryId: id.optional(),

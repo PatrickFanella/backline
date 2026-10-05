@@ -10,6 +10,131 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model Giveaway {
+  id            String          @id @default(uuid())
+  guildId       String
+  channelId     String
+  creatorId     String
+  requestId     String
+  prize         String
+  winnerCount   Int
+  requiredRoles String[]
+  minJoinedDays Int             @default(0)
+  endsAt        DateTime        @db.Timestamptz
+  expiresAt     DateTime        @db.Timestamptz
+  state         String          @default("CREATING")
+  messageId     String?
+  createdAt     DateTime        @default(now()) @db.Timestamptz
+  entries       GiveawayEntry[]
+  draws         GiveawayDraw[]
+
+  @@unique([guildId, requestId])
+  @@index([guildId, state, endsAt])
+  @@index([expiresAt])
+}
+
+model GiveawayEntry {
+  giveawayId String
+  memberId   String
+  createdAt  DateTime @default(now()) @db.Timestamptz
+  giveaway   Giveaway @relation(fields: [giveawayId], references: [id], onDelete: Cascade)
+
+  @@id([giveawayId, memberId])
+}
+
+model GiveawayDraw {
+  id            String   @id @default(uuid())
+  giveawayId    String
+  round         Int
+  requestId     String
+  actorId       String
+  eligibleCount Int
+  winners       String[]
+  announcement  String   @default("PENDING")
+  createdAt     DateTime @default(now()) @db.Timestamptz
+  giveaway      Giveaway @relation(fields: [giveawayId], references: [id], onDelete: Cascade)
+
+  @@unique([giveawayId, round])
+  @@unique([giveawayId, requestId])
+}
+
+model LevelProfile {
+  guildId       String
+  memberId      String
+  displayName   String
+  xp            Int @default(0)
+  digestKey     String @default(uuid())
+  lastMessageAt DateTime? @db.Timestamptz
+  lastVoiceAt   DateTime? @db.Timestamptz
+  updatedAt     DateTime @default(now()) @db.Timestamptz
+
+  @@id([guildId, memberId])
+  @@index([guildId, xp(sort: Desc)])
+  @@index([updatedAt])
+}
+
+model LevelGrant {
+  guildId   String
+  requestId String
+  memberId  String
+  source    String
+  amount    Int
+  createdAt DateTime @default(now()) @db.Timestamptz
+
+  @@id([guildId, requestId])
+  @@index([guildId, memberId, createdAt])
+  @@index([createdAt])
+}
+
+model LevelDigest {
+  guildId   String
+  memberId  String
+  digest    String
+  expiresAt DateTime @db.Timestamptz
+
+  @@id([guildId, memberId, digest])
+  @@index([expiresAt])
+}
+
+model CommunityObservation {
+  guildId String
+  eventId String
+  memberId String
+  channelId String?
+  kind String
+  at DateTime @db.Timestamptz
+
+  @@id([guildId, eventId])
+  @@index([guildId, at])
+}
+
+model CommunityCoverage {
+  guildId String
+  minute DateTime @db.Timestamptz
+
+  @@id([guildId, minute])
+  @@index([minute])
+}
+
+model CommunityCohort {
+  guildId String
+  memberId String
+  joinedAt DateTime @db.Timestamptz
+  leftAt DateTime? @db.Timestamptz
+
+  @@id([guildId, memberId, joinedAt])
+  @@index([guildId, joinedAt])
+}
+
+model CommunityCounter {
+  guildId String
+  channelId String
+  lastAttemptAt DateTime @db.Timestamptz
+  expectedName String
+
+  @@id([guildId, channelId])
+}
+
 enum Role {
   USER
   ADMIN
