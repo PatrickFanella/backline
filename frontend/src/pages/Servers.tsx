@@ -11,6 +11,7 @@ import OnboardingConfig from '../components/OnboardingConfig';
 import ScheduledUtilitiesHistory from '../components/ScheduledUtilitiesHistory';
 import SelfRolesConfig from '../components/SelfRolesConfig';
 import ServerModuleConfig from '../components/ServerModuleConfig';
+import SuggestionsConfig from '../components/SuggestionsConfig';
 import TicketConfig from '../components/TicketConfig';
 import { ThemeToggle } from '../components/ui/ThemeToggle';
 import api from '../lib/api';
@@ -241,6 +242,31 @@ export default function Servers() {
                                     {module.id === 'audio' && (
                                         <AudioConfig
                                             key={`${guildId}:audio:${JSON.stringify(module.settings.config)}`}
+                                            guildId={guildId}
+                                            enabled={module.settings.enabled}
+                                            config={module.settings.config}
+                                            onBusy={(value) =>
+                                                setBusy(
+                                                    value ? module.id : null
+                                                )
+                                            }
+                                            onSaved={async () => {
+                                                const current =
+                                                    generation.current;
+                                                const response = await api.get<
+                                                    Module[]
+                                                >(`/guilds/${guildId}/modules`);
+                                                if (
+                                                    current ===
+                                                    generation.current
+                                                )
+                                                    setModules(response.data);
+                                            }}
+                                        />
+                                    )}
+                                    {module.id === 'suggestions' && (
+                                        <SuggestionsConfig
+                                            key={`${guildId}:suggestions:${JSON.stringify(module.settings.config)}`}
                                             guildId={guildId}
                                             enabled={module.settings.enabled}
                                             config={module.settings.config}

@@ -20,6 +20,7 @@ import {
     scheduledUtilityHandler,
 } from '../community/scheduledUtilities';
 import { expireRoleChoices } from '../community/selfRoles';
+import { expireSuggestions, suggestionHandler } from '../community/suggestions';
 import { expireTickets } from '../community/tickets';
 import { db } from '../db';
 import { authorizeGuild } from '../guilds/authorization';
@@ -34,6 +35,7 @@ export function createBotWorker(client: Client): JobWorker {
             ...giveawayHandlers(client),
             ['scheduled-utility', scheduledUtilityHandler(client)],
             ['native-poll', pollHandler(client)],
+            ['suggestion-publish', suggestionHandler(client)],
             ['level-reward', levelingHandler(client)],
             ['community-counter', communityCounterHandler(client)],
             ['audit-log', auditHandler(client)],
@@ -170,6 +172,7 @@ export function startJobPolling(
                 await expireLeveling();
                 await expireScheduledUtilities();
                 await expirePollJobs();
+                await expireSuggestions();
                 await maintainCommunityReports();
                 lastExpiry = Date.now();
             }
@@ -185,6 +188,7 @@ export function startJobPolling(
                             'community-counter',
                             'scheduled-utility',
                             'native-poll',
+                            'suggestion-publish',
                         ],
                     },
                 },

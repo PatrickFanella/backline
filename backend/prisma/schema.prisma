@@ -1070,3 +1070,28 @@ model ScheduledUtility {
   @@index([guildId, state, runAt])
   @@index([expiresAt])
 }
+
+model CommunitySuggestion {
+  id String @id @default(uuid())
+  guildId String
+  actorId String
+  requestId String
+  channelId String
+  content String
+  state String @default("OPEN")
+  decision String?
+  reviewerId String?
+  deliveryState String @default("PENDING")
+  messageId String?
+  createdAt DateTime @default(now()) @db.Timestamptz
+  votes SuggestionVote[]
+  @@unique([guildId, requestId])
+  @@index([guildId, createdAt])
+}
+model SuggestionVote {
+  suggestionId String
+  memberId String
+  value Int
+  suggestion CommunitySuggestion @relation(fields:[suggestionId],references:[id],onDelete:Cascade)
+  @@id([suggestionId, memberId])
+}

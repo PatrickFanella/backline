@@ -13,6 +13,7 @@ import {
     levelingConfig,
     communityReportsConfig,
 } from '../community/config';
+import { suggestionsConfig } from '../community/memberUtilityConfig';
 import { customCommandsConfig } from '../community/utilityTemplates';
 import { scheduledUtilitiesConfig } from '../community/utilityTime';
 import { db } from '../db';
@@ -87,7 +88,8 @@ export class ModuleRegistry {
             moduleId === 'leveling' ||
             moduleId === 'community-reports' ||
             moduleId === 'scheduled-utilities' ||
-            moduleId === 'polls'
+            moduleId === 'polls' ||
+            moduleId === 'suggestions'
         ) {
             await db.$transaction(async (tx) => {
                 await tx.$queryRaw(
@@ -210,6 +212,23 @@ export class ModuleRegistry {
 }
 
 export const moduleRegistry = new ModuleRegistry();
+moduleRegistry.register({
+    id: 'suggestions',
+    description: 'Member ideas with changeable votes and staff decisions.',
+    version: 1,
+    schema: suggestionsConfig,
+    permissions: [],
+    intents: [],
+    commands: ['suggest'],
+    pendingJobPolicy: 'cancel',
+    actionPermissions: {
+        publish: [
+            PermissionFlagsBits.ViewChannel,
+            PermissionFlagsBits.SendMessages,
+            PermissionFlagsBits.ReadMessageHistory,
+        ],
+    },
+});
 moduleRegistry.register({
     id: 'polls',
     description:
