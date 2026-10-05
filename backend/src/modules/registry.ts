@@ -13,6 +13,7 @@ import {
     levelingConfig,
     communityReportsConfig,
 } from '../community/config';
+import { customCommandsConfig } from '../community/utilityTemplates';
 import { db } from '../db';
 import { env } from '../utils/env';
 import { toInputJson } from '../utils/prismaJson';
@@ -203,6 +204,17 @@ export class ModuleRegistry {
 }
 
 export const moduleRegistry = new ModuleRegistry();
+moduleRegistry.register({
+    id: 'custom-commands',
+    description:
+        'Administrator-authored text and embed replies with fixed substitutions and optional role access.',
+    version: 1,
+    schema: customCommandsConfig,
+    permissions: [],
+    intents: [],
+    commands: ['custom'],
+    pendingJobPolicy: 'cancel',
+});
 moduleRegistry.register({
     id: 'community-reports',
     description:
