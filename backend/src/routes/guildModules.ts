@@ -29,6 +29,60 @@ const updateSchema = z.object({
     config: z.unknown().default({}),
 });
 router.use('/guilds/:guildId/modules', requireAuthOrApiKey, requireGuildAccess);
+router.get(
+    '/guilds/:guildId/modules/scheduled-utilities/history',
+    async (req, res) => {
+        try {
+            const events = await db.scheduledUtility.findMany({
+                where: {
+                    guildId: req.params.guildId,
+                    OR: [
+                        { kind: 'ANNOUNCEMENT' },
+                        { actorId: req.user!.discordId },
+                    ],
+                },
+                orderBy: { createdAt: 'desc' },
+                take: 100,
+                select: {
+                    id: true,
+                    kind: true,
+                    channelId: true,
+                    runAt: true,
+                    timeZone: true,
+                    state: true,
+                    messageId: true,
+                },
+            });
+            const jobs = await db.durableJob.findMany({
+                where: {
+                    guildId: req.params.guildId,
+                    kind: 'scheduled-utility',
+                    idempotencyKey: {
+                        in: events.map(
+                            (event) => 'scheduled-utility:' + event.id
+                        ),
+                    },
+                },
+                select: { idempotencyKey: true, state: true, lastError: true },
+            });
+            res.json(
+                events.map((event) => ({
+                    ...event,
+                    delivery:
+                        jobs.find(
+                            (job) =>
+                                job.idempotencyKey ===
+                                'scheduled-utility:' + event.id
+                        ) ?? null,
+                }))
+            );
+        } catch {
+            res.status(503).json({
+                error: 'Scheduled message history unavailable',
+            });
+        }
+    }
+);
 router.get('/guilds/:guildId/modules/anti-spam/history', async (req, res) => {
     try {
         const decisions = await db.spamDecision.findMany({

@@ -14,6 +14,10 @@ import {
     communityCounterHandler,
     maintainCommunityReports,
 } from '../community/reports';
+import {
+    expireScheduledUtilities,
+    scheduledUtilityHandler,
+} from '../community/scheduledUtilities';
 import { expireRoleChoices } from '../community/selfRoles';
 import { expireTickets } from '../community/tickets';
 import { db } from '../db';
@@ -27,6 +31,7 @@ export function createBotWorker(client: Client): JobWorker {
     return new JobWorker(
         new Map<string, JobHandler>([
             ...giveawayHandlers(client),
+            ['scheduled-utility', scheduledUtilityHandler(client)],
             ['level-reward', levelingHandler(client)],
             ['community-counter', communityCounterHandler(client)],
             ['audit-log', auditHandler(client)],
@@ -161,6 +166,7 @@ export function startJobPolling(
                 await recoverSpamDecisions();
                 await recoverGiveaways();
                 await expireLeveling();
+                await expireScheduledUtilities();
                 await maintainCommunityReports();
                 lastExpiry = Date.now();
             }
@@ -174,6 +180,7 @@ export function startJobPolling(
                             'giveaway-reroll',
                             'level-reward',
                             'community-counter',
+                            'scheduled-utility',
                         ],
                     },
                 },

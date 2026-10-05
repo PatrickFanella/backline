@@ -14,6 +14,7 @@ import {
     communityReportsConfig,
 } from '../community/config';
 import { customCommandsConfig } from '../community/utilityTemplates';
+import { scheduledUtilitiesConfig } from '../community/utilityTime';
 import { db } from '../db';
 import { env } from '../utils/env';
 import { toInputJson } from '../utils/prismaJson';
@@ -82,7 +83,11 @@ export class ModuleRegistry {
         });
         if (!installation?.active)
             throw new Error('Bot installation unavailable');
-        if (moduleId === 'leveling' || moduleId === 'community-reports') {
+        if (
+            moduleId === 'leveling' ||
+            moduleId === 'community-reports' ||
+            moduleId === 'scheduled-utilities'
+        ) {
             await db.$transaction(async (tx) => {
                 await tx.$queryRaw(
                     Prisma.sql`SELECT pg_advisory_xact_lock(hashtext(${guildId})::bigint)::text`
@@ -204,6 +209,23 @@ export class ModuleRegistry {
 }
 
 export const moduleRegistry = new ModuleRegistry();
+moduleRegistry.register({
+    id: 'scheduled-utilities',
+    description:
+        'Persistent channel reminders and one-time announcements with explicit time zones.',
+    version: 1,
+    schema: scheduledUtilitiesConfig,
+    permissions: [],
+    intents: [],
+    commands: ['remind', 'announce'],
+    pendingJobPolicy: 'cancel',
+    actionPermissions: {
+        send: [
+            PermissionFlagsBits.ViewChannel,
+            PermissionFlagsBits.SendMessages,
+        ],
+    },
+});
 moduleRegistry.register({
     id: 'custom-commands',
     description:
