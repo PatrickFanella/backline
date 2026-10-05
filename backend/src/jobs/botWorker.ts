@@ -29,6 +29,10 @@ import { expireSuggestions, suggestionHandler } from '../community/suggestions';
 import { expireTickets } from '../community/tickets';
 import { db } from '../db';
 import { authorizeGuild } from '../guilds/authorization';
+import {
+    maintainProviderFeeds,
+    providerNotificationHandler,
+} from '../integrations/notifications';
 import { performModeration } from '../moderation/service';
 import { moduleRegistry } from '../modules/registry';
 
@@ -39,6 +43,7 @@ export function createBotWorker(client: Client): JobWorker {
         new Map<string, JobHandler>([
             ...giveawayHandlers(client),
             ['scheduled-utility', scheduledUtilityHandler(client)],
+            ['provider-notification', providerNotificationHandler(client)],
             ['native-poll', pollHandler(client)],
             ['suggestion-publish', suggestionHandler(client)],
             ['afk-notice', memberNoticeHandler(client)],
@@ -164,7 +169,17 @@ export function startJobPolling(
 ): () => Promise<void> {
     let active: Promise<unknown> | undefined;
     let lastExpiry = 0;
+    let providerActive: Promise<unknown> | undefined;
+    let lastProviderPoll = 0;
     const interval = setInterval(() => {
+        if (!providerActive && Date.now() - lastProviderPoll > 60000) {
+            lastProviderPoll = Date.now();
+            providerActive = maintainProviderFeeds()
+                .catch(() => console.warn('Provider polling failed'))
+                .finally(() => {
+                    providerActive = undefined;
+                });
+        }
         if (active) return;
         active = (async () => {
             if (Date.now() - lastExpiry > 60000) {
@@ -198,6 +213,7 @@ export function startJobPolling(
                             'scheduled-utility',
                             'native-poll',
                             'suggestion-publish',
+                            'provider-notification',
                         ],
                     },
                 },
@@ -214,5 +230,6 @@ export function startJobPolling(
     return async () => {
         clearInterval(interval);
         await active;
+        await providerActive;
     };
 }

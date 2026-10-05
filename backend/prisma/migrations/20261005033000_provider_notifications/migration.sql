@@ -1,0 +1,6 @@
+CREATE TABLE "ProviderFeed" ("id" TEXT NOT NULL,"guildId" TEXT NOT NULL,"actorId" TEXT NOT NULL,"provider" TEXT NOT NULL CHECK("provider" IN ('twitch','youtube','rss')),"source" TEXT NOT NULL,"channelId" TEXT NOT NULL,"enabled" BOOLEAN NOT NULL DEFAULT true,"baselineAt" TIMESTAMP(3),"nextPollAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,"failures" INTEGER NOT NULL DEFAULT 0,"lastError" TEXT,"createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,CONSTRAINT "ProviderFeed_pkey" PRIMARY KEY("id"));
+CREATE UNIQUE INDEX "ProviderFeed_guildId_provider_source_key" ON "ProviderFeed"("guildId","provider","source");
+CREATE INDEX "ProviderFeed_enabled_nextPollAt_idx" ON "ProviderFeed"("enabled","nextPollAt");
+CREATE TABLE "ProviderEvent" ("id" TEXT NOT NULL,"guildId" TEXT NOT NULL,"feedId" TEXT NOT NULL,"externalId" TEXT NOT NULL,"title" TEXT NOT NULL,"url" TEXT NOT NULL,"publishedAt" TIMESTAMP(3) NOT NULL,"messageId" TEXT,"state" TEXT NOT NULL DEFAULT 'BASELINE' CHECK("state" IN ('BASELINE','PENDING','DELIVERED','UNCERTAIN','CANCELLED')),"createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,CONSTRAINT "ProviderEvent_pkey" PRIMARY KEY("id"));
+CREATE UNIQUE INDEX "ProviderEvent_feedId_externalId_key" ON "ProviderEvent"("feedId","externalId");
+CREATE INDEX "ProviderEvent_guildId_createdAt_idx" ON "ProviderEvent"("guildId","createdAt");

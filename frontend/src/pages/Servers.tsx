@@ -9,6 +9,7 @@ import CustomCommandsConfig from '../components/CustomCommandsConfig';
 import GiveawayConfig from '../components/GiveawayConfig';
 import LevelingConfig from '../components/LevelingConfig';
 import OnboardingConfig from '../components/OnboardingConfig';
+import ProviderHistory from '../components/ProviderHistory';
 import RecurringAnnouncementsHistory from '../components/RecurringAnnouncementsHistory';
 import ScheduledUtilitiesHistory from '../components/ScheduledUtilitiesHistory';
 import SelfRolesConfig from '../components/SelfRolesConfig';
@@ -246,6 +247,12 @@ export default function Servers() {
                                                 guildId={guildId}
                                             />
                                         </>
+                                    )}
+                                    {module.id === 'integrations' && (
+                                        <ProviderHistory
+                                            key={`${guildId}:integrations`}
+                                            guildId={guildId}
+                                        />
                                     )}
                                     {module.id === 'audio' && (
                                         <AudioConfig

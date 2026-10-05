@@ -21,6 +21,7 @@ import {
 import { customCommandsConfig } from '../community/utilityTemplates';
 import { scheduledUtilitiesConfig } from '../community/utilityTime';
 import { db } from '../db';
+import { integrationsConfig } from '../integrations/config';
 import { env } from '../utils/env';
 import { toInputJson } from '../utils/prismaJson';
 
@@ -95,7 +96,8 @@ export class ModuleRegistry {
             moduleId === 'polls' ||
             moduleId === 'suggestions' ||
             moduleId === 'afk' ||
-            moduleId === 'birthdays'
+            moduleId === 'birthdays' ||
+            moduleId === 'integrations'
         ) {
             await db.$transaction(async (tx) => {
                 await tx.$queryRaw(
@@ -530,5 +532,17 @@ moduleRegistry.register({
         GatewayIntentBits.MessageContent,
     ],
     commands: [],
+    pendingJobPolicy: 'cancel',
+});
+
+moduleRegistry.register({
+    id: 'integrations',
+    description:
+        'Twitch, YouTube and public RSS/Atom notifications with a baseline and durable delivery.',
+    version: 1,
+    schema: integrationsConfig,
+    permissions: [PermissionFlagsBits.SendMessages],
+    intents: [],
+    commands: ['feed'],
     pendingJobPolicy: 'cancel',
 });

@@ -1137,3 +1137,34 @@ model AnnouncementSeries {
   @@index([state,nextAt])
   @@index([guildId,createdAt])
 }
+
+model ProviderFeed {
+  id String @id @default(uuid())
+  guildId String
+  actorId String
+  provider String
+  source String
+  channelId String
+  enabled Boolean @default(true)
+  baselineAt DateTime?
+  nextPollAt DateTime @default(now())
+  failures Int @default(0)
+  lastError String?
+  createdAt DateTime @default(now())
+  @@unique([guildId, provider, source])
+  @@index([enabled, nextPollAt])
+}
+model ProviderEvent {
+  id String @id @default(uuid())
+  guildId String
+  feedId String
+  externalId String
+  title String
+  url String
+  publishedAt DateTime
+  messageId String?
+  state String @default("BASELINE")
+  createdAt DateTime @default(now())
+  @@unique([feedId, externalId])
+  @@index([guildId, createdAt])
+}
