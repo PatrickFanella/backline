@@ -18,9 +18,11 @@ const getConnectionPoolConfig = () => {
     try {
         const url = new URL(process.env.DATABASE_URL ?? '');
         return {
-            connectionLimit: url.searchParams.get('connection_limit') || 'default',
+            connectionLimit:
+                url.searchParams.get('connection_limit') || 'default',
             poolTimeout: url.searchParams.get('pool_timeout') || 'default',
-            connectTimeout: url.searchParams.get('connect_timeout') || 'default',
+            connectTimeout:
+                url.searchParams.get('connect_timeout') || 'default',
         };
     } catch {
         return {
@@ -57,7 +59,9 @@ console.log(`   - Connection Limit: ${poolConfig.connectionLimit}`);
 console.log(`   - Pool Timeout: ${poolConfig.poolTimeout}s`);
 console.log(`   - Connect Timeout: ${poolConfig.connectTimeout}s`);
 if (isPgBouncer) {
-    console.log('   ℹ️  PgBouncer handles connection pooling at transaction level');
+    console.log(
+        '   ℹ️  PgBouncer handles connection pooling at transaction level'
+    );
 }
 
 // Prevent multiple instances in development (hot reload)
@@ -158,71 +162,20 @@ export async function checkDatabaseHealth(): Promise<{
     }
 }
 
-// Graceful shutdown handlers
-const gracefulShutdown = async (signal: string) => {
-    if (isShuttingDown) {
-        console.log('Shutdown already in progress...');
-        return;
-    }
-
+// Entrypoints own signal handling so Gateway sessions and HTTP requests stop before
+// database connections are closed. A database import must not terminate the process.
+export async function closeDatabaseConnections(): Promise<void> {
+    if (isShuttingDown) return;
     isShuttingDown = true;
-    console.log(`Received ${signal}, initiating graceful shutdown...`);
-
     try {
-        // Close database connections
-        console.log('Closing database connections...');
         await db.$disconnect();
-        console.log('✅ Database connections closed successfully');
-
-        // Close Redis connections
         const { closeRedisConnection } = await import('./utils/redis');
         await closeRedisConnection();
     } catch (error) {
-        console.error('❌ Error during graceful shutdown:', error);
-    } finally {
-        process.exit(0);
+        console.error('Database shutdown failed', error);
+        throw error;
     }
-};
-
-process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
-process.on('SIGINT', () => gracefulShutdown('SIGINT'));
-
-// Handle uncaught exceptions and unhandled rejections
-process.on('uncaughtException', async (err) => {
-    console.error('❌ Uncaught Exception:', err);
-    if (!isShuttingDown) {
-        isShuttingDown = true;
-        try {
-            await db.$disconnect();
-            const { closeRedisConnection } = await import('./utils/redis');
-            await closeRedisConnection();
-        } catch (disconnectError) {
-            console.error(
-                'Error during emergency disconnect:',
-                disconnectError
-            );
-        }
-    }
-    process.exit(1);
-});
-
-process.on('unhandledRejection', async (reason) => {
-    console.error('❌ Unhandled Rejection:', reason);
-    if (!isShuttingDown) {
-        isShuttingDown = true;
-        try {
-            await db.$disconnect();
-            const { closeRedisConnection } = await import('./utils/redis');
-            await closeRedisConnection();
-        } catch (disconnectError) {
-            console.error(
-                'Error during emergency disconnect:',
-                disconnectError
-            );
-        }
-    }
-    process.exit(1);
-});
+}
 
 // Connection pooling configuration:
 //

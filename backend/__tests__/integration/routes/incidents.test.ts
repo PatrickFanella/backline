@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-require-imports, @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-require-imports */
 import express, { Application } from 'express';
 import request from 'supertest';
 
@@ -392,9 +392,7 @@ describe('Incidents Routes', () => {
         it('should filter incidents by status', async () => {
             mockDb.incident.findMany.mockResolvedValue([]);
 
-            await request(app).get(
-                '/api/admin/incidents?status=INVESTIGATING'
-            );
+            await request(app).get('/api/admin/incidents?status=INVESTIGATING');
 
             expect(mockDb.incident.findMany).toHaveBeenCalledWith(
                 expect.objectContaining({

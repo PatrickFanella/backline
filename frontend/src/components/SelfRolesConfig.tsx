@@ -6,6 +6,7 @@ import api from '../lib/api';
 type Option = {
     roleId: string;
     label: string;
+    emoji?: string;
     group?: string;
     requires: string[];
 };
@@ -100,6 +101,7 @@ export default function SelfRolesConfig({
                     >
                         <option value="buttons">Buttons</option>
                         <option value="select">Select menu</option>
+                        <option value="reactions">Unicode reactions</option>
                     </select>
                 </label>
                 {roles.map((role, index) => (
@@ -132,6 +134,22 @@ export default function SelfRolesConfig({
                                 maxLength={80}
                             />
                         </label>
+                        {style === 'reactions' && (
+                            <label className="block">
+                                Unicode emoji
+                                <input
+                                    className="block w-full p-2 bg-ctp-surface0 rounded"
+                                    value={role.emoji ?? ''}
+                                    onChange={(event) =>
+                                        edit(index, {
+                                            emoji: event.target.value,
+                                        })
+                                    }
+                                    required
+                                    maxLength={64}
+                                />
+                            </label>
+                        )}
                         <label className="block">
                             Exclusive group (optional)
                             <input
@@ -195,8 +213,10 @@ export default function SelfRolesConfig({
                 <p className="text-sm text-ctp-subtext0">
                     Enable this module, then use /roles-panel in Discord to
                     publish. A configuration change makes earlier panels
-                    unavailable. Only basic chat and voice roles below the bot
-                    can be offered.
+                    unavailable. Reaction panels need one unique Unicode emoji
+                    per role and the bot needs Add Reactions and Read Message
+                    History. Only basic chat and voice roles below the bot can
+                    be offered.
                 </p>
             </fieldset>
             {notice && <p role="status">{notice}</p>}

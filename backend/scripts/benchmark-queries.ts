@@ -1,18 +1,17 @@
 /**
  * Query Performance Benchmark Script
- * 
+ *
  * Validates that all queries meet performance requirements:
  * - All queries under 100ms (p95)
  * - Critical queries under 50ms (p95)
  * - No N+1 query problems
- * 
+ *
  * Usage:
  *   ts-node scripts/benchmark-queries.ts
  *   ts-node scripts/benchmark-queries.ts --guild-id=<guild-id>
  *   ts-node scripts/benchmark-queries.ts --iterations=10
  */
 
-import { db } from '../src/db';
 import {
     getGhostScores,
     getChannelHeatmap,
@@ -21,10 +20,11 @@ import {
     getClientDriftFlags,
     getBehaviorShiftFlags,
 } from '../src/analytics';
-import { getReactionStats } from '../src/analytics/reactions';
 import { getChannelDiversity } from '../src/analytics/channels';
-import { getMultiClientLogins } from '../src/analytics/presence';
+import { getMultiClientLoginCounts } from '../src/analytics/presence';
+import { getReactionStats } from '../src/analytics/reactions';
 import { getUserTimeline } from '../src/analytics/timeline';
+import { db } from '../src/db';
 
 interface BenchmarkResult {
     name: string;
@@ -121,12 +121,23 @@ function formatTime(ms: number, threshold: number = 100): string {
  */
 function printResults(results: BenchmarkResult[]) {
     console.log('\n📊 Benchmark Results\n');
-    console.log('┌─────────────────────────────┬────────────┬────────────┬────────────┬────────────┬────────────┬────────────┬──────────┐');
-    console.log('│ Query Name                  │ Min        │ Avg        │ P50        │ P95        │ P99        │ Max        │ Status   │');
-    console.log('├─────────────────────────────┼────────────┼────────────┼────────────┼────────────┼────────────┼────────────┼──────────┤');
+    console.log(
+        '┌─────────────────────────────┬────────────┬────────────┬────────────┬────────────┬────────────┬────────────┬──────────┐'
+    );
+    console.log(
+        '│ Query Name                  │ Min        │ Avg        │ P50        │ P95        │ P99        │ Max        │ Status   │'
+    );
+    console.log(
+        '├─────────────────────────────┼────────────┼────────────┼────────────┼────────────┼────────────┼────────────┼──────────┤'
+    );
 
     for (const result of results) {
-        const statusIcon = result.status === 'PASS' ? '✅' : result.status === 'WARN' ? '⚠️ ' : '❌';
+        const statusIcon =
+            result.status === 'PASS'
+                ? '✅'
+                : result.status === 'WARN'
+                  ? '⚠️ '
+                  : '❌';
         const name = result.name.padEnd(27);
         const min = formatTime(result.min).padEnd(18);
         const avg = formatTime(result.avg).padEnd(18);
@@ -135,19 +146,23 @@ function printResults(results: BenchmarkResult[]) {
         const p99 = formatTime(result.p99).padEnd(18);
         const max = formatTime(result.max).padEnd(18);
 
-        console.log(`│ ${name} │ ${min} │ ${avg} │ ${p50} │ ${p95} │ ${p99} │ ${max} │ ${statusIcon} ${result.status.padEnd(5)} │`);
+        console.log(
+            `│ ${name} │ ${min} │ ${avg} │ ${p50} │ ${p95} │ ${p99} │ ${max} │ ${statusIcon} ${result.status.padEnd(5)} │`
+        );
     }
 
-    console.log('└─────────────────────────────┴────────────┴────────────┴────────────┴────────────┴────────────┴────────────┴──────────┘');
+    console.log(
+        '└─────────────────────────────┴────────────┴────────────┴────────────┴────────────┴────────────┴────────────┴──────────┘'
+    );
 }
 
 /**
  * Print summary statistics
  */
 function printSummary(results: BenchmarkResult[]) {
-    const passed = results.filter(r => r.status === 'PASS').length;
-    const warned = results.filter(r => r.status === 'WARN').length;
-    const failed = results.filter(r => r.status === 'FAIL').length;
+    const passed = results.filter((r) => r.status === 'PASS').length;
+    const warned = results.filter((r) => r.status === 'WARN').length;
+    const failed = results.filter((r) => r.status === 'FAIL').length;
     const total = results.length;
 
     console.log('\n📈 Summary\n');
@@ -158,7 +173,9 @@ function printSummary(results: BenchmarkResult[]) {
 
     if (failed > 0) {
         console.log('\n⚠️  Some queries are failing the 100ms requirement!');
-        console.log('Review QUERY_OPTIMIZATIONS.md for optimization strategies.');
+        console.log(
+            'Review QUERY_OPTIMIZATIONS.md for optimization strategies.'
+        );
     } else if (warned > 0) {
         console.log('\n✅ All queries under 100ms, but some could be faster!');
     } else {
@@ -171,11 +188,13 @@ async function main() {
 
     // Parse command line arguments
     const args = process.argv.slice(2);
-    const guildIdArg = args.find(arg => arg.startsWith('--guild-id='));
-    const iterationsArg = args.find(arg => arg.startsWith('--iterations='));
+    const guildIdArg = args.find((arg) => arg.startsWith('--guild-id='));
+    const iterationsArg = args.find((arg) => arg.startsWith('--iterations='));
 
     let guildId = guildIdArg?.split('=')[1];
-    const iterations = iterationsArg ? parseInt(iterationsArg.split('=')[1]) : 5;
+    const iterations = iterationsArg
+        ? parseInt(iterationsArg.split('=')[1])
+        : 5;
 
     // If no guild ID provided, try to find one from the database
     if (!guildId) {
@@ -186,7 +205,9 @@ async function main() {
         guildId = messageEvent?.guildId;
 
         if (!guildId) {
-            console.error('❌ No guild ID found in database. Please provide one with --guild-id=<id>');
+            console.error(
+                '❌ No guild ID found in database. Please provide one with --guild-id=<id>'
+            );
             process.exit(1);
         }
         console.log(`   Using guild ID: ${guildId}`);
@@ -208,80 +229,94 @@ async function main() {
 
     try {
         // Benchmark Ghost Detection
-        results.push(await benchmark(
-            'Ghost Detection',
-            () => getGhostScores(options.guildId),
-            options.iterations,
-            options.warmup
-        ));
-
-        // Benchmark Lurker Detection
-        results.push(await benchmark(
-            'Lurker Detection',
-            () => getLurkerFlags(options.guildId),
-            options.iterations,
-            options.warmup
-        ));
-
-        // Benchmark Channel Heatmap
-        results.push(await benchmark(
-            'Channel Heatmap',
-            () => getChannelHeatmap({ guildId: options.guildId }),
-            options.iterations,
-            options.warmup
-        ));
-
-        // Benchmark Role Drift
-        results.push(await benchmark(
-            'Role Drift Detection',
-            () => getRoleDriftFlags(options.guildId),
-            options.iterations,
-            options.warmup
-        ));
-
-        // Benchmark Client Drift
-        results.push(await benchmark(
-            'Client Drift Detection',
-            () => getClientDriftFlags(options.guildId),
-            options.iterations,
-            options.warmup
-        ));
-
-        // Benchmark Behavior Shifts
-        results.push(await benchmark(
-            'Behavior Shift Detection',
-            () => getBehaviorShiftFlags(options.guildId),
-            options.iterations,
-            options.warmup
-        ));
-
-        // Benchmark Reaction Stats
-        results.push(await benchmark(
-            'Reaction Statistics',
-            () => getReactionStats(options.guildId),
-            options.iterations,
-            options.warmup
-        ));
-
-        // Benchmark Channel Diversity
-        results.push(await benchmark(
-            'Channel Diversity',
-            () => getChannelDiversity(options.guildId),
-            options.iterations,
-            options.warmup
-        ));
-
-        // Benchmark Multi-Client Logins
-        if (typeof getMultiClientLogins === 'function') {
-            results.push(await benchmark(
-                'Multi-Client Logins',
-                () => getMultiClientLogins(),
+        results.push(
+            await benchmark(
+                'Ghost Detection',
+                () => getGhostScores(options.guildId),
                 options.iterations,
                 options.warmup
-            ));
-        } else {
-            console.warn('⚠️  getMultiClientLogins is not defined or not a function. Skipping Multi-Client Logins benchmark.');
-        }
+            )
+        );
+
+        // Benchmark Lurker Detection
+        results.push(
+            await benchmark(
+                'Lurker Detection',
+                () => getLurkerFlags(options.guildId),
+                options.iterations,
+                options.warmup
+            )
+        );
+
+        // Benchmark Channel Heatmap
+        results.push(
+            await benchmark(
+                'Channel Heatmap',
+                () => getChannelHeatmap({ guildId: options.guildId }),
+                options.iterations,
+                options.warmup
+            )
+        );
+
+        // Benchmark Role Drift
+        results.push(
+            await benchmark(
+                'Role Drift Detection',
+                () => getRoleDriftFlags(options.guildId),
+                options.iterations,
+                options.warmup
+            )
+        );
+
+        // Benchmark Client Drift
+        results.push(
+            await benchmark(
+                'Client Drift Detection',
+                () => getClientDriftFlags(options.guildId),
+                options.iterations,
+                options.warmup
+            )
+        );
+
+        // Benchmark Behavior Shifts
+        results.push(
+            await benchmark(
+                'Behavior Shift Detection',
+                () => getBehaviorShiftFlags(options.guildId),
+                options.iterations,
+                options.warmup
+            )
+        );
+
+        // Benchmark Reaction Stats
+        results.push(
+            await benchmark(
+                'Reaction Statistics',
+                () => getReactionStats(options.guildId),
+                options.iterations,
+                options.warmup
+            )
+        );
+
+        // Benchmark Channel Diversity
+        results.push(
+            await benchmark(
+                'Channel Diversity',
+                () => getChannelDiversity(options.guildId),
+                options.iterations,
+                options.warmup
+            )
+        );
+
+        // Benchmark Multi-Client Logins
+        results.push(
+            await benchmark(
+                'Multi-Client Logins',
+                () => getMultiClientLoginCounts(options.guildId),
+                options.iterations,
+                options.warmup
+            )
+        );
 
         // Benchmark User Timeline (get a user ID first)
         const user = await db.messageEvent.findFirst({
@@ -290,16 +325,19 @@ async function main() {
         });
 
         if (user) {
-            results.push(await benchmark(
-                'User Timeline',
-                () => getUserTimeline({
-                    userId: user.userId,
-                    guildId: options.guildId,
-                    limit: 50,
-                }),
-                options.iterations,
-                options.warmup
-            ));
+            results.push(
+                await benchmark(
+                    'User Timeline',
+                    () =>
+                        getUserTimeline({
+                            userId: user.userId,
+                            guildId: options.guildId,
+                            limit: 50,
+                        }),
+                    options.iterations,
+                    options.warmup
+                )
+            );
         }
 
         // Print results
@@ -307,9 +345,8 @@ async function main() {
         printSummary(results);
 
         // Exit with appropriate code
-        const failed = results.filter(r => r.status === 'FAIL').length;
+        const failed = results.filter((r) => r.status === 'FAIL').length;
         process.exit(failed > 0 ? 1 : 0);
-
     } catch (error) {
         console.error('❌ Benchmark failed:', error);
         process.exit(1);
@@ -319,5 +356,5 @@ async function main() {
 }
 
 if (require.main === module) {
-    main();
+    void main();
 }

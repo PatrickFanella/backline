@@ -16,6 +16,7 @@ import guildModulesRoutes from './guildModules';
 import incidentsRoutes from './incidents';
 import ipManagementRoutes from './ipManagement';
 import levelingRoutes from './leveling';
+import managedAutomationRoutes from './managedAutomation';
 import metricsAnalyticsRoutes from './metricsAnalytics';
 import moderationRoutes from './moderation';
 import monitoringRoutes from './monitoring';
@@ -23,6 +24,7 @@ import pluginsRoutes from './plugins';
 import privacyRoutes from './privacy';
 import publicApiRoutes from './publicApi';
 import quotaManagementRoutes from './quotaManagement';
+import recoveryControlsRoutes from './recoveryControls';
 import statusRoutes from './status';
 import suspicionRoutes from './suspicion';
 import timelineRoutes from './timeline';
@@ -94,5 +96,8 @@ router.use(analyticsRoutes);
 router.use(suspicionRoutes);
 router.use(banRoutes);
 router.use(timelineRoutes);
+
+router.use(managedAutomationRoutes);
+router.use(recoveryControlsRoutes);
 
 export default router;

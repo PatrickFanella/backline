@@ -1,360 +1,143 @@
-import { getRedisClient } from '../../../src/utils/redis';
+import Redis from 'ioredis';
 
-// Mock ioredis
-jest.mock('ioredis');
-
-// Mock env
-jest.mock('../../../src/utils/env', () => ({
-    env: {
-        REDIS_URL: 'redis://localhost:6379',
-        ENABLE_REDIS_RATE_LIMITING: true,
-    },
-}));
-
-describe('Redis Utility', () => {
+const mockEnv = {
+    REDIS_URL: 'redis://localhost:6379' as string | undefined,
+    ENABLE_REDIS_RATE_LIMITING: true,
+};
+const mockClient = {
+    on: jest.fn().mockReturnThis(),
+    scan: jest.fn(),
+    del: jest.fn(),
+    ping: jest.fn(),
+    pipeline: jest.fn(),
+};
+jest.mock('ioredis', () => jest.fn(() => mockClient));
+jest.mock('../../../src/utils/env', () => ({ env: mockEnv }));
+let redis: typeof import('../../../src/utils/redis');
+describe('Redis utility external transport contracts', () => {
     beforeEach(() => {
         jest.clearAllMocks();
-    });
-
-    describe('getRedisClient', () => {
-        it('should return null when Redis URL is not configured', () => {
-            jest.resetModules();
-            jest.mock('../../../src/utils/env', () => ({
-                env: {
-                    REDIS_URL: undefined,
-                    ENABLE_REDIS_RATE_LIMITING: true,
-                },
-            }));
-
-            const { getRedisClient } = require('../../../src/utils/redis');
-            const client = getRedisClient();
-            expect(client).toBeNull();
-        });
-
-        it('should return null when Redis rate limiting is disabled', () => {
-            jest.resetModules();
-            jest.mock('../../../src/utils/env', () => ({
-                env: {
-                    REDIS_URL: 'redis://localhost:6379',
-                    ENABLE_REDIS_RATE_LIMITING: false,
-                },
-            }));
-
-            const { getRedisClient } = require('../../../src/utils/redis');
-            const client = getRedisClient();
-            expect(client).toBeNull();
-        });
-
-        it('should create Redis client when properly configured', () => {
-            const client = getRedisClient();
-            // Since we're mocking ioredis, we just verify it doesn't throw
-            expect(client).toBeDefined();
+        mockEnv.REDIS_URL = 'redis://localhost:6379';
+        mockEnv.ENABLE_REDIS_RATE_LIMITING = true;
+        jest.isolateModules(() => {
+            redis = jest.requireActual('../../../src/utils/redis');
         });
     });
-
-    describe('isRedisAvailable', () => {
-        it('should return false when Redis client is null', async () => {
-            jest.resetModules();
-            jest.mock('../../../src/utils/redis');
-            jest.mock('../../../src/utils/env', () => ({
-                env: {
-                    REDIS_URL: undefined,
-                    ENABLE_REDIS_RATE_LIMITING: true,
-                },
-            }));
-
-            const { isRedisAvailable } = require('../../../src/utils/redis');
-            const available = await isRedisAvailable();
-            expect(available).toBe(false);
-        });
+    it('returns null without configuration', () => {
+        mockEnv.REDIS_URL = undefined;
+        expect(redis.getRedisClient()).toBeNull();
+        expect(Redis).not.toHaveBeenCalled();
     });
-
-    describe('scanKeys', () => {
-        it('should return empty array when Redis client is null', async () => {
-            jest.resetModules();
-            jest.mock('../../../src/utils/env', () => ({
-                env: {
-                    REDIS_URL: undefined,
-                    ENABLE_REDIS_RATE_LIMITING: true,
-                },
-            }));
-
-            const { scanKeys } = require('../../../src/utils/redis');
-            const keys = await scanKeys('violations:*');
-            expect(keys).toEqual([]);
-        });
-
-        it('should scan keys with pattern using SCAN command', async () => {
-            const mockClient = {
-                scan: jest
-                    .fn()
-                    .mockResolvedValueOnce(['5', ['violations:192.168.1.1', 'violations:192.168.1.2']])
-                    .mockResolvedValueOnce(['0', ['violations:192.168.1.3']]),
-            };
-
-            jest.resetModules();
-            jest.mock('../../../src/utils/env', () => ({
-                env: {
-                    REDIS_URL: 'redis://localhost:6379',
-                    ENABLE_REDIS_RATE_LIMITING: true,
-                },
-            }));
-
-            // Mock getRedisClient to return our mock client
-            jest.mock('../../../src/utils/redis', () => {
-                const originalModule = jest.requireActual('../../../src/utils/redis');
-                return {
-                    ...originalModule,
-                    getRedisClient: () => mockClient,
-                };
-            });
-
-            const { scanKeys } = require('../../../src/utils/redis');
-            const keys = await scanKeys('violations:*', 100);
-
-            expect(mockClient.scan).toHaveBeenCalledTimes(2);
-            expect(mockClient.scan).toHaveBeenCalledWith('0', 'MATCH', 'violations:*', 'COUNT', 100);
-            expect(keys).toEqual([
-                'violations:192.168.1.1',
-                'violations:192.168.1.2',
-                'violations:192.168.1.3',
-            ]);
-        });
-
-        it('should handle scan errors gracefully', async () => {
-            const mockClient = {
-                scan: jest.fn().mockRejectedValue(new Error('Redis error')),
-            };
-
-            jest.resetModules();
-            jest.mock('../../../src/utils/env', () => ({
-                env: {
-                    REDIS_URL: 'redis://localhost:6379',
-                    ENABLE_REDIS_RATE_LIMITING: true,
-                },
-            }));
-
-            jest.mock('../../../src/utils/redis', () => {
-                const originalModule = jest.requireActual('../../../src/utils/redis');
-                return {
-                    ...originalModule,
-                    getRedisClient: () => mockClient,
-                };
-            });
-
-            const { scanKeys } = require('../../../src/utils/redis');
-            const keys = await scanKeys('violations:*');
-
-            expect(keys).toEqual([]);
-        });
+    it('returns null when disabled', () => {
+        mockEnv.ENABLE_REDIS_RATE_LIMITING = false;
+        expect(redis.getRedisClient()).toBeNull();
     });
-
-    describe('deleteKeysByPattern', () => {
-        it('should return 0 when Redis client is null', async () => {
-            jest.resetModules();
-            jest.mock('../../../src/utils/env', () => ({
-                env: {
-                    REDIS_URL: undefined,
-                    ENABLE_REDIS_RATE_LIMITING: true,
-                },
-            }));
-
-            const { deleteKeysByPattern } = require('../../../src/utils/redis');
-            const deleted = await deleteKeysByPattern('violations:*');
-            expect(deleted).toBe(0);
-        });
-
-        it('should delete keys matching pattern using SCAN', async () => {
-            const mockClient = {
-                scan: jest
-                    .fn()
-                    .mockResolvedValueOnce(['5', ['key1', 'key2']])
-                    .mockResolvedValueOnce(['0', ['key3']]),
-                del: jest.fn().mockResolvedValueOnce(2).mockResolvedValueOnce(1),
-            };
-
-            jest.resetModules();
-            jest.mock('../../../src/utils/env', () => ({
-                env: {
-                    REDIS_URL: 'redis://localhost:6379',
-                    ENABLE_REDIS_RATE_LIMITING: true,
-                },
-            }));
-
-            jest.mock('../../../src/utils/redis', () => {
-                const originalModule = jest.requireActual('../../../src/utils/redis');
-                return {
-                    ...originalModule,
-                    getRedisClient: () => mockClient,
-                };
-            });
-
-            const { deleteKeysByPattern } = require('../../../src/utils/redis');
-            const deleted = await deleteKeysByPattern('violations:*', 100);
-
-            expect(mockClient.scan).toHaveBeenCalledTimes(2);
-            expect(mockClient.del).toHaveBeenCalledTimes(2);
-            expect(mockClient.del).toHaveBeenCalledWith('key1', 'key2');
-            expect(mockClient.del).toHaveBeenCalledWith('key3');
-            expect(deleted).toBe(3);
-        });
-
-        it('should handle delete errors gracefully', async () => {
-            const mockClient = {
-                scan: jest.fn().mockRejectedValue(new Error('Redis error')),
-            };
-
-            jest.resetModules();
-            jest.mock('../../../src/utils/env', () => ({
-                env: {
-                    REDIS_URL: 'redis://localhost:6379',
-                    ENABLE_REDIS_RATE_LIMITING: true,
-                },
-            }));
-
-            jest.mock('../../../src/utils/redis', () => {
-                const originalModule = jest.requireActual('../../../src/utils/redis');
-                return {
-                    ...originalModule,
-                    getRedisClient: () => mockClient,
-                };
-            });
-
-            const { deleteKeysByPattern } = require('../../../src/utils/redis');
-            const deleted = await deleteKeysByPattern('violations:*');
-
-            expect(deleted).toBe(0);
-        });
+    it('creates and reuses one configured transport', () => {
+        expect(redis.getRedisClient()).toBe(mockClient);
+        expect(redis.getRedisClient()).toBe(mockClient);
+        expect(Redis).toHaveBeenCalledTimes(1);
     });
-
-    describe('getKeyValuesByPattern', () => {
-        it('should return empty map when Redis client is null', async () => {
-            jest.resetModules();
-            jest.mock('../../../src/utils/env', () => ({
-                env: {
-                    REDIS_URL: undefined,
-                    ENABLE_REDIS_RATE_LIMITING: true,
-                },
-            }));
-
-            const { getKeyValuesByPattern } = require('../../../src/utils/redis');
-            const result = await getKeyValuesByPattern('violations:*');
-            expect(result.size).toBe(0);
-        });
-
-        it('should get key-value pairs using SCAN and pipeline', async () => {
-            const mockPipeline = {
-                get: jest.fn().mockReturnThis(),
-                exec: jest.fn().mockResolvedValue([
-                    [null, '5'],
-                    [null, '3'],
-                ]),
-            };
-
-            const mockClient = {
-                scan: jest.fn().mockResolvedValueOnce(['0', ['violations:ip1', 'violations:ip2']]),
-                pipeline: jest.fn().mockReturnValue(mockPipeline),
-            };
-
-            jest.resetModules();
-            jest.mock('../../../src/utils/env', () => ({
-                env: {
-                    REDIS_URL: 'redis://localhost:6379',
-                    ENABLE_REDIS_RATE_LIMITING: true,
-                },
-            }));
-
-            jest.mock('../../../src/utils/redis', () => {
-                const originalModule = jest.requireActual('../../../src/utils/redis');
-                return {
-                    ...originalModule,
-                    getRedisClient: () => mockClient,
-                };
-            });
-
-            const { getKeyValuesByPattern } = require('../../../src/utils/redis');
-            const result = await getKeyValuesByPattern('violations:*');
-
-            expect(mockClient.scan).toHaveBeenCalledTimes(1);
-            expect(mockClient.pipeline).toHaveBeenCalled();
-            expect(mockPipeline.get).toHaveBeenCalledTimes(2);
-            expect(result.size).toBe(2);
-            expect(result.get('violations:ip1')).toBe('5');
-            expect(result.get('violations:ip2')).toBe('3');
-        });
+    it('reports unavailable without a transport', async () => {
+        mockEnv.REDIS_URL = undefined;
+        expect(await redis.isRedisAvailable()).toBe(false);
     });
-
-    describe('countKeysByPattern', () => {
-        it('should return 0 when Redis client is null', async () => {
-            jest.resetModules();
-            jest.mock('../../../src/utils/env', () => ({
-                env: {
-                    REDIS_URL: undefined,
-                    ENABLE_REDIS_RATE_LIMITING: true,
-                },
-            }));
-
-            const { countKeysByPattern } = require('../../../src/utils/redis');
-            const count = await countKeysByPattern('violations:*');
-            expect(count).toBe(0);
-        });
-
-        it('should count keys matching pattern using SCAN', async () => {
-            const mockClient = {
-                scan: jest
-                    .fn()
-                    .mockResolvedValueOnce(['5', ['key1', 'key2', 'key3']])
-                    .mockResolvedValueOnce(['0', ['key4', 'key5']]),
-            };
-
-            jest.resetModules();
-            jest.mock('../../../src/utils/env', () => ({
-                env: {
-                    REDIS_URL: 'redis://localhost:6379',
-                    ENABLE_REDIS_RATE_LIMITING: true,
-                },
-            }));
-
-            jest.mock('../../../src/utils/redis', () => {
-                const originalModule = jest.requireActual('../../../src/utils/redis');
-                return {
-                    ...originalModule,
-                    getRedisClient: () => mockClient,
-                };
-            });
-
-            const { countKeysByPattern } = require('../../../src/utils/redis');
-            const count = await countKeysByPattern('violations:*');
-
-            expect(mockClient.scan).toHaveBeenCalledTimes(2);
-            expect(count).toBe(5);
-        });
-
-        it('should handle count errors gracefully', async () => {
-            const mockClient = {
-                scan: jest.fn().mockRejectedValue(new Error('Redis error')),
-            };
-
-            jest.resetModules();
-            jest.mock('../../../src/utils/env', () => ({
-                env: {
-                    REDIS_URL: 'redis://localhost:6379',
-                    ENABLE_REDIS_RATE_LIMITING: true,
-                },
-            }));
-
-            jest.mock('../../../src/utils/redis', () => {
-                const originalModule = jest.requireActual('../../../src/utils/redis');
-                return {
-                    ...originalModule,
-                    getRedisClient: () => mockClient,
-                };
-            });
-
-            const { countKeysByPattern } = require('../../../src/utils/redis');
-            const count = await countKeysByPattern('violations:*');
-
-            expect(count).toBe(0);
-        });
+    it('reports ping availability and failure', async () => {
+        mockClient.ping
+            .mockResolvedValueOnce('PONG')
+            .mockRejectedValueOnce(new Error('offline'));
+        expect(await redis.isRedisAvailable()).toBe(true);
+        expect(await redis.isRedisAvailable()).toBe(false);
+    });
+    it('returns no keys without a transport', async () => {
+        mockEnv.REDIS_URL = undefined;
+        expect(await redis.scanKeys('prefix:*')).toEqual([]);
+    });
+    it('scans all pages using SCAN rather than KEYS', async () => {
+        mockClient.scan
+            .mockResolvedValueOnce(['5', ['key1', 'key2']])
+            .mockResolvedValueOnce(['0', ['key3']]);
+        expect(await redis.scanKeys('prefix:*', 100)).toEqual([
+            'key1',
+            'key2',
+            'key3',
+        ]);
+        expect(mockClient.scan).toHaveBeenNthCalledWith(
+            1,
+            '0',
+            'MATCH',
+            'prefix:*',
+            'COUNT',
+            100
+        );
+        expect(mockClient.scan).toHaveBeenNthCalledWith(
+            2,
+            '5',
+            'MATCH',
+            'prefix:*',
+            'COUNT',
+            100
+        );
+    });
+    it('handles scanning errors', async () => {
+        mockClient.scan.mockRejectedValueOnce(new Error('offline'));
+        expect(await redis.scanKeys('*')).toEqual([]);
+    });
+    it('does not delete without a transport', async () => {
+        mockEnv.REDIS_URL = undefined;
+        expect(await redis.deleteKeysByPattern('*')).toBe(0);
+    });
+    it('deletes matching pages in bounded batches', async () => {
+        mockClient.scan
+            .mockResolvedValueOnce(['5', ['key1', 'key2']])
+            .mockResolvedValueOnce(['0', ['key3']]);
+        mockClient.del.mockResolvedValueOnce(2).mockResolvedValueOnce(1);
+        expect(await redis.deleteKeysByPattern('prefix:*', 100)).toBe(3);
+        expect(mockClient.del).toHaveBeenNthCalledWith(1, 'key1', 'key2');
+        expect(mockClient.del).toHaveBeenNthCalledWith(2, 'key3');
+    });
+    it('handles delete errors without false success', async () => {
+        mockClient.scan.mockRejectedValueOnce(new Error('offline'));
+        expect(await redis.deleteKeysByPattern('*')).toBe(0);
+    });
+    it('returns an empty map without a transport', async () => {
+        mockEnv.REDIS_URL = undefined;
+        expect((await redis.getKeyValuesByPattern('*')).size).toBe(0);
+    });
+    it('pipelines values and excludes failed or missing reads', async () => {
+        const pipeline = {
+            get: jest.fn().mockReturnThis(),
+            exec: jest.fn().mockResolvedValue([
+                [null, '5'],
+                [new Error('failed'), null],
+                [null, null],
+                [null, '3'],
+            ]),
+        };
+        mockClient.scan.mockResolvedValueOnce([
+            '0',
+            ['one', 'bad', 'missing', 'two'],
+        ]);
+        mockClient.pipeline.mockReturnValue(pipeline);
+        expect(await redis.getKeyValuesByPattern('*')).toEqual(
+            new Map([
+                ['one', '5'],
+                ['two', '3'],
+            ])
+        );
+        expect(pipeline.get).toHaveBeenCalledTimes(4);
+    });
+    it('does not count without a transport', async () => {
+        mockEnv.REDIS_URL = undefined;
+        expect(await redis.countKeysByPattern('*')).toBe(0);
+    });
+    it('counts all matching pages', async () => {
+        mockClient.scan
+            .mockResolvedValueOnce(['5', ['one', 'two', 'three']])
+            .mockResolvedValueOnce(['0', ['four', 'five']]);
+        expect(await redis.countKeysByPattern('*')).toBe(5);
+    });
+    it('handles count errors', async () => {
+        mockClient.scan.mockRejectedValueOnce(new Error('offline'));
+        expect(await redis.countKeysByPattern('*')).toBe(0);
     });
 });

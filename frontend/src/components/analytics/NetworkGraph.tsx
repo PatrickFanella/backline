@@ -44,10 +44,17 @@ function NetworkGraph({ data, height = 500 }: NetworkGraphProps) {
             }
 
             // Add channel node if present
-            if (item.channelId && item.channel && !processedChannels.has(item.channelId)) {
+            if (
+                item.channelId &&
+                item.channel &&
+                !processedChannels.has(item.channelId)
+            ) {
                 nodes.push({
                     id: `channel-${item.channelId}`,
-                    label: item.channel.length > 20 ? item.channel.substring(0, 20) + '...' : item.channel,
+                    label:
+                        item.channel.length > 20
+                            ? item.channel.substring(0, 20) + '...'
+                            : item.channel,
                     group: 'channel',
                     value: 10,
                     title: item.channel,
@@ -67,10 +74,8 @@ function NetworkGraph({ data, height = 500 }: NetworkGraphProps) {
         });
 
         // Create datasets
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const nodesDataSet = new DataSet(nodes as any);
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const edgesDataSet = new DataSet(edges as any);
+        const nodesDataSet = new DataSet<NetworkNode>(nodes);
+        const edgesDataSet = new DataSet<NetworkEdge>(edges);
 
         // Network options
         const options = {
@@ -124,11 +129,9 @@ function NetworkGraph({ data, height = 500 }: NetworkGraphProps) {
             },
         };
 
-        // Create network
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const network = new Network(
             containerRef.current,
-            { nodes: nodesDataSet as any, edges: edgesDataSet as any },
+            { nodes: nodesDataSet, edges: edgesDataSet },
             options
         );
 

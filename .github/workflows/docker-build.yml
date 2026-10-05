@@ -1,227 +1,135 @@
-name: Docker Build and Test
+name: Docker qualification
 
 on:
-  push:
-    branches: [main, develop]
-    paths:
-      - 'backend/**'
-      - 'frontend/**'
-      - 'docker-compose*.yml'
-      - '**/Dockerfile*'
-      - '.github/workflows/docker-build.yml'
-  pull_request:
-    branches: [main, develop]
-    paths:
-      - 'backend/**'
-      - 'frontend/**'
-      - 'docker-compose*.yml'
-      - '**/Dockerfile*'
-      - '.github/workflows/docker-build.yml'
+    push:
+        paths:
+            - 'backend/**'
+            - 'frontend/**'
+            - 'compose.release.yml'
+            - 'docker-compose*.yml'
+            - 'release-example.env'
+            - 'release-runtime-example.env'
+            - '**/Dockerfile*'
+            - '.github/workflows/docker-build.yml'
+    pull_request:
+        paths:
+            - 'backend/**'
+            - 'frontend/**'
+            - 'compose.release.yml'
+            - 'docker-compose*.yml'
+            - 'release-example.env'
+            - 'release-runtime-example.env'
+            - '**/Dockerfile*'
+            - '.github/workflows/docker-build.yml'
 
 env:
-  REGISTRY: ghcr.io
-  BACKEND_IMAGE_NAME: ${{ github.repository }}/backend
-  FRONTEND_IMAGE_NAME: ${{ github.repository }}/frontend
+    CI_DISCORD_CLIENT_ID: '1375864689577164911'
 
 jobs:
-  build-backend:
-    name: Build Backend Docker Image
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
+    build-backend:
+        name: Build and inspect backend image
+        runs-on: ubuntu-latest
 
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v5
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v5
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+            - name: Build backend image locally
+              run: docker build -t backline-ci-backend:qualification ./backend
 
-      - name: Log in to Container Registry
-        if: github.event_name != 'pull_request'
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+            - name: Verify packaged backend entrypoints and native dependencies
+              run: |
+                  docker run --rm --entrypoint sh backline-ci-backend:qualification -ec '
+                    test -f dist/src/server.js
+                    test -f dist/src/index.js
+                    test -f scripts/migrate.cjs
+                    test -x node_modules/.bin/prisma
+                    node --version
+                    ffmpeg -version
+                    node -e "const sharp = require(\"sharp\"); console.log(sharp.versions.vips)"
+                  '
 
-      - name: Extract metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE_NAME }}
-          tags: |
-            type=ref,event=branch
-            type=ref,event=pr
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=sha,prefix={{branch}}-
+    build-frontend:
+        name: Build and serve dashboard image
+        runs-on: ubuntu-latest
 
-      - name: Build backend image
-        uses: docker/build-push-action@v6
-        with:
-          context: ./backend
-          file: ./backend/Dockerfile
-          push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v5
 
-      - name: Test backend image
-        run: |
-          docker build -t test-backend ./backend
-          docker run --rm test-backend node --version
-          docker run --rm test-backend npm --version
+            - name: Build dashboard image locally
+              run: |
+                  docker build \
+                    --build-arg VITE_DISCORD_CLIENT_ID="$CI_DISCORD_CLIENT_ID" \
+                    -t backline-ci-dashboard:qualification \
+                    ./frontend
 
-  build-frontend:
-    name: Build Frontend Docker Image
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
+            - name: Verify dashboard static health endpoint
+              run: |
+                  # This standalone probe supplies the release-time upstream name only.
+                  # The API proxy is qualified by compose.release.yml, not this static health check.
+                  docker run --rm -d -p 8080:80 --add-host api:127.0.0.1 --name backline-ci-dashboard backline-ci-dashboard:qualification
+                  trap 'docker logs backline-ci-dashboard; docker rm -f backline-ci-dashboard' EXIT
+                  for attempt in 1 2 3 4 5; do
+                    if curl --fail --silent --show-error http://127.0.0.1:8080/health; then
+                      exit 0
+                    fi
+                    sleep 1
+                  done
+                  exit 1
 
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v5
+    validate-compose:
+        name: Validate Compose definitions
+        runs-on: ubuntu-latest
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v5
 
-      - name: Log in to Container Registry
-        if: github.event_name != 'pull_request'
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+            - name: Validate existing Compose files without printing interpolated values
+              run: |
+                  legacy_env="$(mktemp)"
+                  trap 'rm -f "$legacy_env"' EXIT
+                  cat > "$legacy_env" <<'EOF'
+                  DB_PASSWORD=ci-placeholder-db-password
+                  PGBOUNCER_ADMIN_PASSWORD=ci-placeholder-pgbouncer-password
+                  ADMIN_DISCORD_IDS=000000000000000001
+                  BOT_GUILD_IDS=000000000000000002
+                  DISCORD_BOT_TOKEN=ci-placeholder-not-a-real-discord-token
+                  DISCORD_CLIENT_ID=000000000000000000
+                  DISCORD_CLIENT_SECRET=ci-placeholder-not-a-real-client-secret
+                  DISCORD_GUILD_ID=000000000000000003
+                  DISCORD_REDIRECT_URI=https://backline.example.invalid/auth/callback
+                  JWT_SECRET=ci-placeholder-jwt-secret-at-least-32-characters
+                  JWT_REFRESH_SECRET=ci-placeholder-refresh-secret-at-least-32-characters
+                  DATABASE_URL_DIRECT=postgresql://spywatcher:ci-placeholder-db-password@postgres:5432/spywatcher
+                  VITE_API_URL=https://backline.example.invalid/api
+                  VITE_DISCORD_CLIENT_ID=000000000000000000
+                  EOF
+                  docker compose --env-file "$legacy_env" -f docker-compose.dev.yml config --quiet
+                  docker compose --env-file "$legacy_env" -f docker-compose.prod.yml config --quiet
+                  docker compose --env-file "$legacy_env" -f docker-compose.test.yml config --quiet
 
-      - name: Extract metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.FRONTEND_IMAGE_NAME }}
-          tags: |
-            type=ref,event=branch
-            type=ref,event=pr
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=sha,prefix={{branch}}-
-
-      - name: Build frontend image
-        uses: docker/build-push-action@v6
-        with:
-          context: ./frontend
-          file: ./frontend/Dockerfile
-          push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Test frontend image
-        run: |
-          docker build -t test-frontend ./frontend
-          docker run --rm -d -p 8080:80 --name test-frontend test-frontend
-          sleep 5
-          curl -f http://localhost:8080/health || exit 1
-          docker stop test-frontend
-
-  validate-compose:
-    name: Validate Docker Compose
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v5
-
-      - name: Validate docker-compose.dev.yml
-        run: docker compose -f docker-compose.dev.yml config
-
-      - name: Validate docker-compose.prod.yml
-        run: docker compose -f docker-compose.prod.yml config
-
-      - name: Validate docker-compose.test.yml
-        run: docker compose -f docker-compose.test.yml config
-
-  security-scan:
-    name: Security Scan Docker Images
-    runs-on: ubuntu-latest
-    needs: [build-backend, build-frontend]
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v5
-
-      - name: Build images for scanning
-        run: |
-          docker build -t scan-backend ./backend
-          docker build -t scan-frontend ./frontend
-
-      - name: Run Trivy vulnerability scanner on backend
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: scan-backend
-          format: 'sarif'
-          output: 'trivy-backend-results.sarif'
-          severity: 'CRITICAL,HIGH'
-
-      - name: Run Trivy vulnerability scanner on frontend
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: scan-frontend
-          format: 'sarif'
-          output: 'trivy-frontend-results.sarif'
-          severity: 'CRITICAL,HIGH'
-
-      - name: Upload Trivy results to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@v4
-        if: always()
-        with:
-          sarif_file: '.'
-
-  report-image-sizes:
-    name: Report Image Sizes
-    runs-on: ubuntu-latest
-    needs: [build-backend, build-frontend]
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v5
-
-      - name: Build images
-        run: |
-          docker build -t size-backend ./backend
-          docker build -t size-frontend ./frontend
-
-      - name: Get image sizes
-        id: sizes
-        run: |
-          BACKEND_SIZE=$(docker images size-backend --format "{{.Size}}")
-          FRONTEND_SIZE=$(docker images size-frontend --format "{{.Size}}")
-          echo "backend=$BACKEND_SIZE" >> $GITHUB_OUTPUT
-          echo "frontend=$FRONTEND_SIZE" >> $GITHUB_OUTPUT
-
-      - name: Comment image sizes on PR
-        if: github.event_name == 'pull_request'
-        uses: actions/github-script@v8
-        with:
-          script: |
-            const backendSize = '${{ steps.sizes.outputs.backend }}';
-            const frontendSize = '${{ steps.sizes.outputs.frontend }}';
-            const body = `## 🐳 Docker Image Sizes
-            
-            | Image | Size |
-            |-------|------|
-            | Backend | ${backendSize} |
-            | Frontend | ${frontendSize} |
-            
-            Built from commit: ${context.sha}`;
-            
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: body
-            });
+            - name: Validate release Compose with generated placeholders
+              run: |
+                  release_env="$(mktemp)"
+                  runtime_env="$(mktemp)"
+                  trap 'rm -f "$release_env" "$runtime_env"' EXIT
+                  cat > "$runtime_env" <<'EOF'
+                  DISCORD_BOT_TOKEN=ci-placeholder-not-a-real-discord-token
+                  DISCORD_CLIENT_ID=000000000000000000
+                  DISCORD_CLIENT_SECRET=ci-placeholder-not-a-real-client-secret
+                  DISCORD_REDIRECT_URI=https://backline.example.invalid/auth/callback
+                  JWT_SECRET=ci-placeholder-jwt-secret-at-least-32-characters
+                  JWT_REFRESH_SECRET=ci-placeholder-refresh-secret-at-least-32-characters
+                  CORS_ORIGINS=https://backline.example.invalid
+                  EOF
+                  cat > "$release_env" <<EOF
+                  BACKLINE_BACKEND_IMAGE=registry.example.invalid/backline/backend@sha256:0000000000000000000000000000000000000000000000000000000000000000
+                  BACKLINE_FRONTEND_IMAGE=registry.example.invalid/backline/dashboard@sha256:0000000000000000000000000000000000000000000000000000000000000000
+                  BACKLINE_ENV_FILE=$runtime_env
+                  POSTGRES_PASSWORD=ci-placeholder-postgres-password
+                  BACKLINE_BIND_ADDRESS=127.0.0.1
+                  BACKLINE_PORT=8080
+                  EOF
+                  docker compose --env-file "$release_env" -f compose.release.yml config --quiet

@@ -44,13 +44,16 @@ describe('PluginLoader', () => {
     describe('executeHooks', () => {
         it('should execute hooks and return data', async () => {
             const testData = { value: 'test' };
-            const result = await pluginLoader.executeHooks(PluginHookType.DISCORD_READY, testData);
+            const result = await pluginLoader.executeHooks(
+                PluginHookType.DISCORD_READY,
+                testData
+            );
             expect(result).toEqual(testData);
         });
     });
 
     describe('getLoadedPlugins', () => {
-        it('should return all loaded plugins', async () => {
+        it('should return all loaded plugins', () => {
             const plugins = pluginLoader.getLoadedPlugins();
             expect(Array.isArray(plugins)).toBe(true);
         });

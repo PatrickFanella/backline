@@ -1,4 +1,5 @@
 import { db } from '../../../src/db';
+import * as alertSystem from '../../../src/utils/alertSystem';
 import {
     checkBackupHealth,
     logBackupStart,
@@ -7,7 +8,6 @@ import {
     getBackupStats,
     getRecentBackups,
 } from '../../../src/utils/backupMonitor';
-import * as alertSystem from '../../../src/utils/alertSystem';
 
 jest.mock('../../../src/db', () => ({
     db: {

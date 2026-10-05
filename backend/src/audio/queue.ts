@@ -1,10 +1,12 @@
 import { randomInt, randomUUID } from 'node:crypto';
 
-import { AudioQueue, Prisma } from '@prisma/client';
+import { AudioQueue, DurableJob, Prisma } from '@prisma/client';
 import { Client, Interaction, SlashCommandBuilder } from 'discord.js';
 import { z } from 'zod';
 
 import { db } from '../db';
+import { authorizeGuild } from '../guilds/authorization';
+import { JobHandler } from '../jobs/store';
 
 import { stationId } from './config';
 import { audioAccess, audioSettings, radioRuntime } from './radio';
@@ -52,7 +54,8 @@ export async function enqueue(
     guildId: string,
     actorId: string,
     station: string,
-    minutes: number
+    minutes: number,
+    requestId: string = randomUUID()
 ) {
     const access = await audioAccess(client, guildId, actorId);
     if (!access.config.queuesEnabled) throw new Error('Queues disabled');
@@ -60,7 +63,7 @@ export async function enqueue(
     if (current && current.channelId !== access.channelId)
         throw new Error('Join the current audio channel');
     const item = queueItem.parse({
-        id: randomUUID(),
+        id: requestId,
         station,
         minutes,
         requesterId: actorId,
@@ -77,6 +80,7 @@ export async function enqueue(
         )
             throw new Error('Queues disabled');
         const items = queueItems.parse(row.items);
+        if (items.some((entry) => entry.id === requestId)) return row;
         if (
             items.length >= 50 ||
             items.filter((i) => i.requesterId === actorId).length >= 10
@@ -87,6 +91,190 @@ export async function enqueue(
         items.push(item);
         return tx.audioQueue.update({ where: { guildId }, data: { items } });
     });
+}
+
+const dashboardAudioAction = z.discriminatedUnion('action', [
+    z
+        .object({
+            action: z.literal('enqueue'),
+            station: stationId,
+            minutes: z.number().int().min(1).max(30),
+            discordId: z.string().regex(/^\d{17,20}$/),
+            requestId: z.string().uuid(),
+        })
+        .strict(),
+    z
+        .object({
+            action: z.literal('start'),
+            discordId: z.string().regex(/^\d{17,20}$/),
+            requestId: z.string().uuid(),
+        })
+        .strict(),
+    z
+        .object({
+            action: z.literal('control'),
+            control: z.enum(['pause', 'resume', 'skip', 'stop']),
+            discordId: z.string().regex(/^\d{17,20}$/),
+            requestId: z.string().uuid(),
+        })
+        .strict(),
+    z
+        .object({
+            action: z.literal('volume'),
+            volume: z.number().int().min(0).max(100),
+            discordId: z.string().regex(/^\d{17,20}$/),
+            requestId: z.string().uuid(),
+        })
+        .strict(),
+    z
+        .object({
+            action: z.literal('queue-setting'),
+            setting: z.enum(['shuffle', 'loop', 'clear']),
+            enabled: z.boolean().optional(),
+            discordId: z.string().regex(/^\d{17,20}$/),
+            requestId: z.string().uuid(),
+        })
+        .strict(),
+    z
+        .object({
+            action: z.literal('playlist'),
+            operation: z.enum(['save', 'load', 'delete']),
+            name: playlistName,
+            discordId: z.string().regex(/^\d{17,20}$/),
+            requestId: z.string().uuid(),
+        })
+        .strict(),
+]);
+
+async function dashboardActor(
+    job: DurableJob,
+    discordId: string
+): Promise<boolean> {
+    const account = await db.user.findUnique({
+        where: { id: job.actorId },
+        select: { discordId: true, role: true },
+    });
+    return (
+        !!account &&
+        account.role !== 'BANNED' &&
+        account.discordId === discordId
+    );
+}
+
+/** API requests are durable work; only the Gateway worker touches voice state. */
+export function audioDashboardHandler(client: Client): JobHandler {
+    return {
+        authorize: async (job) => {
+            const payload = dashboardAudioAction.parse(job.payload);
+            return (
+                (await dashboardActor(job, payload.discordId)) &&
+                (await authorizeGuild(job.actorId, job.guildId))
+            );
+        },
+        execute: async (job) => {
+            const payload = dashboardAudioAction.parse(job.payload);
+            if (
+                !(await dashboardActor(job, payload.discordId)) ||
+                !(await authorizeGuild(job.actorId, job.guildId))
+            )
+                return {
+                    state: 'CANCELLED',
+                    reason: 'Dashboard authorization changed',
+                };
+            if (payload.action === 'enqueue')
+                await enqueue(
+                    client,
+                    job.guildId,
+                    payload.discordId,
+                    payload.station,
+                    payload.minutes,
+                    job.id
+                );
+            else if (payload.action === 'start')
+                await startQueue(client, job.guildId, payload.discordId);
+            else if (payload.action === 'control') {
+                if (payload.control === 'stop') {
+                    const access = await audioAccess(
+                        client,
+                        job.guildId,
+                        payload.discordId
+                    );
+                    const playback = radioRuntime.status(job.guildId);
+                    if (playback && playback.channelId !== access.channelId)
+                        throw new Error('Join the current audio channel');
+                    await radioRuntime.authorizedStop(
+                        client,
+                        job.guildId,
+                        payload.discordId
+                    );
+                } else
+                    await radioRuntime.control(
+                        client,
+                        job.guildId,
+                        payload.discordId,
+                        payload.control
+                    );
+            } else if (payload.action === 'volume')
+                await radioRuntime.control(
+                    client,
+                    job.guildId,
+                    payload.discordId,
+                    'volume',
+                    payload.volume
+                );
+            else if (payload.action === 'queue-setting')
+                await queueSettings(
+                    client,
+                    job.guildId,
+                    payload.discordId,
+                    payload.setting,
+                    payload.enabled
+                );
+            else if (payload.operation === 'save')
+                await savePlaylist(
+                    client,
+                    job.guildId,
+                    payload.discordId,
+                    payload.name
+                );
+            else if (payload.operation === 'load')
+                await loadPlaylist(
+                    client,
+                    job.guildId,
+                    payload.discordId,
+                    payload.name
+                );
+            else {
+                await audioAccess(client, job.guildId, payload.discordId, true);
+                await db.audioPlaylist.deleteMany({
+                    where: { guildId: job.guildId, name: payload.name },
+                });
+            }
+            return { state: 'DELIVERED', result: { action: payload.action } };
+        },
+        reconcile: async (job) => {
+            const payload = dashboardAudioAction.parse(job.payload);
+            if (payload.action === 'enqueue') {
+                const queue = await db.audioQueue.findUnique({
+                    where: { guildId: job.guildId },
+                });
+                if (
+                    queue &&
+                    queueItems
+                        .parse(queue.items)
+                        .some((item) => item.id === job.id)
+                )
+                    return {
+                        state: 'DELIVERED',
+                        result: { action: payload.action },
+                    };
+            }
+            return {
+                state: 'RECONCILE',
+                reason: 'Audio action outcome requires current queue inspection',
+            };
+        },
+    };
 }
 export async function claimQueue(guildId: string) {
     return locked(guildId, async (tx, row) => {
@@ -147,6 +335,7 @@ const active = new Map<
         {
             claimId: string;
             playbackId: string;
+            controllerId: string;
             deadline: number;
             channelId: string;
         }
@@ -206,6 +395,9 @@ export async function startQueue(
         active.set(guildId, {
             claimId: row.claimId!,
             playbackId: result.id,
+            // Queue entries belong to their requesters, but continuation must
+            // remain under the DJ who explicitly started this queue.
+            controllerId: actorId,
             deadline,
             channelId: access.channelId,
         });
@@ -251,7 +443,7 @@ export async function maintainQueues(client: Client) {
                 await startQueue(
                     client,
                     guildId,
-                    playback.requesterId,
+                    owned.controllerId,
                     owned.deadline,
                     owned.channelId
                 );
@@ -300,7 +492,9 @@ export async function queueSettings(
                           claimId: null,
                           leaseUntil: null,
                       }
-                    : { [action]: enabled === true },
+                    : action === 'shuffle'
+                      ? { shuffle: enabled === true }
+                      : { loop: enabled === true },
         });
     });
 }

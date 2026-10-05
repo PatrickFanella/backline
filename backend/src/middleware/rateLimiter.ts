@@ -1,7 +1,8 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any */
+import { SubscriptionTier, Role } from '@prisma/client';
 import { Request, Response } from 'express';
-import rateLimit from 'express-rate-limit';
+import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 import RedisStore from 'rate-limit-redis';
+import { z } from 'zod';
 
 import { db } from '../db';
 import { getRateLimitsForTier } from '../utils/quotaManager';
@@ -163,7 +164,7 @@ export const refreshLimiter = createRateLimiter({
  */
 async function getUserMetadata(
     userId: string
-): Promise<{ subscriptionTier: any; role: any } | null> {
+): Promise<{ subscriptionTier: SubscriptionTier; role: Role } | null> {
     const cacheKey = `user:meta:${userId}`;
 
     // Try to get from Redis cache first
@@ -171,7 +172,13 @@ async function getUserMetadata(
         try {
             const cached = await redis.get(cacheKey);
             if (cached) {
-                return JSON.parse(cached);
+                const parsed = z
+                    .object({
+                        subscriptionTier: z.nativeEnum(SubscriptionTier),
+                        role: z.nativeEnum(Role),
+                    })
+                    .safeParse(JSON.parse(cached) as unknown);
+                if (parsed.success) return parsed.data;
             }
         } catch (error) {
             console.error('Error reading user metadata from cache:', error);
@@ -212,7 +219,7 @@ async function getUserMetadata(
 export const userRateLimiter = rateLimit({
     windowMs: 1 * 60 * 1000, // 1 minute
     max: async (req: Request) => {
-        const user = (req as any).user;
+        const user = req.user;
         if (!user) return 30; // Unauthenticated users
 
         try {
@@ -240,9 +247,9 @@ export const userRateLimiter = rateLimit({
     legacyHeaders: false,
     // Use user ID as key if authenticated, otherwise IP
     keyGenerator: (req: Request) => {
-        const user = (req as any).user;
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-return
-        return user?.userId || req.ip || 'unknown';
+        const user = req.user;
+
+        return user?.userId || (req.ip ? ipKeyGenerator(req.ip) : 'unknown');
     },
     ...(redis && {
         store: new RedisStore({

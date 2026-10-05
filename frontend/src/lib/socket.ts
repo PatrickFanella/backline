@@ -101,18 +101,25 @@ class SocketService {
                 throw new Error('No authentication token available');
             }
 
-            this.socket = io(config.apiUrl, {
-                auth: { token },
-                transports: ['websocket', 'polling'],
-                reconnection: true,
-                reconnectionDelay: 1000,
-                reconnectionDelayMax: 5000,
-                reconnectionAttempts: this.maxReconnectAttempts,
-                timeout: 20000,
-            });
+            this.socket = io(
+                new URL(config.apiUrl, window.location.origin).origin,
+                {
+                    auth: { token },
+                    transports: ['websocket', 'polling'],
+                    reconnection: true,
+                    reconnectionDelay: 1000,
+                    reconnectionDelayMax: 5000,
+                    reconnectionAttempts: this.maxReconnectAttempts,
+                    timeout: 20000,
+                }
+            );
 
             this.socket.on('connect', () => {
-                console.log('[WebSocket] Connected after', this.reconnectAttempts, 'attempts');
+                console.log(
+                    '[WebSocket] Connected after',
+                    this.reconnectAttempts,
+                    'attempts'
+                );
                 this.reconnectAttempts = 0;
             });
 
@@ -122,11 +129,13 @@ class SocketService {
 
             this.socket.on('connect_error', (error) => {
                 console.error('[WebSocket] Connection error:', error.message);
-                
+
                 // Only disconnect on authentication errors, not general connection errors
                 // Socket.io's built-in reconnection will handle transient failures
-                if (error.message.includes('Invalid token') || 
-                    error.message.includes('Authentication required')) {
+                if (
+                    error.message.includes('Invalid token') ||
+                    error.message.includes('Authentication required')
+                ) {
                     console.error('[WebSocket] Authentication failed');
                     this.disconnect();
                 }

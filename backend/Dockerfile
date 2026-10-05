@@ -35,6 +35,10 @@ COPY --from=builder --chown=nodejs:nodejs /app/dist ./dist
 COPY --from=builder --chown=nodejs:nodejs /app/node_modules ./node_modules
 COPY --from=builder --chown=nodejs:nodejs /app/prisma ./prisma
 COPY --chown=nodejs:nodejs package*.json ./
+COPY --chown=nodejs:nodejs scripts/bot-health.cjs scripts/migrate.cjs ./scripts/
+
+# Writable runtime directories are created before dropping privileges.
+RUN mkdir -p /app/logs /app/dist/plugin-data && chown -R nodejs:nodejs /app/logs /app/dist/plugin-data
 
 # Switch to non-root user
 USER nodejs
@@ -44,7 +48,7 @@ EXPOSE 3001
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD wget -q --spider http://localhost:3001/health/live || exit 1
+  CMD wget -q --spider http://127.0.0.1:3001/health/live || exit 1
 
 # Start the application
 CMD ["node", "dist/src/server.js"]

@@ -1,16 +1,17 @@
 import { db } from '../db';
 
-export enum DataType {
-    PRESENCE_EVENTS = 'PRESENCE_EVENTS',
-    MESSAGE_EVENTS = 'MESSAGE_EVENTS',
-    TYPING_EVENTS = 'TYPING_EVENTS',
-    DELETED_MESSAGE_EVENTS = 'DELETED_MESSAGE_EVENTS',
-    JOIN_EVENTS = 'JOIN_EVENTS',
-    REACTION_TIMES = 'REACTION_TIMES',
-    ROLE_CHANGE_EVENTS = 'ROLE_CHANGE_EVENTS',
-    SESSIONS = 'SESSIONS',
-    AUDIT_LOGS = 'AUDIT_LOGS',
-}
+export const DataType = {
+    PRESENCE_EVENTS: 'PRESENCE_EVENTS',
+    MESSAGE_EVENTS: 'MESSAGE_EVENTS',
+    TYPING_EVENTS: 'TYPING_EVENTS',
+    DELETED_MESSAGE_EVENTS: 'DELETED_MESSAGE_EVENTS',
+    JOIN_EVENTS: 'JOIN_EVENTS',
+    REACTION_TIMES: 'REACTION_TIMES',
+    ROLE_CHANGE_EVENTS: 'ROLE_CHANGE_EVENTS',
+    SESSIONS: 'SESSIONS',
+    AUDIT_LOGS: 'AUDIT_LOGS',
+} as const;
+export type DataType = (typeof DataType)[keyof typeof DataType];
 
 // Default retention periods in days
 export const DEFAULT_RETENTION_PERIODS: Record<string, number> = {
@@ -49,7 +50,7 @@ export async function initializeRetentionPolicies(): Promise<void> {
 /**
  * Get retention policy for a specific data type
  */
-export async function getRetentionPolicy(dataType: DataType | string): Promise<{
+export async function getRetentionPolicy(dataType: string): Promise<{
     id: string;
     dataType: string;
     retentionDays: number;
@@ -64,7 +65,7 @@ export async function getRetentionPolicy(dataType: DataType | string): Promise<{
  * Update retention policy
  */
 export async function updateRetentionPolicy(
-    dataType: DataType | string,
+    dataType: string,
     retentionDays: number,
     enabled = true
 ): Promise<void> {

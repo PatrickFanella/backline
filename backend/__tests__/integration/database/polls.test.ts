@@ -132,7 +132,11 @@ databaseTests('native channel polls', () => {
         expect(send).not.toHaveBeenCalled();
     });
     it('uses competing worker leases to send exactly one native poll', async () => {
-        await queuePoll(client, guildId, actorId, 'send', input());
+        const job = await queuePoll(client, guildId, actorId, 'send', input());
+        await db.durableJob.update({
+            where: { id: job.id },
+            data: { runAt: new Date(Date.now() - 60000) },
+        });
         const workers = [
             new JobWorker(new Map([['native-poll', pollHandler(client)]])),
             new JobWorker(new Map([['native-poll', pollHandler(client)]])),
@@ -160,6 +164,10 @@ databaseTests('native channel polls', () => {
             'uncertain',
             input()
         );
+        await db.durableJob.update({
+            where: { id: job.id },
+            data: { runAt: new Date(Date.now() - 60000) },
+        });
         send.mockRejectedValue(new Error('Lost response'));
         const worker = new JobWorker(
             new Map([['native-poll', pollHandler(client)]])
@@ -199,6 +207,10 @@ databaseTests('native channel polls', () => {
     });
     it('cleans completed attempt receipts but preserves held sends', async () => {
         const job = await queuePoll(client, guildId, actorId, 'old', input());
+        await db.durableJob.update({
+            where: { id: job.id },
+            data: { runAt: new Date(Date.now() - 60000) },
+        });
         await new JobWorker(
             new Map([['native-poll', pollHandler(client)]])
         ).tick();

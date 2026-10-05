@@ -3,8 +3,9 @@
  * GDPR-compliant analytics with consent management and data anonymization
  */
 
-import { PrismaClient } from '@prisma/client';
 import crypto from 'crypto';
+
+import { Prisma, PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
@@ -120,7 +121,9 @@ export async function trackEvent(options: TrackEventOptions): Promise<void> {
                 eventType,
                 eventName,
                 category,
-                properties: (properties || {}) as any,
+                properties: JSON.parse(
+                    JSON.stringify(properties || {})
+                ) as Prisma.InputJsonObject,
                 ipAddress: shouldAnonymize
                     ? anonymizeData(ipAddress)
                     : ipAddress,
@@ -153,7 +156,9 @@ export async function trackFeatureUsage(
                 featureName,
                 userId: !consentGiven ? anonymizeData(userId) : userId,
                 usageCount: 1,
-                metadata: (metadata || {}) as any,
+                metadata: JSON.parse(
+                    JSON.stringify(metadata || {})
+                ) as Prisma.InputJsonObject,
                 consentGiven,
             },
         });
@@ -189,7 +194,9 @@ export async function trackPerformance(
                 endpoint,
                 userId,
                 sessionId,
-                metadata: (metadata || {}) as any,
+                metadata: JSON.parse(
+                    JSON.stringify(metadata || {})
+                ) as Prisma.InputJsonObject,
             },
         });
     } catch (error) {

@@ -36,9 +36,6 @@ out
 eslint.config.js
 .eslintcache
 .stylelintcache
-vite.config.ts
-postcss.config.js
-tailwind.config.js
 
 # Logs
 logs

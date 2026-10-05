@@ -12,7 +12,9 @@ import {
     recoverQueues,
     savePlaylist,
     startQueue,
+    maintainQueues,
 } from '../../../src/audio/queue';
+import { radioRuntime } from '../../../src/audio/radio';
 import { db } from '../../../src/db';
 import { moduleRegistry } from '../../../src/modules/registry';
 import { env } from '../../../src/utils/env';
@@ -23,6 +25,7 @@ databaseTests('durable server audio queues', () => {
     const guildId = '777777777777777821',
         otherGuild = '777777777777777822',
         actorId = '777777777777777823',
+        memberId = '777777777777777825',
         channelId = '777777777777777824';
     let permitted = true,
         previous: string[],
@@ -38,7 +41,7 @@ databaseTests('durable server audio queues', () => {
                                 user: { bot: false },
                                 voice: { channelId },
                                 permissions: new PermissionsBitField(
-                                    permitted
+                                    permitted && user === actorId
                                         ? [PermissionFlagsBits.ManageGuild]
                                         : []
                                 ),
@@ -81,6 +84,7 @@ databaseTests('durable server audio queues', () => {
     });
     const add = (server = guildId) =>
         enqueue(client, server, actorId, 'defcon', 1);
+    const addMember = () => enqueue(client, guildId, memberId, 'defcon', 1);
     it('serializes concurrent queue claims and ignores stale completion', async () => {
         await add();
         await add();
@@ -187,6 +191,83 @@ databaseTests('durable server audio queues', () => {
         });
         expect(row.state).toBe('IDLE');
         expect(queueItems.parse(row.items)).toHaveLength(1);
+    });
+    it('continues a member request under the original current DJ', async () => {
+        const sessions = new Map<string, { id: string }>();
+        const controllers: string[] = [];
+        const play = jest
+            .spyOn(radioRuntime, 'play')
+            .mockImplementation(async (_client, server, controller) => {
+                controllers.push(controller);
+                const id = randomUUID();
+                await db.voicePlayback.create({
+                    data: {
+                        id,
+                        guildId: server,
+                        channelId,
+                        requesterId: memberId,
+                        stationId: 'defcon',
+                        state: 'PLAYING',
+                    },
+                });
+                sessions.set(server, { id });
+                return {
+                    id,
+                    channelId,
+                    stationId: 'defcon',
+                    player: 'playing',
+                    connection: 'ready',
+                    playbackMs: 0,
+                } as Awaited<ReturnType<typeof radioRuntime.play>>;
+            });
+        const status = jest
+            .spyOn(radioRuntime, 'status')
+            .mockImplementation((server) => {
+                const session = sessions.get(server);
+                return session
+                    ? ({
+                          ...session,
+                          channelId,
+                          stationId: 'defcon',
+                          player: 'playing',
+                          connection: 'ready',
+                          playbackMs: 0,
+                      } as ReturnType<typeof radioRuntime.status>)
+                    : null;
+            });
+        try {
+            await addMember();
+            await addMember();
+            await startQueue(client, guildId, actorId);
+            const first = sessions.get(guildId)!;
+            sessions.delete(guildId);
+            await db.voicePlayback.update({
+                where: { id: first.id },
+                data: {
+                    state: 'STOPPED',
+                    detail: 'Queue skip',
+                    finishedAt: new Date(),
+                },
+            });
+
+            await maintainQueues(client);
+
+            expect(controllers).toEqual([actorId, actorId]);
+            const second = sessions.get(guildId)!;
+            sessions.delete(guildId);
+            await db.voicePlayback.update({
+                where: { id: second.id },
+                data: {
+                    state: 'STOPPED',
+                    detail: 'Stopped by authorized member',
+                    finishedAt: new Date(),
+                },
+            });
+            await maintainQueues(client);
+        } finally {
+            play.mockRestore();
+            status.mockRestore();
+        }
     });
     it('does not enqueue with disabled settings or after bot removal', async () => {
         await moduleRegistry.configure(guildId, 'audio', true, {

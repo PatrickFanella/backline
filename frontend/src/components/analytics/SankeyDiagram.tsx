@@ -1,11 +1,33 @@
 import * as d3 from 'd3';
 import { sankey, sankeyLinkHorizontal } from 'd3-sankey';
-import type { SankeyNode, SankeyLink } from 'd3-sankey';
+import type { SankeyExtraProperties, SankeyLink, SankeyNode } from 'd3-sankey';
 import { useEffect, useRef } from 'react';
 
+interface SankeyNodeData extends SankeyExtraProperties {
+    name: string;
+    category?: 'channel' | 'user';
+}
+
+interface SankeyLinkData extends SankeyExtraProperties {
+    source: number;
+    target: number;
+    value: number;
+}
+
 interface SankeyData {
-    nodes: Array<{ name: string; category?: string }>;
-    links: Array<{ source: number; target: number; value: number }>;
+    nodes: SankeyNodeData[];
+    links: SankeyLinkData[];
+}
+
+type LayoutNode = SankeyNode<SankeyNodeData, SankeyLinkData>;
+type LayoutLink = SankeyLink<SankeyNodeData, SankeyLinkData>;
+
+function getLayoutNode(endpoint: LayoutLink['source']): LayoutNode | null {
+    return typeof endpoint === 'object' && endpoint !== null ? endpoint : null;
+}
+
+function nodeName(endpoint: LayoutLink['source']): string {
+    return getLayoutNode(endpoint)?.name ?? 'Unknown';
 }
 
 interface SankeyDiagramProps {
@@ -21,7 +43,11 @@ interface SankeyDiagramProps {
     height?: number;
 }
 
-function SankeyDiagram({ data, width = 800, height = 500 }: SankeyDiagramProps) {
+function SankeyDiagram({
+    data,
+    width = 800,
+    height = 500,
+}: SankeyDiagramProps) {
     const svgRef = useRef<SVGSVGElement>(null);
 
     useEffect(() => {
@@ -31,19 +57,24 @@ function SankeyDiagram({ data, width = 800, height = 500 }: SankeyDiagramProps) 
         d3.select(svgRef.current).selectAll('*').remove();
 
         // Prepare Sankey data
-        const nodes: Array<{ name: string; category?: string }> = [];
-        const links: Array<{ source: number; target: number; value: number }> = [];
+        const nodes: SankeyNodeData[] = [];
+        const links: SankeyLinkData[] = [];
         const nodeMap = new Map<string, number>();
 
         // Create nodes for users and channels
         data.forEach((item) => {
             const userId = `user-${item.userId}`;
-            const channelId = item.channelId ? `channel-${item.channelId}` : null;
+            const channelId = item.channelId
+                ? `channel-${item.channelId}`
+                : null;
 
             // Add user node
             if (!nodeMap.has(userId)) {
                 nodeMap.set(userId, nodes.length);
-                nodes.push({ name: item.username || 'Unknown', category: 'user' });
+                nodes.push({
+                    name: item.username || 'Unknown',
+                    category: 'user',
+                });
             }
 
             // Add channel node
@@ -78,9 +109,11 @@ function SankeyDiagram({ data, width = 800, height = 500 }: SankeyDiagramProps) 
             .attr('transform', `translate(${margin.left},${margin.top})`);
 
         // Create Sankey generator
-        type NodeData = { name: string; category?: string };
-        type LinkData = Record<string, never>;
-        const sankeyGenerator = sankey<SankeyNode<NodeData, LinkData>, SankeyLink<SankeyNode<NodeData, LinkData>, LinkData>>()
+        const sankeyGenerator = sankey<
+            SankeyData,
+            SankeyNodeData,
+            SankeyLinkData
+        >()
             .nodeWidth(15)
             .nodePadding(10)
             .extent([
@@ -89,12 +122,12 @@ function SankeyDiagram({ data, width = 800, height = 500 }: SankeyDiagramProps) 
             ]);
 
         // Generate Sankey layout
-        const { nodes: sankeyNodes, links: sankeyLinks } = sankeyGenerator(
-            sankeyData as Parameters<typeof sankeyGenerator>[0]
-        );
+        const { nodes: sankeyNodes, links: sankeyLinks } =
+            sankeyGenerator(sankeyData);
 
         // Color scale
-        const colorScale = d3.scaleOrdinal<string>()
+        const colorScale = d3
+            .scaleOrdinal<string>()
             .domain(['user', 'channel'])
             .range(['#89b4fa', '#a6e3a1']);
 
@@ -104,13 +137,18 @@ function SankeyDiagram({ data, width = 800, height = 500 }: SankeyDiagramProps) 
             .selectAll('path')
             .data(sankeyLinks)
             .join('path')
-            .attr('d', sankeyLinkHorizontal())
-            .attr('stroke', (d: any) => colorScale((d.source as any).category || 'user'))
-            .attr('stroke-width', (d: any) => Math.max(1, d.width))
+            .attr('d', sankeyLinkHorizontal<SankeyNodeData, SankeyLinkData>())
+            .attr('stroke', (d) =>
+                colorScale(getLayoutNode(d.source)?.category ?? 'user')
+            )
+            .attr('stroke-width', (d) => Math.max(1, d.width ?? 0))
             .attr('fill', 'none')
             .attr('opacity', 0.5)
             .append('title')
-            .text((d: any) => `${(d.source as any).name} → ${(d.target as any).name}\n${d.value} interactions`);
+            .text(
+                (d) =>
+                    `${nodeName(d.source)} → ${nodeName(d.target)}\n${d.value} interactions`
+            );
 
         // Draw nodes
         const node = svg
@@ -119,11 +157,11 @@ function SankeyDiagram({ data, width = 800, height = 500 }: SankeyDiagramProps) 
             .selectAll('rect')
             .data(sankeyNodes)
             .join('rect')
-            .attr('x', (d: any) => d.x0)
-            .attr('y', (d: any) => d.y0)
-            .attr('height', (d: any) => d.y1 - d.y0)
-            .attr('width', (d: any) => d.x1 - d.x0)
-            .attr('fill', (d: any) => colorScale(d.category || 'user'))
+            .attr('x', (d) => d.x0 ?? 0)
+            .attr('y', (d) => d.y0 ?? 0)
+            .attr('height', (d) => (d.y1 ?? 0) - (d.y0 ?? 0))
+            .attr('width', (d) => (d.x1 ?? 0) - (d.x0 ?? 0))
+            .attr('fill', (d) => colorScale(d.category ?? 'user'))
             .attr('stroke', '#1e1e2e')
             .attr('stroke-width', 1);
 
@@ -133,18 +171,24 @@ function SankeyDiagram({ data, width = 800, height = 500 }: SankeyDiagramProps) 
             .selectAll('text')
             .data(sankeyNodes)
             .join('text')
-            .attr('x', (d: any) => (d.x0 < innerWidth / 2 ? d.x1 + 6 : d.x0 - 6))
-            .attr('y', (d: any) => (d.y1 + d.y0) / 2)
+            .attr('x', (d) =>
+                (d.x0 ?? 0) < innerWidth / 2 ? (d.x1 ?? 0) + 6 : (d.x0 ?? 0) - 6
+            )
+            .attr('y', (d) => ((d.y1 ?? 0) + (d.y0 ?? 0)) / 2)
             .attr('dy', '0.35em')
-            .attr('text-anchor', (d: any) => (d.x0 < innerWidth / 2 ? 'start' : 'end'))
+            .attr('text-anchor', (d) =>
+                (d.x0 ?? 0) < innerWidth / 2 ? 'start' : 'end'
+            )
             .attr('font-size', '10px')
             .attr('fill', '#cdd6f4')
-            .text((d: any) => d.name.length > 15 ? d.name.substring(0, 15) + '...' : d.name);
+            .text((d) =>
+                d.name.length > 15 ? d.name.substring(0, 15) + '...' : d.name
+            );
 
         // Add tooltips
-        node.append('title')
-            .text((d: any) => `${d.name}\n${d.value} total interactions`);
-
+        node.append('title').text(
+            (d) => `${d.name}\n${d.value ?? 0} total interactions`
+        );
     }, [data, width, height]);
 
     if (data.length === 0) {

@@ -2,6 +2,7 @@
  * Unit tests for Query Analyzer utility
  */
 
+import { db } from '../../../src/db';
 import {
     parseExplainOutput,
     generateRecommendations,
@@ -19,8 +20,6 @@ jest.mock('../../../src/db', () => ({
         $queryRaw: jest.fn(),
     },
 }));
-
-import { db } from '../../../src/db';
 
 describe('Query Analyzer', () => {
     describe('parseExplainOutput', () => {
@@ -336,21 +335,31 @@ Execution Time: 8.2 ms
         describe('analyzeQuery', () => {
             it('should accept valid SELECT queries', async () => {
                 (db.$queryRawUnsafe as jest.Mock).mockResolvedValue([
-                    { 'QUERY PLAN': 'Index Scan\nExecution Time: 10.5 ms\nPlanning Time: 1.2 ms' }
+                    {
+                        'QUERY PLAN':
+                            'Index Scan\nExecution Time: 10.5 ms\nPlanning Time: 1.2 ms',
+                    },
                 ]);
 
                 await expect(
-                    analyzeQuery('SELECT * FROM "MessageEvent" WHERE "guildId" = $1')
+                    analyzeQuery(
+                        'SELECT * FROM "MessageEvent" WHERE "guildId" = $1'
+                    )
                 ).resolves.toBeDefined();
             });
 
             it('should accept queries with CTEs (WITH clause)', async () => {
                 (db.$queryRawUnsafe as jest.Mock).mockResolvedValue([
-                    { 'QUERY PLAN': 'CTE Scan\nExecution Time: 15.0 ms\nPlanning Time: 2.0 ms' }
+                    {
+                        'QUERY PLAN':
+                            'CTE Scan\nExecution Time: 15.0 ms\nPlanning Time: 2.0 ms',
+                    },
                 ]);
 
                 await expect(
-                    analyzeQuery('WITH cte AS (SELECT * FROM table) SELECT * FROM cte')
+                    analyzeQuery(
+                        'WITH cte AS (SELECT * FROM table) SELECT * FROM cte'
+                    )
                 ).resolves.toBeDefined();
             });
 
@@ -386,17 +395,25 @@ Execution Time: 8.2 ms
 
             it('should accept SELECT queries with keywords in string literals', async () => {
                 (db.$queryRawUnsafe as jest.Mock).mockResolvedValue([
-                    { 'QUERY PLAN': 'Index Scan\nExecution Time: 10.5 ms\nPlanning Time: 1.2 ms' }
+                    {
+                        'QUERY PLAN':
+                            'Index Scan\nExecution Time: 10.5 ms\nPlanning Time: 1.2 ms',
+                    },
                 ]);
 
                 await expect(
-                    analyzeQuery("SELECT * FROM table WHERE description LIKE '%DELETE%'")
+                    analyzeQuery(
+                        "SELECT * FROM table WHERE description LIKE '%DELETE%'"
+                    )
                 ).resolves.toBeDefined();
             });
 
             it('should accept queries with leading comments', async () => {
                 (db.$queryRawUnsafe as jest.Mock).mockResolvedValue([
-                    { 'QUERY PLAN': 'Index Scan\nExecution Time: 10.5 ms\nPlanning Time: 1.2 ms' }
+                    {
+                        'QUERY PLAN':
+                            'Index Scan\nExecution Time: 10.5 ms\nPlanning Time: 1.2 ms',
+                    },
                 ]);
 
                 await expect(
@@ -407,7 +424,9 @@ Execution Time: 8.2 ms
             it('should reject queries that start with non-SELECT/WITH after removing comments', async () => {
                 await expect(
                     analyzeQuery('/* comment */ UPDATE table SET x = 1')
-                ).rejects.toThrow('Only SELECT or WITH (CTE) statements are allowed for analysis');
+                ).rejects.toThrow(
+                    'Only SELECT or WITH (CTE) statements are allowed for analysis'
+                );
             });
         });
 
@@ -423,27 +442,45 @@ Execution Time: 8.2 ms
                         last_autovacuum: new Date(),
                         last_analyze: null,
                         last_autoanalyze: new Date(),
-                    }
+                    },
                 ]);
 
-                await expect(getTableStatistics('MessageEvent')).resolves.toBeDefined();
-                await expect(getTableStatistics('_underscoreStart')).resolves.toBeDefined();
-                await expect(getTableStatistics('Table123')).resolves.toBeDefined();
+                await expect(
+                    getTableStatistics('MessageEvent')
+                ).resolves.toBeDefined();
+                await expect(
+                    getTableStatistics('_underscoreStart')
+                ).resolves.toBeDefined();
+                await expect(
+                    getTableStatistics('Table123')
+                ).resolves.toBeDefined();
             });
 
             it('should reject table names starting with numbers', async () => {
-                await expect(getTableStatistics('123Table')).rejects.toThrow('Invalid table name');
+                await expect(getTableStatistics('123Table')).rejects.toThrow(
+                    'Invalid table name'
+                );
             });
 
             it('should reject table names with special characters', async () => {
-                await expect(getTableStatistics('table-name')).rejects.toThrow('Invalid table name');
-                await expect(getTableStatistics('table.name')).rejects.toThrow('Invalid table name');
-                await expect(getTableStatistics('table;DROP')).rejects.toThrow('Invalid table name');
-                await expect(getTableStatistics('table name')).rejects.toThrow('Invalid table name');
+                await expect(getTableStatistics('table-name')).rejects.toThrow(
+                    'Invalid table name'
+                );
+                await expect(getTableStatistics('table.name')).rejects.toThrow(
+                    'Invalid table name'
+                );
+                await expect(getTableStatistics('table;DROP')).rejects.toThrow(
+                    'Invalid table name'
+                );
+                await expect(getTableStatistics('table name')).rejects.toThrow(
+                    'Invalid table name'
+                );
             });
 
             it('should reject empty table names', async () => {
-                await expect(getTableStatistics('')).rejects.toThrow('Invalid table name');
+                await expect(getTableStatistics('')).rejects.toThrow(
+                    'Invalid table name'
+                );
             });
         });
     });

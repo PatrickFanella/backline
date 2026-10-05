@@ -1,4 +1,4 @@
-import { createHash } from 'crypto';
+import { createHash, randomUUID } from 'crypto';
 
 import { Prisma } from '@prisma/client';
 import {
@@ -8,7 +8,11 @@ import {
     ChatInputCommandInteraction,
     Client,
     Interaction,
+    MessageReaction,
+    PartialMessageReaction,
+    PartialUser,
     PermissionFlagsBits,
+    User,
     SlashCommandBuilder,
     StringSelectMenuBuilder,
 } from 'discord.js';
@@ -222,6 +226,18 @@ export async function publishRolePanel(
     const channel = await guild.channels.fetch(config.channelId);
     if (!channel || !channel.isTextBased() || !('send' in channel))
         throw new Error('Panel channel unavailable');
+    if (
+        config.style === 'reactions' &&
+        !channel
+            .permissionsFor(bot)
+            ?.has([
+                PermissionFlagsBits.ViewChannel,
+                PermissionFlagsBits.SendMessages,
+                PermissionFlagsBits.AddReactions,
+                PermissionFlagsBits.ReadMessageHistory,
+            ])
+    )
+        throw new Error('Bot reaction panel permissions unavailable');
     const configHash = roleConfigHash(config);
     const panel = await db.$transaction(async (tx) => {
         await tx.$queryRaw(
@@ -294,6 +310,9 @@ export async function publishRolePanel(
             nonce: panel.id.replace(/-/g, '').slice(0, 24),
             enforceNonce: true,
         });
+        if (config.style === 'reactions')
+            for (const option of config.roles)
+                await message.react(option.emoji!);
         await db.rolePanel.update({
             where: { id: panel.id },
             data: { state: 'DELIVERED', messageId: message.id },
@@ -306,6 +325,65 @@ export async function publishRolePanel(
         });
         throw new Error('Panel outcome uncertain');
     }
+}
+
+/** Apply a reaction panel's current desired managed-role set, never a blind toggle. */
+export async function applySelfRoleReaction(
+    client: Client,
+    reaction: MessageReaction | PartialMessageReaction,
+    user: User | PartialUser,
+    added: boolean
+): Promise<void> {
+    if (user.partial) user = await user.fetch();
+    if (user.bot) return;
+    if (reaction.partial) await reaction.fetch();
+    if (reaction.message.partial) await reaction.message.fetch();
+    const guildId = reaction.message.guildId;
+    if (!guildId) return;
+    const panel = await db.rolePanel.findFirst({
+        where: {
+            guildId,
+            messageId: reaction.message.id,
+            state: 'DELIVERED',
+        },
+    });
+    if (!panel) return;
+    const config = await settings(guildId);
+    if (
+        config.style !== 'reactions' ||
+        panel.configHash !== roleConfigHash(config)
+    )
+        return;
+    const emoji = reaction.emoji.name;
+    const option = config.roles.find((role) => role.emoji === emoji);
+    if (!option) return;
+    const guild = await client.guilds.fetch({ guild: guildId, force: true });
+    const member = await guild.members.fetch({ user: user.id, force: true });
+    if (member.user.bot) return;
+    const selected = new Set(
+        config.roles
+            .filter((role) => member.roles.cache.has(role.roleId))
+            .map((role) => role.roleId)
+    );
+    if (added) {
+        if (option.group)
+            for (const role of config.roles)
+                if (role.group === option.group) selected.delete(role.roleId);
+        selected.add(option.roleId);
+    } else selected.delete(option.roleId);
+    // Discord events do not provide a durable event id. Each delivery needs a
+    // new receipt so a later add after a remove cannot reuse an older add.
+    // The desired current state still makes duplicate gateway deliveries no-ops.
+    const requestId = `reaction:${added ? 'add' : 'remove'}:${randomUUID()}`;
+    await applyRoleChoice(
+        client,
+        guildId,
+        user.id,
+        requestId,
+        panel.id,
+        reaction.message.id,
+        { selected: [...selected] }
+    );
 }
 export async function routeSelfRoles(
     interaction: Interaction

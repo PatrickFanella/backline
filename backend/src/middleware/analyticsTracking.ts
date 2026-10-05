@@ -13,6 +13,12 @@ import {
     PerformanceMetricType,
 } from '../services/analytics';
 
+function requestSessionId(req: Request): string | undefined {
+    const session: unknown = (req as Request & { sessionID?: unknown })
+        .sessionID;
+    return typeof session === 'string' ? session : req.get('x-session-id');
+}
+
 /**
  * Get analytics category from request path
  */
@@ -60,10 +66,8 @@ export function trackApiRequest(
 
         // Track the API call event
         trackEvent({
-            userId: req.user?.id,
-            sessionId:
-                (req as any).sessionID ||
-                (req.headers['x-session-id'] as string),
+            userId: req.user?.userId,
+            sessionId: requestSessionId(req),
             eventType: AnalyticsEventType.API_CALL,
             eventName: `${req.method} ${req.path}`,
             category: getCategoryFromPath(req.path),
@@ -91,10 +95,8 @@ export function trackApiRequest(
             value: duration,
             unit: 'ms',
             endpoint: req.path,
-            userId: req.user?.id,
-            sessionId:
-                (req as any).sessionID ||
-                (req.headers['x-session-id'] as string),
+            userId: req.user?.userId,
+            sessionId: requestSessionId(req),
             metadata: {
                 method: req.method,
                 statusCode: res.statusCode,
@@ -119,9 +121,8 @@ export function trackErrorEvent(
     const consentGiven = hasAnalyticsConsent(req);
 
     trackEvent({
-        userId: req.user?.id,
-        sessionId:
-            (req as any).sessionID || (req.headers['x-session-id'] as string),
+        userId: req.user?.userId,
+        sessionId: requestSessionId(req),
         eventType: AnalyticsEventType.ERROR,
         eventName: error.name || 'UnknownError',
         category: getCategoryFromPath(req.path),
@@ -154,9 +155,8 @@ export function trackCustomEvent(
     const consentGiven = hasAnalyticsConsent(req);
 
     trackEvent({
-        userId: req.user?.id,
-        sessionId:
-            (req as any).sessionID || (req.headers['x-session-id'] as string),
+        userId: req.user?.userId,
+        sessionId: requestSessionId(req),
         eventType: AnalyticsEventType.FEATURE_USED,
         eventName,
         category: getCategoryFromPath(req.path),

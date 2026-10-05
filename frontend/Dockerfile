@@ -1,5 +1,5 @@
 # Build stage
-FROM node:20-alpine AS builder
+FROM node:22-alpine AS builder
 
 WORKDIR /app
 
@@ -12,7 +12,15 @@ RUN npm ci
 # Copy source files
 COPY . .
 
-# Build the application
+# Vite configuration is embedded at build time. Only public configuration belongs here.
+ARG VITE_DISCORD_CLIENT_ID
+ARG VITE_API_URL
+ARG VITE_ENVIRONMENT=production
+ARG VITE_DISCORD_REDIRECT_URI
+ENV VITE_DISCORD_CLIENT_ID=$VITE_DISCORD_CLIENT_ID \
+    VITE_API_URL=$VITE_API_URL \
+    VITE_ENVIRONMENT=$VITE_ENVIRONMENT \
+    VITE_DISCORD_REDIRECT_URI=$VITE_DISCORD_REDIRECT_URI
 RUN npm run build
 
 # Production stage

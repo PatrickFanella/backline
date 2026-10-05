@@ -1,8 +1,15 @@
-import { Client, Collection, PermissionFlagsBits } from 'discord.js';
+import {
+    Client,
+    Collection,
+    MessageReaction,
+    PermissionFlagsBits,
+    User,
+} from 'discord.js';
 
 import { selfRolesConfig } from '../../../src/community/config';
 import {
     applyRoleChoice,
+    applySelfRoleReaction,
     planRoleChoice,
     roleConfigHash,
 } from '../../../src/community/selfRoles';
@@ -55,9 +62,30 @@ describe('role policy planning', () => {
             planRoleChoice(config, new Set(), { toggle: 'unmanaged' })
         ).toThrow('not offered');
     });
+    it('requires distinct Unicode emoji when publishing a reaction panel', () => {
+        expect(
+            selfRolesConfig.parse({
+                style: 'reactions',
+                roles: [
+                    { roleId: first, label: 'First', emoji: '🎨' },
+                    { roleId: second, label: 'Second', emoji: '🎵' },
+                ],
+            }).style
+        ).toBe('reactions');
+        expect(() =>
+            selfRolesConfig.parse({
+                style: 'reactions',
+                roles: [
+                    { roleId: first, label: 'First', emoji: '🎨' },
+                    { roleId: second, label: 'Second', emoji: '🎨' },
+                ],
+            })
+        ).toThrow('unique Unicode emoji');
+    });
 });
 databaseTests('persistent self-service role choices', () => {
     const member = {
+        user: { bot: false },
         roles: {
             cache: new Collection<string, unknown>(),
             add: jest.fn(),
@@ -174,5 +202,64 @@ databaseTests('persistent self-service role choices', () => {
             'previous role action'
         );
         expect(member.roles.add).toHaveBeenCalledTimes(1);
+    });
+    it('keeps a duplicate event idempotent while allowing add, remove, and later add', async () => {
+        const reactionConfig = selfRolesConfig.parse({
+            ...config,
+            style: 'reactions',
+            roles: [{ roleId: first, label: 'First', emoji: '🎨' }],
+        });
+        await moduleRegistry.configure(
+            guildId,
+            'self-roles',
+            true,
+            reactionConfig
+        );
+        await db.rolePanel.update({
+            where: { id: panelId },
+            data: { configHash: roleConfigHash(reactionConfig) },
+        });
+        const reaction = {
+            partial: false,
+            message: { partial: false, guildId, id: 'message' },
+            emoji: { name: '🎨' },
+        } as unknown as MessageReaction;
+        const user = { id: userId, bot: false } as User;
+        await applySelfRoleReaction(
+            client as unknown as Client,
+            reaction,
+            user,
+            true
+        );
+        expect(member.roles.add).toHaveBeenCalledWith(
+            first,
+            'Backline self-service role choice'
+        );
+        expect(member.roles.cache.has(first)).toBe(true);
+        // A repeated add observes the already-selected role and has no mutation.
+        await applySelfRoleReaction(
+            client as unknown as Client,
+            reaction,
+            user,
+            true
+        );
+        expect(member.roles.add).toHaveBeenCalledTimes(1);
+        await applySelfRoleReaction(
+            client as unknown as Client,
+            reaction,
+            user,
+            false
+        );
+        expect(member.roles.remove).toHaveBeenCalledTimes(1);
+        expect(member.roles.cache.has(first)).toBe(false);
+        // This is a new state transition, so it must not reuse the first add receipt.
+        await applySelfRoleReaction(
+            client as unknown as Client,
+            reaction,
+            user,
+            true
+        );
+        expect(member.roles.add).toHaveBeenCalledTimes(2);
+        expect(member.roles.cache.has(first)).toBe(true);
     });
 });

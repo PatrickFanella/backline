@@ -1,0 +1,84 @@
+# One bot owns Gateway sessions and polls durable jobs. Do not scale bot replicas.
+name: backline
+x-runtime: &runtime
+    image: ${BACKLINE_BACKEND_IMAGE:?Set an immutable backend image digest or release tag}
+    env_file: ${BACKLINE_ENV_FILE:?Set the private runtime env file path}
+    restart: unless-stopped
+    init: true
+    stop_grace_period: 45s
+    environment: &runtime-env
+        NODE_ENV: production
+        DATABASE_URL: postgresql://backline:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}@postgres:5432/backline
+        REDIS_URL: redis://redis:6379
+    depends_on:
+        postgres:
+            condition: service_healthy
+        redis:
+            condition: service_healthy
+        migrate:
+            condition: service_completed_successfully
+services:
+    postgres:
+        image: postgres:16-alpine
+        restart: unless-stopped
+        environment:
+            POSTGRES_DB: backline
+            POSTGRES_USER: backline
+            POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
+        volumes:
+            - postgres-data:/var/lib/postgresql/data
+        healthcheck:
+            test: [CMD-SHELL, pg_isready -U backline -d backline]
+            interval: 10s
+            timeout: 5s
+            retries: 6
+    redis:
+        image: redis:7-alpine
+        restart: unless-stopped
+        command: [redis-server, --appendonly, 'yes']
+        volumes:
+            - redis-data:/data
+        healthcheck:
+            test: [CMD, redis-cli, ping]
+            interval: 10s
+            timeout: 3s
+            retries: 6
+    migrate:
+        image: ${BACKLINE_BACKEND_IMAGE:?Set BACKLINE_BACKEND_IMAGE}
+        env_file: ${BACKLINE_ENV_FILE:?Set BACKLINE_ENV_FILE}
+        environment:
+            DATABASE_URL: postgresql://backline:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}@postgres:5432/backline
+        command: [node, scripts/migrate.cjs]
+        restart: 'no'
+        depends_on:
+            postgres:
+                condition: service_healthy
+    api:
+        <<: *runtime
+        command: [node, dist/src/server.js]
+        environment:
+            <<: *runtime-env
+            BOT_RUN_JOBS: 'false'
+    bot:
+        <<: *runtime
+        command: [node, dist/src/index.js]
+        environment:
+            <<: *runtime-env
+            BOT_RUN_JOBS: 'true'
+        healthcheck:
+            test: [CMD, node, scripts/bot-health.cjs]
+            interval: 20s
+            timeout: 3s
+            start_period: 90s
+            retries: 3
+    dashboard:
+        image: ${BACKLINE_FRONTEND_IMAGE:?Set an immutable frontend image digest or release tag}
+        restart: unless-stopped
+        ports:
+            - '${BACKLINE_BIND_ADDRESS:-127.0.0.1}:${BACKLINE_PORT:-8080}:80'
+        depends_on:
+            api:
+                condition: service_healthy
+volumes:
+    postgres-data:
+    redis-data:

@@ -9,6 +9,7 @@ import { registerLevelingEvents } from '../community/leveling';
 import { registerMemberUtilityEvents } from '../community/memberUtilities';
 import { registerOnboardingEvents } from '../community/onboarding';
 import { registerCommunityReportEvents } from '../community/reports';
+import { applySelfRoleReaction } from '../community/selfRoles';
 import { db } from '../db';
 import { recordInstallation } from '../guilds/installations';
 import { createBotWorker, startJobPolling } from '../jobs/botWorker';
@@ -24,7 +25,23 @@ import { registerGuildCommands, routeInteraction } from './commands';
 export async function startBot(): Promise<Client> {
     const client = new Client({
         intents: configuredIntents(),
-        partials: [Partials.Message, Partials.Channel, Partials.GuildMember],
+        partials: [
+            Partials.Message,
+            Partials.Channel,
+            Partials.GuildMember,
+            Partials.Reaction,
+            Partials.User,
+        ],
+    });
+    client.on('messageReactionAdd', (reaction, user) => {
+        void applySelfRoleReaction(client, reaction, user, true).catch(() =>
+            console.warn('Reaction role assignment failed')
+        );
+    });
+    client.on('messageReactionRemove', (reaction, user) => {
+        void applySelfRoleReaction(client, reaction, user, false).catch(() =>
+            console.warn('Reaction role removal failed')
+        );
     });
     registerAuditEvents(client);
     registerWorkflowEvents(client);

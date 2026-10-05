@@ -1,9 +1,9 @@
 /**
  * Pagination Validation Script
- * 
+ *
  * Validates that all list endpoints implement proper pagination
  * to prevent unbounded result sets and performance issues.
- * 
+ *
  * Usage:
  *   ts-node scripts/validate-pagination.ts
  */
@@ -24,7 +24,7 @@ interface EndpointCheck {
 /**
  * Check if analytics functions have proper pagination
  */
-async function checkAnalyticsPagination(): Promise<EndpointCheck[]> {
+function checkAnalyticsPagination(): EndpointCheck[] {
     const checks: EndpointCheck[] = [];
 
     // Ghost Scores - Uses LIMIT in query
@@ -117,7 +117,7 @@ async function checkAnalyticsPagination(): Promise<EndpointCheck[]> {
 /**
  * Check if monitoring endpoints have proper pagination
  */
-async function checkMonitoringPagination(): Promise<EndpointCheck[]> {
+function checkMonitoringPagination(): EndpointCheck[] {
     const checks: EndpointCheck[] = [];
 
     // Slow queries
@@ -160,7 +160,7 @@ async function checkMonitoringPagination(): Promise<EndpointCheck[]> {
 /**
  * Check if admin endpoints have proper pagination
  */
-async function checkAdminPagination(): Promise<EndpointCheck[]> {
+function checkAdminPagination(): EndpointCheck[] {
     const checks: EndpointCheck[] = [];
 
     // Audit logs
@@ -194,9 +194,15 @@ async function checkAdminPagination(): Promise<EndpointCheck[]> {
  */
 function printEndpointTable(checks: EndpointCheck[], category: string) {
     console.log(`\n📋 ${category}\n`);
-    console.log('┌────────────────────────────────────────────┬─────────────┬──────────┬────────────┬──────────────┐');
-    console.log('│ Endpoint                                   │ Pagination  │ Limit    │ Max Limit  │ Type         │');
-    console.log('├────────────────────────────────────────────┼─────────────┼──────────┼────────────┼──────────────┤');
+    console.log(
+        '┌────────────────────────────────────────────┬─────────────┬──────────┬────────────┬──────────────┐'
+    );
+    console.log(
+        '│ Endpoint                                   │ Pagination  │ Limit    │ Max Limit  │ Type         │'
+    );
+    console.log(
+        '├────────────────────────────────────────────┼─────────────┼──────────┼────────────┼──────────────┤'
+    );
 
     for (const check of checks) {
         const endpoint = check.endpoint.padEnd(42).substring(0, 42);
@@ -205,14 +211,20 @@ function printEndpointTable(checks: EndpointCheck[], category: string) {
         const maxLim = check.maxLimit?.toString().padEnd(10) || 'N/A       ';
         const type = (check.paginationType || 'none').padEnd(12);
 
-        console.log(`│ ${endpoint} │ ${hasPag.padEnd(11)} │ ${hasLim.padEnd(8)} │ ${maxLim} │ ${type} │`);
+        console.log(
+            `│ ${endpoint} │ ${hasPag.padEnd(11)} │ ${hasLim.padEnd(8)} │ ${maxLim} │ ${type} │`
+        );
 
         if (check.notes) {
-            console.log(`│   Note: ${check.notes.padEnd(85).substring(0, 85)} │`);
+            console.log(
+                `│   Note: ${check.notes.padEnd(85).substring(0, 85)} │`
+            );
         }
     }
 
-    console.log('└────────────────────────────────────────────┴─────────────┴──────────┴────────────┴──────────────┘');
+    console.log(
+        '└────────────────────────────────────────────┴─────────────┴──────────┴────────────┴──────────────┘'
+    );
 }
 
 /**
@@ -220,50 +232,68 @@ function printEndpointTable(checks: EndpointCheck[], category: string) {
  */
 function printSummary(allChecks: EndpointCheck[]) {
     const total = allChecks.length;
-    const withPagination = allChecks.filter(c => c.hasPagination).length;
-    const withLimit = allChecks.filter(c => c.hasLimit).length;
-    const withoutPagination = allChecks.filter(c => !c.hasPagination && c.notes?.includes('WARNING')).length;
+    const withPagination = allChecks.filter((c) => c.hasPagination).length;
+    const withLimit = allChecks.filter((c) => c.hasLimit).length;
+    const withoutPagination = allChecks.filter(
+        (c) => !c.hasPagination && c.notes?.includes('WARNING')
+    ).length;
 
     console.log('\n📈 Summary\n');
     console.log(`Total endpoints checked: ${total}`);
-    console.log(`✅ With pagination: ${withPagination} (${((withPagination / total) * 100).toFixed(1)}%)`);
-    console.log(`✅ With explicit limits: ${withLimit} (${((withLimit / total) * 100).toFixed(1)}%)`);
+    console.log(
+        `✅ With pagination: ${withPagination} (${((withPagination / total) * 100).toFixed(1)}%)`
+    );
+    console.log(
+        `✅ With explicit limits: ${withLimit} (${((withLimit / total) * 100).toFixed(1)}%)`
+    );
     console.log(`⚠️  Need attention: ${withoutPagination}`);
 
     if (withoutPagination > 0) {
         console.log('\n⚠️  Endpoints that may need pagination:');
         allChecks
-            .filter(c => !c.hasPagination && c.notes?.includes('WARNING'))
-            .forEach(c => console.log(`   • ${c.endpoint} - ${c.notes}`));
+            .filter((c) => !c.hasPagination && c.notes?.includes('WARNING'))
+            .forEach((c) => console.log(`   • ${c.endpoint} - ${c.notes}`));
     }
 
     const recommendations: string[] = [];
 
     // Check for endpoints without pagination
-    const noPagination = allChecks.filter(c => !c.hasPagination);
+    const noPagination = allChecks.filter((c) => !c.hasPagination);
     if (noPagination.length > 0) {
-        const criticalEndpoints = noPagination.filter(c => c.notes?.includes('WARNING'));
+        const criticalEndpoints = noPagination.filter((c) =>
+            c.notes?.includes('WARNING')
+        );
         if (criticalEndpoints.length > 0) {
-            recommendations.push('Add pagination to endpoints with unbounded result sets');
+            recommendations.push(
+                'Add pagination to endpoints with unbounded result sets'
+            );
         }
     }
 
     // Check for endpoints with high limits
-    const highLimits = allChecks.filter(c => c.maxLimit && c.maxLimit > 100);
+    const highLimits = allChecks.filter((c) => c.maxLimit && c.maxLimit > 100);
     if (highLimits.length > 0) {
-        recommendations.push('Consider reducing max limits above 100 to improve performance');
+        recommendations.push(
+            'Consider reducing max limits above 100 to improve performance'
+        );
     }
 
     // Check for cursor vs offset pagination
-    const cursorPaginated = allChecks.filter(c => c.paginationType === 'cursor').length;
-    const offsetPaginated = allChecks.filter(c => c.paginationType === 'offset').length;
+    const cursorPaginated = allChecks.filter(
+        (c) => c.paginationType === 'cursor'
+    ).length;
+    const offsetPaginated = allChecks.filter(
+        (c) => c.paginationType === 'offset'
+    ).length;
     if (offsetPaginated > cursorPaginated) {
-        recommendations.push('Consider using cursor-based pagination for better performance on large datasets');
+        recommendations.push(
+            'Consider using cursor-based pagination for better performance on large datasets'
+        );
     }
 
     if (recommendations.length > 0) {
         console.log('\n💡 Recommendations:\n');
-        recommendations.forEach(rec => console.log(`   • ${rec}`));
+        recommendations.forEach((rec) => console.log(`   • ${rec}`));
     }
 
     if (withoutPagination === 0) {
@@ -280,9 +310,9 @@ async function main() {
 
     try {
         // Check all endpoint categories
-        const analyticsChecks = await checkAnalyticsPagination();
-        const monitoringChecks = await checkMonitoringPagination();
-        const adminChecks = await checkAdminPagination();
+        const analyticsChecks = checkAnalyticsPagination();
+        const monitoringChecks = checkMonitoringPagination();
+        const adminChecks = checkAdminPagination();
 
         // Print tables
         printEndpointTable(analyticsChecks, 'Analytics Endpoints');
@@ -290,7 +320,11 @@ async function main() {
         printEndpointTable(adminChecks, 'Admin Endpoints');
 
         // Print summary
-        const allChecks = [...analyticsChecks, ...monitoringChecks, ...adminChecks];
+        const allChecks = [
+            ...analyticsChecks,
+            ...monitoringChecks,
+            ...adminChecks,
+        ];
         const success = printSummary(allChecks);
 
         process.exit(success ? 0 : 1);
@@ -303,5 +337,5 @@ async function main() {
 }
 
 if (require.main === module) {
-    main();
+    void main();
 }

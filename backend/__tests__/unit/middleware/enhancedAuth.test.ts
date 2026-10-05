@@ -11,6 +11,10 @@ import { generateAccessToken } from '../../../src/utils/auth';
 import * as permissionsUtils from '../../../src/utils/permissions';
 
 jest.mock('../../../src/utils/permissions');
+jest.mock('../../../src/utils/securityLogger', () => ({
+    logSecurityEvent: jest.fn().mockResolvedValue(undefined),
+    SecurityActions: { PERMISSION_DENIED: 'permission_denied' },
+}));
 
 describe('Middleware - Enhanced Auth', () => {
     let mockRequest: Partial<Request>;
@@ -20,6 +24,7 @@ describe('Middleware - Enhanced Auth', () => {
     beforeEach(() => {
         mockRequest = {
             headers: {},
+            get: jest.fn(),
             params: {},
             query: {},
         };
@@ -224,18 +229,15 @@ describe('Middleware - Enhanced Auth', () => {
             };
             mockRequest.params = { guildId: 'guild-123' };
 
-            (
-                permissionsUtils.checkGuildAccess as jest.Mock
-            ).mockResolvedValue(true);
+            (permissionsUtils.checkGuildAccess as jest.Mock).mockResolvedValue(
+                true
+            );
 
-            await new Promise<void>((resolve) => {
-                mockNext = jest.fn(() => resolve());
-                requireGuildAccess(
-                    mockRequest as Request,
-                    mockResponse as Response,
-                    mockNext
-                );
-            });
+            await requireGuildAccess(
+                mockRequest as Request,
+                mockResponse as Response,
+                mockNext
+            );
 
             expect(permissionsUtils.checkGuildAccess).toHaveBeenCalledWith(
                 'user-1',
@@ -254,21 +256,15 @@ describe('Middleware - Enhanced Auth', () => {
             };
             mockRequest.params = { guildId: 'guild-123' };
 
-            (
-                permissionsUtils.checkGuildAccess as jest.Mock
-            ).mockResolvedValue(false);
+            (permissionsUtils.checkGuildAccess as jest.Mock).mockResolvedValue(
+                false
+            );
 
-            await new Promise<void>((resolve) => {
-                mockResponse.json = jest.fn(() => {
-                    resolve();
-                    return mockResponse as Response;
-                });
-                requireGuildAccess(
-                    mockRequest as Request,
-                    mockResponse as Response,
-                    mockNext
-                );
-            });
+            await requireGuildAccess(
+                mockRequest as Request,
+                mockResponse as Response,
+                mockNext
+            );
 
             expect(mockResponse.status).toHaveBeenCalledWith(403);
             expect(mockResponse.json).toHaveBeenCalledWith({
@@ -286,18 +282,15 @@ describe('Middleware - Enhanced Auth', () => {
             };
             mockRequest.query = { guildId: 'guild-456' };
 
-            (
-                permissionsUtils.checkGuildAccess as jest.Mock
-            ).mockResolvedValue(true);
+            (permissionsUtils.checkGuildAccess as jest.Mock).mockResolvedValue(
+                true
+            );
 
-            await new Promise<void>((resolve) => {
-                mockNext = jest.fn(() => resolve());
-                requireGuildAccess(
-                    mockRequest as Request,
-                    mockResponse as Response,
-                    mockNext
-                );
-            });
+            await requireGuildAccess(
+                mockRequest as Request,
+                mockResponse as Response,
+                mockNext
+            );
 
             expect(permissionsUtils.checkGuildAccess).toHaveBeenCalledWith(
                 'user-1',
@@ -305,7 +298,7 @@ describe('Middleware - Enhanced Auth', () => {
             );
         });
 
-        it('should reject requests without guildId', () => {
+        it('should reject requests without guildId', async () => {
             mockRequest.user = {
                 userId: 'user-1',
                 discordId: '123',
@@ -316,7 +309,7 @@ describe('Middleware - Enhanced Auth', () => {
             mockRequest.params = {};
             mockRequest.query = {};
 
-            requireGuildAccess(
+            await requireGuildAccess(
                 mockRequest as Request,
                 mockResponse as Response,
                 mockNext

@@ -6,16 +6,24 @@ import {
 } from 'discord.js';
 
 import { db } from '../../../src/db';
+import { authorizeGuild } from '../../../src/guilds/authorization';
 import { JobWorker } from '../../../src/jobs/store';
 import { moduleRegistry } from '../../../src/modules/registry';
 import {
     previewRestore,
     queueRestore,
     restoreApplyHandler,
+    restoreApplyRequestHandler,
+    restoreMapHandler,
+    restorePreviewHandler,
     mapRecoveryResource,
 } from '../../../src/recovery/restore';
 import { captureSnapshot } from '../../../src/recovery/snapshots';
 import { env } from '../../../src/utils/env';
+
+jest.mock('../../../src/guilds/authorization', () => ({
+    authorizeGuild: jest.fn(),
+}));
 
 const databaseTests =
     process.env.RUN_DATABASE_TESTS === 'true' ? describe : describe.skip;
@@ -197,6 +205,7 @@ databaseTests('selective restore', () => {
             return Promise.resolve(normal);
         });
         createRole.mockClear();
+        (client.guilds.fetch as jest.Mock).mockClear();
         createRole.mockImplementation((values) => {
             const created = {
                 ...normal,
@@ -210,6 +219,20 @@ databaseTests('selective restore', () => {
         actor.permissions = new PermissionsBitField([
             PermissionFlagsBits.ManageGuild,
         ]);
+        jest.mocked(authorizeGuild).mockResolvedValue(true);
+        await db.user.create({
+            data: {
+                id: actorId,
+                discordId: actorId,
+                username: 'transport-fixture',
+                discriminator: '0',
+                verified: true,
+                accessToken: 'fixture',
+                refreshToken: 'fixture',
+                accessTokenExpiresAt: new Date(Date.now() + 86400000),
+                lastSeenAt: new Date(),
+            },
+        });
         await db.guildInstallation.create({
             data: { guildId, name: guild.name, active: true },
         });
@@ -223,6 +246,7 @@ databaseTests('selective restore', () => {
         await db.serverSnapshot.deleteMany({ where: { guildId } });
         await db.guildModuleConfig.deleteMany({ where: { guildId } });
         await db.guildInstallation.deleteMany({ where: { guildId } });
+        await db.user.deleteMany({ where: { discordId: actorId } });
     });
     afterAll(async () => {
         env.BOT_GUILD_IDS.splice(0, env.BOT_GUILD_IDS.length, ...priorGuilds);
@@ -300,6 +324,127 @@ databaseTests('selective restore', () => {
             )
         ).rejects.toThrow('stale');
         expect(createRole).not.toHaveBeenCalled();
+    });
+    it('rejects malformed transport payloads before touching Discord', async () => {
+        const job = await db.durableJob.create({
+            data: {
+                guildId,
+                actorId,
+                moduleId: 'recovery',
+                kind: 'restore-preview',
+                idempotencyKey: 'malformed-preview',
+                payload: {},
+                expiresAt: new Date(Date.now() + 60000),
+            },
+        });
+        await expect(
+            restorePreviewHandler(client).execute(job)
+        ).rejects.toThrow();
+        expect(client.guilds.fetch).not.toHaveBeenCalled();
+    });
+    it('rechecks current owner and Manage Server permission when a queued apply request executes', async () => {
+        const { plan } = await preview();
+        const handler = restoreApplyRequestHandler(client);
+        const job = await db.durableJob.create({
+            data: {
+                guildId,
+                actorId,
+                moduleId: 'recovery',
+                kind: 'restore-apply-request',
+                idempotencyKey: 'apply-request',
+                payload: {
+                    planId: plan.id,
+                    confirmation: `RESTORE ${guildId} ${plan.id}`,
+                    discordId: actorId,
+                },
+                expiresAt: new Date(Date.now() + 60000),
+            },
+        });
+        actor.permissions = new PermissionsBitField([]);
+        await expect(handler.execute(job)).rejects.toThrow('Manage Server');
+        actor.permissions = new PermissionsBitField([
+            PermissionFlagsBits.ManageGuild,
+        ]);
+        guild.ownerId = '777777777777777869';
+        await expect(handler.execute(job)).rejects.toThrow('owner');
+        guild.ownerId = actorId;
+        await expect(
+            handler.execute({
+                ...job,
+                payload: {
+                    planId: plan.id,
+                    confirmation: 'wrong',
+                    discordId: actorId,
+                },
+            })
+        ).rejects.toThrow('Confirm');
+    });
+    it('rejects a banned account during a queued owner mapping', async () => {
+        await db.user.update({
+            where: { id: actorId },
+            data: { role: 'BANNED' },
+        });
+        const job = await db.durableJob.create({
+            data: {
+                guildId,
+                actorId,
+                moduleId: 'recovery',
+                kind: 'restore-map',
+                idempotencyKey: 'banned-map',
+                payload: {
+                    kind: 'role',
+                    sourceId: normalId,
+                    targetId: normalId,
+                    discordId: actorId,
+                },
+                expiresAt: new Date(Date.now() + 60000),
+            },
+        });
+        expect((await restoreMapHandler(client).execute(job)).state).toBe(
+            'CANCELLED'
+        );
+        expect(client.guilds.fetch).not.toHaveBeenCalled();
+    });
+    it('cancels a deleted account or revoked application grant before fetching Discord', async () => {
+        const job = await db.durableJob.create({
+            data: {
+                guildId,
+                actorId,
+                moduleId: 'recovery',
+                kind: 'restore-preview',
+                idempotencyKey: 'deleted-account',
+                payload: {
+                    snapshotId: '11111111-1111-4111-8111-111111111111',
+                    requestId: '22222222-2222-4222-8222-222222222222',
+                    selected: [normalId],
+                    discordId: actorId,
+                },
+                expiresAt: new Date(Date.now() + 60000),
+            },
+        });
+        await db.user.delete({ where: { id: actorId } });
+        expect((await restorePreviewHandler(client).execute(job)).state).toBe(
+            'CANCELLED'
+        );
+        expect(client.guilds.fetch).not.toHaveBeenCalled();
+        await db.user.create({
+            data: {
+                id: actorId,
+                discordId: actorId,
+                username: 'transport-fixture',
+                discriminator: '0',
+                verified: true,
+                accessToken: 'fixture',
+                refreshToken: 'fixture',
+                accessTokenExpiresAt: new Date(Date.now() + 86400000),
+                lastSeenAt: new Date(),
+            },
+        });
+        jest.mocked(authorizeGuild).mockResolvedValue(false);
+        expect((await restorePreviewHandler(client).execute(job)).state).toBe(
+            'CANCELLED'
+        );
+        expect(client.guilds.fetch).not.toHaveBeenCalled();
     });
     it('applies once through the worker and persists mappings and completed receipts', async () => {
         const { plan, job, handler } = await queued();

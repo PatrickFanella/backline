@@ -2,13 +2,13 @@ import { SubscriptionTier } from '@prisma/client';
 import { NextFunction, Request, Response } from 'express';
 
 import { db } from '../db';
-import { getRedisClient } from '../utils/redis';
 import {
     checkAndIncrementQuota,
     checkQuota,
     EndpointCategory,
     getEndpointCategory,
 } from '../utils/quotaManager';
+import { getRedisClient } from '../utils/redis';
 
 /**
  * Middleware to enforce quota limits based on user's subscription tier

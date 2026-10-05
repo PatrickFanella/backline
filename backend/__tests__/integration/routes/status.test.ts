@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-require-imports, @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-require-imports */
 import express, { Application } from 'express';
 import request from 'supertest';
 
@@ -107,8 +107,7 @@ describe('Status Routes', () => {
                 overall: true,
             });
 
-            mockStatusCheckService.getUptimePercentage
-                .mockResolvedValue(99.9);
+            mockStatusCheckService.getUptimePercentage.mockResolvedValue(99.9);
 
             mockDb.incident.findMany.mockResolvedValue([
                 {

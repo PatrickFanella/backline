@@ -12,7 +12,7 @@ Stop only the pilot's bot, API and dashboard units to roll back. Retain the data
 
 ## Database backup and restore check
 
-Run `rtk proxy python scripts/pilot/backup.py` from the pinned source, or use `--directory` with a private directory (mode 700). This pilot-specific utility targets only the `backline-pilot-postgres` container in Docker context `kuznya` and database `backline_pilot`. It uses the container's local PostgreSQL connection; it does not read or print Discord credentials.
+Run `rtk proxy python scripts/pilot/backup.py` from the pinned source. Set `--directory` to a private directory with mode 700 when the default path is unsuitable. The utility accepts `--context`, `--container`, `--database`, `--database-user`, and `--restore-owner`, so it can verify a backup for the owned pilot or a release stack without hard-coded infrastructure names. For the existing pilot, its defaults target Docker context `kuznya`, container `backline-pilot-postgres`, database `backline_pilot`, and owner `backline_pilot`. It uses the selected container's local PostgreSQL connection; it does not read or print Discord credentials.
 
 Each run captures a consistent SQL dump, stores a private manifest, restores into a newly named disposable database owned by `backline_pilot`, and compares every public table's rows and all captured sequence values with the dump. The manifest sorts COPY rows so PostgreSQL's physical row order does not affect the comparison. It drops only the disposable database successfully created by that run. An unsuccessful verification leaves the original backup available for inspection; recovery of any leftover disposable database requires checking the container before deletion.
 

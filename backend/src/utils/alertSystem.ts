@@ -87,7 +87,7 @@ export async function sendAlert(alert: Alert): Promise<void> {
         console.log(
             `${getSeverityEmoji(alert.severity)} Alert sent with severity: ${alert.severity}`
         );
-    } catch (error) {
+    } catch (_error) {
         console.error('Failed to send alert');
         // Don't throw - alert failures shouldn't break the main flow
     }

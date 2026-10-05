@@ -46,24 +46,20 @@ async function getGhostScoresUncached(guildId: string, since?: Date) {
       COALESCE(t.username, m.username) as username,
       COALESCE(t.typing_count, 0) as typing_count,
       COALESCE(m.message_count, 0) as message_count,
-      CASE 
-        WHEN COALESCE(m.message_count, 0) = 0 
-        THEN COALESCE(t.typing_count, 0)::float
-        ELSE COALESCE(t.typing_count, 0)::float / COALESCE(m.message_count, 0)
-      END as ghost_score
+      COALESCE(t.typing_count, 0)::float / (COALESCE(m.message_count, 0) + 1) as ghost_score
     FROM (
-      SELECT "userId", "username", COUNT(*) as typing_count
+      SELECT "userId", (array_agg("username" ORDER BY "createdAt" DESC))[1] as username, COUNT(*) as typing_count
       FROM "TypingEvent"
       WHERE "guildId" = ${guildId}
         AND "createdAt" >= ${sinceDate}::timestamptz
-      GROUP BY "userId", "username"
+      GROUP BY "userId"
     ) t
     FULL OUTER JOIN (
-      SELECT "userId", "username", COUNT(*) as message_count
+      SELECT "userId", (array_agg("username" ORDER BY "createdAt" DESC))[1] as username, COUNT(*) as message_count
       FROM "MessageEvent"
       WHERE "guildId" = ${guildId}
         AND "createdAt" >= ${sinceDate}::timestamptz
-      GROUP BY "userId", "username"
+      GROUP BY "userId"
     ) m ON t."userId" = m."userId"
     WHERE COALESCE(t.typing_count, 0) > 0
     ORDER BY ghost_score DESC
