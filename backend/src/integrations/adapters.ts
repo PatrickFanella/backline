@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import { lookup } from 'node:dns/promises';
 import { request } from 'node:https';
+import type { LookupFunction } from 'node:net';
 
 import axios from 'axios';
 import { XMLParser, XMLValidator } from 'fast-xml-parser';
@@ -18,16 +19,23 @@ export type ProviderItem = {
     publishedAt: Date;
 };
 export type ProviderSource = z.infer<typeof providerSource>;
+export const MAX_RSS_BYTES = 4 * 1024 * 1024;
+export function pinnedLookup(address: {
+    address: string;
+    family: number;
+}): LookupFunction {
+    return (_hostname, options, callback) =>
+        options.all
+            ? callback(null, [address])
+            : callback(null, address.address, address.family);
+}
 export function publicAddress(address: string) {
     if (!ipaddr.isValid(address)) return false;
     const parsed = ipaddr.parse(address);
     return (
         parsed.range() === 'unicast' &&
         (parsed.kind() === 'ipv4' ||
-            (parsed as ipaddr.IPv6).match(
-                ipaddr.parse('2000::') as ipaddr.IPv6,
-                3
-            ))
+            (parsed as ipaddr.IPv6).match(ipaddr.parse('2000::'), 3))
     );
 }
 export async function publicFeedText(source: string): Promise<string> {
@@ -61,8 +69,7 @@ export async function publicFeedText(source: string): Promise<string> {
                     'User-Agent': 'Backline/1.0',
                     Accept: 'application/rss+xml, application/atom+xml, application/xml',
                 },
-                lookup: (_hostname, _options, callback) =>
-                    callback(null, address.address, address.family),
+                lookup: pinnedLookup(address),
             },
             (response) => {
                 if (response.statusCode !== 200) {
@@ -76,7 +83,7 @@ export async function publicFeedText(source: string): Promise<string> {
                 let size = 0;
                 response.on('data', (chunk: Buffer) => {
                     size += chunk.length;
-                    if (size > 512000) {
+                    if (size > MAX_RSS_BYTES) {
                         req.destroy(new Error('Feed exceeds size limit'));
                         return;
                     }
@@ -144,7 +151,7 @@ function safeItem(
 }
 export function parseFeed(text: string): ProviderItem[] {
     if (
-        Buffer.byteLength(text) > 512000 ||
+        Buffer.byteLength(text) > MAX_RSS_BYTES ||
         /<!DOCTYPE|<!ENTITY/i.test(text) ||
         XMLValidator.validate(text) !== true
     )

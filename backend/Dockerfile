@@ -7,7 +7,7 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install dependencies
-RUN npm ci --only=production=false
+RUN npm ci
 
 # Copy prisma schema first
 COPY prisma ./prisma
@@ -20,6 +20,9 @@ COPY . .
 
 # Build the application
 RUN npm run build
+
+# The migration service uses Prisma CLI; build and test tooling stays in the builder.
+RUN npm prune --omit=dev
 
 # Production stage
 FROM node:22-alpine

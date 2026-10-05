@@ -24,12 +24,14 @@ The isolated release package has exercised the migration barrier, non-root API s
 
 Canonical Gitea CI must qualify the exact proposed head. A labeler check or a successful local build is insufficient. Image qualification builds locally without publishing to an external registry. Coverage and build artifacts stay with Gitea CI.
 
+The backend pins Prisma CLI and client to 6.19.3 and overrides only `@prisma/config`'s `deepmerge-ts` to 8.0.2 to address its prototype-pollution advisory. This repository uses the standard schema and client generator; it does not rely on the changed Map-merging behavior. Client generation, fresh migration and permission seed, and legacy-schema adoption are checked with that override. Prisma CLI is a production dependency because the migration service uses it. The backend image removes development dependencies after compilation; the dashboard image contains static output. Production dependency audits do not establish that build and test dependencies are free of advisories.
+
 ## Live gates before a full-feature public launch
 
 1. Complete owner OAuth login, callback, server selection and reload in the owner's browser. Verify access revocation there as well as at the API boundary.
 2. Have an independent community administrator install, configure, remove and reinstall the bot without operator database edits or an operator-maintained guild allowlist.
 3. Exercise the advertised Discord actions in the pilot, including missing permissions, restart recovery, and selective structure recovery in a disposable server.
-4. Observe one real event from each advertised provider reaching its authorized destination. An empty channel poll, credentials check or mocked event does not prove natural delivery. Supply the owner's intended RSS feed before enabling it.
+4. Observe one real event from each advertised provider reaching its authorized destination. An empty channel poll, credentials check or mocked event does not prove natural delivery. The owner selected `https://geesemag.com/feed.xml` for the RSS pilot. Its first successful poll establishes a baseline without posting historical articles.
 5. Play approved audio in real voice sessions in two servers, hear the output, interrupt it, and verify reconnect and independent queues on the intended host.
 6. Complete the roadmap's observation period and record operational errors and feedback. Preserve the release image, configuration, migration and recovery receipts.
 
