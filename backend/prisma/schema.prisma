@@ -1200,3 +1200,31 @@ model ServerSnapshot {
  @@index([guildId, createdAt])
  @@index([expiresAt])
 }
+
+model RestorePlan {
+ id String @id @default(uuid())
+ guildId String
+ actorId String
+ snapshotId String
+ requestId String
+ manifest Json @db.JsonB
+ operations Json @db.JsonB
+ expectedHash String
+ configHash String
+ state String @default("PREVIEW")
+ attempts Int @default(0)
+ lastError String?
+ expiresAt DateTime
+ createdAt DateTime @default(now())
+ @@unique([guildId, requestId])
+ @@index([guildId, createdAt])
+}
+model RecoveryMapping {
+ id String @id @default(uuid())
+ guildId String
+ kind String
+ sourceId String
+ targetId String
+ createdAt DateTime @default(now())
+ @@unique([guildId, kind, sourceId])
+}

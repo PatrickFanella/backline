@@ -31,6 +31,21 @@ export default function RecoveryConfig({
         [error, setError] = useState(''),
         [notice, setNotice] = useState(''),
         [busy, setBusy] = useState(false);
+    const [protectedChannels, setProtectedChannels] = useState(
+            Array.isArray(config.protectedChannelIds)
+                ? config.protectedChannelIds.join(', ')
+                : ''
+        ),
+        [protectedRoles, setProtectedRoles] = useState(
+            Array.isArray(config.protectedRoleIds)
+                ? config.protectedRoleIds.join(', ')
+                : ''
+        );
+    const ids = (value: string) =>
+        value
+            .split(',')
+            .map((id) => id.trim())
+            .filter(Boolean);
     useEffect(() => {
         let active = true;
         api.get<Snapshot[]>(`/guilds/${guildId}/modules/recovery/snapshots`)
@@ -56,14 +71,8 @@ export default function RecoveryConfig({
                     scheduled,
                     intervalHours: interval,
                     retainDays,
-                    protectedChannelIds: Array.isArray(
-                        config.protectedChannelIds
-                    )
-                        ? config.protectedChannelIds
-                        : [],
-                    protectedRoleIds: Array.isArray(config.protectedRoleIds)
-                        ? config.protectedRoleIds
-                        : [],
+                    protectedChannelIds: ids(protectedChannels),
+                    protectedRoleIds: ids(protectedRoles),
                 },
             });
             await onSaved();
@@ -158,6 +167,26 @@ export default function RecoveryConfig({
                             value={retainDays}
                             onChange={(event) =>
                                 setRetainDays(Number(event.target.value))
+                            }
+                            className="block w-full p-2 bg-ctp-surface0 rounded"
+                        />
+                    </label>
+                    <label className="block">
+                        Protected channel IDs (comma-separated)
+                        <textarea
+                            value={protectedChannels}
+                            onChange={(event) =>
+                                setProtectedChannels(event.target.value)
+                            }
+                            className="block w-full p-2 bg-ctp-surface0 rounded"
+                        />
+                    </label>
+                    <label className="block">
+                        Protected role IDs (comma-separated)
+                        <textarea
+                            value={protectedRoles}
+                            onChange={(event) =>
+                                setProtectedRoles(event.target.value)
                             }
                             className="block w-full p-2 bg-ctp-surface0 rounded"
                         />

@@ -12,6 +12,7 @@ import OnboardingConfig from '../components/OnboardingConfig';
 import ProviderHistory from '../components/ProviderHistory';
 import RecoveryConfig from '../components/RecoveryConfig';
 import RecurringAnnouncementsHistory from '../components/RecurringAnnouncementsHistory';
+import RestoreHistory from '../components/RestoreHistory';
 import ScheduledUtilitiesHistory from '../components/ScheduledUtilitiesHistory';
 import SelfRolesConfig from '../components/SelfRolesConfig';
 import ServerModuleConfig from '../components/ServerModuleConfig';
@@ -304,6 +305,12 @@ export default function Servers() {
                                                     value ? module.id : null
                                                 )
                                             }
+                                        />
+                                    )}
+                                    {module.id === 'recovery' && (
+                                        <RestoreHistory
+                                            key={`${guildId}:restore-history`}
+                                            guildId={guildId}
                                         />
                                     )}
                                     {module.id === 'audio' && (
