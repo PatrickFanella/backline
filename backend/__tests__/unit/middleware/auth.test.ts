@@ -1,7 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
+import jwt from 'jsonwebtoken';
 
 import { requireAuth, requireAdmin } from '../../../src/middleware/auth';
 import { generateAccessToken } from '../../../src/utils/auth';
+import { env } from '../../../src/utils/env';
 
 describe('Middleware - Auth', () => {
     let mockRequest: Partial<Request>;
@@ -85,10 +87,43 @@ describe('Middleware - Auth', () => {
                 mockNext
             );
 
-            expect(mockResponse.status).toHaveBeenCalledWith(403);
+            expect(mockResponse.status).toHaveBeenCalledWith(401);
             expect(mockResponse.json).toHaveBeenCalledWith({
-                error: 'Forbidden — invalid token',
+                error: 'Invalid or expired access token',
             });
+            expect(mockNext).not.toHaveBeenCalled();
+        });
+
+        it('returns 401 for an expired token so the cookie can renew it', () => {
+            const token = jwt.sign(
+                { discordId: '123', role: 'USER', access: true },
+                env.JWT_SECRET,
+                { expiresIn: -1 }
+            );
+            mockRequest.headers = { authorization: `Bearer ${token}` };
+            requireAuth(
+                mockRequest as Request,
+                mockResponse as Response,
+                mockNext
+            );
+            expect(mockResponse.status).toHaveBeenCalledWith(401);
+            expect(mockNext).not.toHaveBeenCalled();
+        });
+
+        it('keeps a valid banned account forbidden', () => {
+            const token = generateAccessToken({
+                discordId: '123',
+                username: 'banned',
+                role: 'BANNED',
+                access: true,
+            });
+            mockRequest.headers = { authorization: `Bearer ${token}` };
+            requireAuth(
+                mockRequest as Request,
+                mockResponse as Response,
+                mockNext
+            );
+            expect(mockResponse.status).toHaveBeenCalledWith(403);
             expect(mockNext).not.toHaveBeenCalled();
         });
 

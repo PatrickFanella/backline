@@ -46,7 +46,7 @@ export function requireAuth(
         next();
     } catch (err) {
         console.error('❌ Token verification failed:', err);
-        res.status(403).json({ error: 'Forbidden — invalid token' });
+        res.status(401).json({ error: 'Invalid or expired access token' });
     }
 }
 
