@@ -8,6 +8,7 @@ import {
     SlashCommandBuilder,
 } from 'discord.js';
 
+import { clipCommand, routeClips } from '../audio/clipCommands';
 import { audioCommand, routeAudio } from '../audio/queue';
 import { radioCommand, routeRadio } from '../audio/radio';
 import {
@@ -171,6 +172,7 @@ export async function routeInteraction(
         if (await acknowledgeRules(interaction)) return;
         if (await routeTickets(interaction)) return;
         if (await routeGiveaways(interaction)) return;
+        if (await routeClips(interaction)) return;
         if (await routeAudio(interaction)) return;
         if (await routeRadio(interaction)) return;
         if (await routeLeveling(interaction)) return;
@@ -436,6 +438,7 @@ export async function registerGuildCommands(
             ...ticketCommands,
             radioCommand,
             audioCommand,
+            clipCommand,
             giveawayCommand,
             xpCommand,
             customCommand,

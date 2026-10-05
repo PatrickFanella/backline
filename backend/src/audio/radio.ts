@@ -27,6 +27,7 @@ import {
 import { db } from '../db';
 import { moduleRegistry } from '../modules/registry';
 
+import { approvedClip } from './clips';
 import { audioConfig, stationId } from './config';
 import { radioSource } from './sources';
 import { somaStations } from './stations';
@@ -132,7 +133,8 @@ export class RadioRuntime {
         actorId: string,
         station?: string,
         requestedChannel?: string,
-        segmentMinutes?: number
+        segmentMinutes?: number,
+        clipId?: string
     ) {
         if (this.pending.has(guildId))
             throw new Error('Radio startup already in progress');
@@ -151,7 +153,10 @@ export class RadioRuntime {
                     config.maxMinutes,
                     Math.max(1, Math.min(30, segmentMinutes))
                 );
-            const selected = stationId.parse(station ?? config.defaultStation);
+            const clip = clipId ? await approvedClip(guildId, clipId) : null;
+            const selected = clip
+                ? `clip:${clip.id}`
+                : stationId.parse(station ?? config.defaultStation);
             const guild = await client.guilds.fetch({
                 guild: guildId,
                 force: true,
@@ -286,7 +291,18 @@ export class RadioRuntime {
                     });
             });
             player.on(AudioPlayerStatus.Idle, () => {
-                if (session?.resource && !session.stopping) stopFailed();
+                if (session?.resource && !session.stopping) {
+                    if (clip)
+                        void this.stop(
+                            guildId,
+                            'Clip completed',
+                            'STOPPED',
+                            record.id
+                        ).catch(() =>
+                            console.warn('Clip completion recording failed')
+                        );
+                    else stopFailed();
+                }
             });
             await entersState(connection, VoiceConnectionStatus.Ready, 20000);
             const network =
@@ -298,7 +314,11 @@ export class RadioRuntime {
                     ? network.dave?.protocolVersion
                     : null;
             if (!dave || dave < 1) throw new Error('DAVE session unavailable');
-            const source = await radioSource(selected, session.controller);
+            await audioSettings(guildId);
+            if (clip) await approvedClip(guildId, clip.id);
+            const source = clip
+                ? { stream: Readable.from([Buffer.from(clip.data)]) }
+                : await radioSource(selected, session.controller);
             session.source = source.stream;
             const child = spawn(
                 'ffmpeg',
@@ -325,8 +345,8 @@ export class RadioRuntime {
             session.process = child;
             child.stderr.resume(); // Never include provider data or arbitrary process output in application logs.
             child.on('error', stopFailed);
-            child.on('exit', () => {
-                if (!session?.stopping) stopFailed();
+            child.on('exit', (code) => {
+                if (!session?.stopping && (!clip || code !== 0)) stopFailed();
             });
             child.stdin.on('error', stopFailed);
             child.stdout.on('error', stopFailed);
@@ -368,13 +388,31 @@ export class RadioRuntime {
                         return;
                     }
                     const current = await audioSettings(guildId);
+                    if (
+                        clip &&
+                        (!current.clipsEnabled ||
+                            !(await db.audioClip.count({
+                                where: { id: clip.id, guildId },
+                            })))
+                    ) {
+                        await this.stop(
+                            guildId,
+                            'Clip approval withdrawn',
+                            'STOPPED',
+                            record.id
+                        );
+                        return;
+                    }
                     const currentActor = await guild.members.fetch({
                         user: actorId,
                         force: true,
                     });
                     if (
-                        current.djRoles.length &&
-                        !isDJ(currentActor, current)
+                        currentActor.user.bot ||
+                        (await db.user.count({
+                            where: { discordId: actorId, role: 'BANNED' },
+                        })) ||
+                        (current.djRoles.length && !isDJ(currentActor, current))
                     ) {
                         await this.stop(
                             guildId,

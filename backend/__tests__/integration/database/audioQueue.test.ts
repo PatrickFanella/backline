@@ -11,6 +11,7 @@ import {
     queueSettings,
     recoverQueues,
     savePlaylist,
+    startQueue,
 } from '../../../src/audio/queue';
 import { db } from '../../../src/db';
 import { moduleRegistry } from '../../../src/modules/registry';
@@ -169,6 +170,23 @@ databaseTests('durable server audio queues', () => {
         );
         expect(items).toHaveLength(1);
         expect(items[0]).toMatchObject({ requesterId: actorId, channelId });
+    });
+    it('does not move an advancing queue to a different voice channel', async () => {
+        await add();
+        await expect(
+            startQueue(
+                client,
+                guildId,
+                actorId,
+                Date.now() + 60000,
+                '777777777777777899'
+            )
+        ).rejects.toThrow('left its voice channel');
+        const row = await db.audioQueue.findUniqueOrThrow({
+            where: { guildId },
+        });
+        expect(row.state).toBe('IDLE');
+        expect(queueItems.parse(row.items)).toHaveLength(1);
     });
     it('does not enqueue with disabled settings or after bot removal', async () => {
         await moduleRegistry.configure(guildId, 'audio', true, {

@@ -26,6 +26,7 @@ describe('radio configuration', () => {
             enabled: false,
             config: {
                 queuesEnabled: false,
+                clipsEnabled: false,
                 defaultStation: 'defcon',
                 djRoles: [],
                 volume: 25,

@@ -11,6 +11,7 @@ export const stationId = z
     );
 export const audioConfig = z
     .object({
+        clipsEnabled: z.boolean().default(false),
         queuesEnabled: z.boolean().default(false),
         defaultStation: stationId.default('defcon'),
         djRoles: z

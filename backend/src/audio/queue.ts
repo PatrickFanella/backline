@@ -12,12 +12,17 @@ import { audioAccess, audioSettings, radioRuntime } from './radio';
 export const queueItem = z
     .object({
         id: z.string().uuid(),
-        station: stationId,
+        station: stationId.optional(),
+        clipId: z.string().uuid().optional(),
         minutes: z.number().int().min(1).max(30),
         requesterId: z.string().regex(/^\d{17,20}$/),
         channelId: z.string().regex(/^\d{17,20}$/),
     })
-    .strict();
+    .strict()
+    .refine(
+        (item) => Boolean(item.station) !== Boolean(item.clipId),
+        'One approved source required'
+    );
 export const queueItems = z.array(queueItem).max(50);
 const playlistName = z
     .string()
@@ -139,17 +144,25 @@ export async function recoverQueues(now = new Date()) {
 }
 const active = new Map<
         string,
-        { claimId: string; playbackId: string; deadline: number }
+        {
+            claimId: string;
+            playbackId: string;
+            deadline: number;
+            channelId: string;
+        }
     >(),
     starting = new Set<string>();
 export async function startQueue(
     client: Client,
     guildId: string,
     actorId: string,
-    deadline?: number
+    deadline?: number,
+    expectedChannel?: string
 ) {
     const access = await audioAccess(client, guildId, actorId, true);
     if (!access.config.queuesEnabled) throw new Error('Queues disabled');
+    if (expectedChannel && access.channelId !== expectedChannel)
+        throw new Error('Queue requester left its voice channel');
     deadline ??= Date.now() + access.config.maxMinutes * 60000;
     if (Date.now() >= deadline) throw new Error('Queue duration limit reached');
     if (starting.has(guildId) || radioRuntime.status(guildId))
@@ -170,7 +183,8 @@ export async function startQueue(
             Math.min(
                 item.minutes,
                 Math.max(1, Math.ceil((deadline - Date.now()) / 60000))
-            )
+            ),
+            item.clipId
         );
         if (!result) throw new Error('Playback unavailable');
         const marked = await db.audioQueue.updateMany({
@@ -193,6 +207,7 @@ export async function startQueue(
             claimId: row.claimId!,
             playbackId: result.id,
             deadline,
+            channelId: access.channelId,
         });
     } catch (error) {
         if (row?.claimId) await finishQueue(guildId, row.claimId, false);
@@ -226,16 +241,19 @@ export async function maintainQueues(client: Client) {
             });
             const complete =
                 playback?.state === 'STOPPED' &&
-                ['Maximum playback duration reached', 'Queue skip'].includes(
-                    playback.detail ?? ''
-                );
+                [
+                    'Maximum playback duration reached',
+                    'Queue skip',
+                    'Clip completed',
+                ].includes(playback.detail ?? '');
             await finishQueue(guildId, owned.claimId, complete);
             if (complete && playback)
                 await startQueue(
                     client,
                     guildId,
                     playback.requesterId,
-                    owned.deadline
+                    owned.deadline,
+                    owned.channelId
                 );
         } catch {
             active.delete(guildId);
@@ -246,6 +264,13 @@ export async function maintainQueues(client: Client) {
                 owned.playbackId
             );
             await finishQueue(guildId, owned.claimId, false);
+            await locked(guildId, async (tx, row) => {
+                if (row.state === 'IDLE' && !row.claimId)
+                    await tx.audioQueue.update({
+                        where: { guildId },
+                        data: { state: 'INTERRUPTED' },
+                    });
+            });
             console.warn('Audio queue interrupted; explicit restart required');
         }
     }
@@ -543,7 +568,7 @@ export async function routeAudio(interaction: Interaction) {
                             .slice(0, 20)
                             .map(
                                 (i, n) =>
-                                    `${n + 1}. ${i.station} · ${i.minutes} min`
+                                    `${n + 1}. ${i.station ?? `clip ${i.clipId}`} · ${i.clipId ? 'up to 15 seconds' : `${i.minutes} min`}`
                             )
                             .join('\n')
                 );
@@ -559,4 +584,57 @@ export async function routeAudio(interaction: Interaction) {
         );
     }
     return true;
+}
+
+export async function enqueueSoundboard(
+    client: Client,
+    guildId: string,
+    actorId: string,
+    name: string
+) {
+    const access = await audioAccess(client, guildId, actorId, true);
+    if (!access.config.queuesEnabled || !access.config.clipsEnabled)
+        throw new Error('Queues and clips required');
+    const current = radioRuntime.status(guildId);
+    if (current && current.channelId !== access.channelId)
+        throw new Error('Join current audio channel');
+    return locked(guildId, async (tx, row) => {
+        const board = await tx.audioSoundboard.findUniqueOrThrow({
+            where: {
+                guildId_name: { guildId, name: playlistName.parse(name) },
+            },
+        });
+        const ids = z
+            .array(z.string().uuid())
+            .min(1)
+            .max(20)
+            .parse(board.clipIds);
+        if (
+            (await tx.audioClip.count({
+                where: { guildId, id: { in: ids } },
+            })) !== ids.length
+        )
+            throw new Error('Soundboard has withdrawn or expired clips');
+        const items = queueItems.parse(row.items);
+        if (items.length + ids.length > 50)
+            throw new Error('Queue capacity reached');
+        const config = await tx.guildModuleConfig.findUniqueOrThrow({
+            where: { guildId_moduleId: { guildId, moduleId: 'audio' } },
+        });
+        if (
+            !config.enabled ||
+            !(config.config as Record<string, unknown>).queuesEnabled ||
+            !(config.config as Record<string, unknown>).clipsEnabled
+        )
+            throw new Error('Queues and clips required');
+        for (const clipId of ids)
+            items.push({
+                id: randomUUID(),
+                clipId,
+                minutes: 1,
+                requesterId: actorId,
+                channelId: access.channelId,
+            });
+        return tx.audioQueue.update({ where: { guildId }, data: { items } });
+    });
 }
