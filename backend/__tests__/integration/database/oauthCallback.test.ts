@@ -5,6 +5,7 @@ import request from 'supertest';
 
 import { db } from '../../../src/db';
 import authRouter from '../../../src/routes/auth';
+import guildRouter from '../../../src/routes/guildModules';
 
 jest.mock('axios');
 const databaseTests =
@@ -15,8 +16,12 @@ databaseTests('Discord OAuth callback and session persistence', () => {
     const app = express();
     app.use(cookieParser());
     app.use('/auth', authRouter);
+    app.use(guildRouter);
     beforeEach(() => {
         jest.clearAllMocks();
+        (axios.isAxiosError as unknown as jest.Mock).mockImplementation(
+            (error) => error?.isAxiosError === true
+        );
         (axios.post as jest.Mock).mockResolvedValue({
             data: {
                 access_token: 'fixture-access-token',
@@ -91,6 +96,34 @@ databaseTests('Discord OAuth callback and session persistence', () => {
             expect.any(URLSearchParams),
             expect.any(Object)
         );
+        const session = await agent
+            .get('/auth/me')
+            .set('Authorization', `Bearer ${result.body.accessToken}`)
+            .expect(200);
+        expect(session.body.discordId).toBe(discordId);
+        expect(session.body.guilds).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    guildId,
+                    permissions: '9007199254740993',
+                }),
+            ])
+        );
+        await db.guildInstallation.update({
+            where: { guildId },
+            data: { active: true },
+        });
+        (axios.get as jest.Mock).mockRejectedValueOnce({
+            isAxiosError: true,
+            response: { status: 429, data: { retry_after: 0.01 } },
+        });
+        const servers = await agent
+            .get('/guilds')
+            .set('Authorization', `Bearer ${result.body.accessToken}`)
+            .expect(200);
+        expect(servers.body).toEqual([
+            { id: guildId, name: 'Fixture', icon: null },
+        ]);
         await agent
             .get('/auth/discord')
             .query({ code: 'fixture-authorization-code', state })

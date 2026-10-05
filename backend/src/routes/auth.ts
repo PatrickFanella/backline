@@ -559,7 +559,10 @@ router.get('/me', requireAuth, async (req, res): Promise<void> => {
             locale: user.locale,
             verified: user.verified,
             role: user.role,
-            guilds: user.guilds,
+            guilds: user.guilds.map((guild) => ({
+                ...guild,
+                permissions: guild.permissions.toString(),
+            })),
         });
         return;
     } catch (err) {
