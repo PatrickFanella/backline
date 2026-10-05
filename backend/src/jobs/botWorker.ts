@@ -10,6 +10,7 @@ import {
 import { giveawayHandlers, recoverGiveaways } from '../community/giveaways';
 import { expireLeveling, levelingHandler } from '../community/leveling';
 import { onboardingHandler, recoverJourneys } from '../community/onboarding';
+import { expirePollJobs, pollHandler } from '../community/polls';
 import {
     communityCounterHandler,
     maintainCommunityReports,
@@ -32,6 +33,7 @@ export function createBotWorker(client: Client): JobWorker {
         new Map<string, JobHandler>([
             ...giveawayHandlers(client),
             ['scheduled-utility', scheduledUtilityHandler(client)],
+            ['native-poll', pollHandler(client)],
             ['level-reward', levelingHandler(client)],
             ['community-counter', communityCounterHandler(client)],
             ['audit-log', auditHandler(client)],
@@ -167,6 +169,7 @@ export function startJobPolling(
                 await recoverGiveaways();
                 await expireLeveling();
                 await expireScheduledUtilities();
+                await expirePollJobs();
                 await maintainCommunityReports();
                 lastExpiry = Date.now();
             }
@@ -181,6 +184,7 @@ export function startJobPolling(
                             'level-reward',
                             'community-counter',
                             'scheduled-utility',
+                            'native-poll',
                         ],
                     },
                 },
