@@ -24,6 +24,9 @@ jest.mock('../../../src/db', () => ({
 describe('server authorization', () => {
     beforeEach(() => {
         jest.resetAllMocks();
+        (axios.isAxiosError as unknown as jest.Mock).mockImplementation(
+            (error) => error?.isAxiosError === true
+        );
         (db.guildInstallation.findUnique as jest.Mock).mockResolvedValue({
             active: true,
         });
@@ -84,6 +87,56 @@ describe('server authorization', () => {
     it('fails closed during Discord outage', async () => {
         (axios.get as jest.Mock).mockRejectedValue(new Error('unavailable'));
         expect(await authorizeGuild('user', '123456789')).toBe(false);
+    });
+    it('waits for Discord rate limits and shares the retry between concurrent checks', async () => {
+        jest.useFakeTimers();
+        try {
+            (axios.get as jest.Mock).mockRejectedValueOnce({
+                isAxiosError: true,
+                response: { status: 429, data: { retry_after: 1 } },
+            });
+            const result = Promise.all([
+                authorizeGuild('user', '123456789'),
+                authorizeGuild('user', '123456789'),
+            ]);
+            await jest.advanceTimersByTimeAsync(1049);
+            expect(axios.get).toHaveBeenCalledTimes(1);
+            expect(syncGuildMemberships).not.toHaveBeenCalled();
+            await jest.advanceTimersByTimeAsync(1);
+            expect(await result).toEqual([true, true]);
+            expect(axios.get).toHaveBeenCalledTimes(2);
+            expect(syncGuildMemberships).toHaveBeenCalledTimes(1);
+        } finally {
+            jest.useRealTimers();
+        }
+    });
+    it.each([undefined, -1, 6, '1', Number.NaN])(
+        'fails closed for an unusable rate-limit delay %s',
+        async (retryAfter) => {
+            (axios.get as jest.Mock).mockRejectedValue({
+                isAxiosError: true,
+                response: { status: 429, data: { retry_after: retryAfter } },
+            });
+            expect(await authorizeGuild('user', '123456789')).toBe(false);
+            expect(axios.get).toHaveBeenCalledTimes(1);
+            expect(syncGuildMemberships).not.toHaveBeenCalled();
+        }
+    );
+    it('stops after one retry if Discord still rejects the check', async () => {
+        jest.useFakeTimers();
+        try {
+            (axios.get as jest.Mock).mockRejectedValue({
+                isAxiosError: true,
+                response: { status: 429, data: { retry_after: 1 } },
+            });
+            const result = authorizeGuild('user', '123456789');
+            await jest.advanceTimersByTimeAsync(1050);
+            expect(await result).toBe(false);
+            expect(axios.get).toHaveBeenCalledTimes(2);
+            expect(syncGuildMemberships).not.toHaveBeenCalled();
+        } finally {
+            jest.useRealTimers();
+        }
     });
     it('denies banned users regardless of stale token role', async () => {
         (db.user.findUnique as jest.Mock).mockResolvedValue({ role: 'BANNED' });

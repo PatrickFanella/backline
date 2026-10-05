@@ -25,6 +25,36 @@ export function canManageGuild(guild: {
 // Share an in-flight refresh so rotated Discord refresh tokens are used once.
 const pending = new Map<string, Promise<boolean>>();
 
+async function fetchCurrentGuilds(token: string): Promise<unknown> {
+    const fetch = () =>
+        axios.get<unknown>('https://discord.com/api/v10/users/@me/guilds', {
+            headers: { Authorization: `Bearer ${token}` },
+            timeout: 5000,
+        });
+    try {
+        return (await fetch()).data;
+    } catch (error) {
+        if (
+            !axios.isAxiosError<{ retry_after?: unknown }>(error) ||
+            error.response?.status !== 429
+        )
+            throw error;
+        const retryAfter = error.response.data?.retry_after;
+        // Honor Discord's delay once; long or malformed limits remain unavailable.
+        if (
+            typeof retryAfter !== 'number' ||
+            !Number.isFinite(retryAfter) ||
+            retryAfter < 0 ||
+            retryAfter > 5
+        )
+            throw error;
+        await new Promise((resolve) =>
+            setTimeout(resolve, Math.ceil(retryAfter * 1000) + 50)
+        );
+        return (await fetch()).data;
+    }
+}
+
 async function refreshMemberships(userId: string): Promise<boolean> {
     try {
         const user = await db.user.findUnique({ where: { id: userId } });
@@ -59,17 +89,21 @@ async function refreshMemberships(userId: string): Promise<boolean> {
                 },
             });
         }
-        const response = await axios.get<unknown>(
-            'https://discord.com/api/v10/users/@me/guilds',
-            { headers: { Authorization: `Bearer ${token}` }, timeout: 5000 }
-        );
+        const guilds = await fetchCurrentGuilds(token);
         await syncGuildMemberships(
             userId,
-            z.array(discordGuildSchema).parse(response.data)
+            z.array(discordGuildSchema).parse(guilds)
         );
         return true;
-    } catch {
-        // Axios errors can contain request credentials. Fail closed without logging them.
+    } catch (error) {
+        // Provider errors contain credentials: log only transport classification.
+        console.warn('Discord membership refresh failed', {
+            type: error instanceof Error ? error.name : 'Unknown',
+            code: axios.isAxiosError(error) ? error.code : undefined,
+            status: axios.isAxiosError(error)
+                ? error.response?.status
+                : undefined,
+        });
         return false;
     }
 }
