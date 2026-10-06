@@ -12,7 +12,7 @@ describe('LanguageSwitcher Component', () => {
 
     it('should render the language switcher button', () => {
         render(<LanguageSwitcher />);
-        
+
         const button = screen.getByRole('button', { name: /change language/i });
         expect(button).toBeInTheDocument();
         expect(button).toHaveTextContent('EN');
@@ -21,7 +21,7 @@ describe('LanguageSwitcher Component', () => {
     it('should show dropdown when clicked', async () => {
         const user = userEvent.setup();
         render(<LanguageSwitcher />);
-        
+
         const button = screen.getByRole('button', { name: /change language/i });
         await user.click(button);
 
@@ -33,7 +33,7 @@ describe('LanguageSwitcher Component', () => {
     it('should display all supported languages', async () => {
         const user = userEvent.setup();
         render(<LanguageSwitcher />);
-        
+
         const button = screen.getByRole('button', { name: /change language/i });
         await user.click(button);
 
@@ -49,20 +49,22 @@ describe('LanguageSwitcher Component', () => {
     it('should highlight current language', async () => {
         const user = userEvent.setup();
         render(<LanguageSwitcher />);
-        
+
         const button = screen.getByRole('button', { name: /change language/i });
         await user.click(button);
 
         await waitFor(() => {
-            const englishOption = screen.getByRole('menuitem', { name: /switch to english/i });
-            expect(englishOption).toHaveClass('text-ctp-blue');
+            const englishOption = screen.getByRole('menuitem', {
+                name: /switch to english/i,
+            });
+            expect(englishOption).toHaveClass('text-bl-accent');
         });
     });
 
     it('should change language when option is selected', async () => {
         const user = userEvent.setup();
         render(<LanguageSwitcher />);
-        
+
         const button = screen.getByRole('button', { name: /change language/i });
         await user.click(button);
 
@@ -70,7 +72,9 @@ describe('LanguageSwitcher Component', () => {
             expect(screen.getByRole('menu')).toBeInTheDocument();
         });
 
-        const spanishOption = screen.getByRole('menuitem', { name: /switch to spanish/i });
+        const spanishOption = screen.getByRole('menuitem', {
+            name: /switch to spanish/i,
+        });
         await user.click(spanishOption);
 
         await waitFor(() => {
@@ -81,7 +85,7 @@ describe('LanguageSwitcher Component', () => {
     it('should close dropdown after selecting a language', async () => {
         const user = userEvent.setup();
         render(<LanguageSwitcher />);
-        
+
         const button = screen.getByRole('button', { name: /change language/i });
         await user.click(button);
 
@@ -89,7 +93,9 @@ describe('LanguageSwitcher Component', () => {
             expect(screen.getByRole('menu')).toBeInTheDocument();
         });
 
-        const frenchOption = screen.getByRole('menuitem', { name: /switch to french/i });
+        const frenchOption = screen.getByRole('menuitem', {
+            name: /switch to french/i,
+        });
         await user.click(frenchOption);
 
         await waitFor(() => {
@@ -100,17 +106,19 @@ describe('LanguageSwitcher Component', () => {
     it('should update button text after language change', async () => {
         const user = userEvent.setup();
         render(<LanguageSwitcher />);
-        
+
         const button = screen.getByRole('button', { name: /change language/i });
         expect(button).toHaveTextContent('EN');
-        
+
         await user.click(button);
 
         await waitFor(() => {
             expect(screen.getByRole('menu')).toBeInTheDocument();
         });
 
-        const germanOption = screen.getByRole('menuitem', { name: /switch to german/i });
+        const germanOption = screen.getByRole('menuitem', {
+            name: /switch to german/i,
+        });
         await user.click(germanOption);
 
         await waitFor(() => {
@@ -126,7 +134,7 @@ describe('LanguageSwitcher Component', () => {
                 <div data-testid="outside">Outside element</div>
             </div>
         );
-        
+
         const button = screen.getByRole('button', { name: /change language/i });
         await user.click(button);
 
@@ -144,7 +152,7 @@ describe('LanguageSwitcher Component', () => {
 
     it('should have proper accessibility attributes', () => {
         render(<LanguageSwitcher />);
-        
+
         const button = screen.getByRole('button', { name: /change language/i });
         expect(button).toHaveAttribute('aria-expanded', 'false');
         expect(button).toHaveAttribute('aria-haspopup', 'true');
@@ -153,10 +161,10 @@ describe('LanguageSwitcher Component', () => {
     it('should update aria-expanded when dropdown is open', async () => {
         const user = userEvent.setup();
         render(<LanguageSwitcher />);
-        
+
         const button = screen.getByRole('button', { name: /change language/i });
         expect(button).toHaveAttribute('aria-expanded', 'false');
-        
+
         await user.click(button);
 
         await waitFor(() => {

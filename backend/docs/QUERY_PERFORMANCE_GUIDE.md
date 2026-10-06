@@ -1,6 +1,6 @@
 # Query Performance Optimization Guide
 
-This guide provides best practices and patterns for writing high-performance database queries in the Discord Spywatcher application.
+This guide provides best practices and patterns for writing high-performance database queries in the Backline application.
 
 ## Table of Contents
 
@@ -29,7 +29,7 @@ All queries should meet these targets:
 
 ```typescript
 const events = await db.messageEvent.findMany({
-    where: { guildId, createdAt: { gte: since } }
+    where: { guildId, createdAt: { gte: since } },
 });
 
 const userCounts = new Map();
@@ -47,14 +47,14 @@ const userCounts = await db.messageEvent.groupBy({
     where: { guildId, createdAt: { gte: since } },
     _count: { userId: true },
     orderBy: { _count: { userId: 'desc' } },
-    take: 100
+    take: 100,
 });
 ```
 
 ✅ **Better** - Using raw SQL for complex aggregations:
 
 ```typescript
-const result = await db.$queryRaw<Array<{userId: string; count: bigint}>>`
+const result = await db.$queryRaw<Array<{ userId: string; count: bigint }>>`
     SELECT "userId", COUNT(*) as count
     FROM "MessageEvent"
     WHERE "guildId" = ${guildId}
@@ -71,7 +71,7 @@ const result = await db.$queryRaw<Array<{userId: string; count: bigint}>>`
 
 ```typescript
 const messages = await db.messageEvent.findMany({
-    where: { guildId }
+    where: { guildId },
 });
 ```
 
@@ -81,7 +81,7 @@ const messages = await db.messageEvent.findMany({
 const messages = await db.messageEvent.findMany({
     where: { guildId },
     take: 100,
-    orderBy: { createdAt: 'desc' }
+    orderBy: { createdAt: 'desc' },
 });
 ```
 
@@ -93,7 +93,7 @@ const messages = await db.messageEvent.findMany({
 const users = await db.user.findMany();
 for (const user of users) {
     const messageCount = await db.messageEvent.count({
-        where: { userId: user.id }
+        where: { userId: user.id },
     });
     user.messageCount = messageCount;
 }
@@ -124,10 +124,10 @@ Always ensure queries use indexes by:
 const messages = await db.messageEvent.findMany({
     where: {
         guildId,
-        createdAt: { gte: since }
+        createdAt: { gte: since },
     },
     orderBy: { createdAt: 'desc' },
-    take: 50
+    take: 50,
 });
 ```
 
@@ -138,19 +138,21 @@ const messages = await db.messageEvent.findMany({
 ```typescript
 export async function getEvents(cursor?: string, limit = 50) {
     const cursorDate = cursor ? new Date(cursor) : new Date();
-    
+
     const events = await db.messageEvent.findMany({
         where: {
             guildId,
-            createdAt: { lt: cursorDate }
+            createdAt: { lt: cursorDate },
         },
         orderBy: { createdAt: 'desc' },
-        take: limit + 1 // Fetch one extra to check for more
+        take: limit + 1, // Fetch one extra to check for more
     });
 
     const hasMore = events.length > limit;
     const results = hasMore ? events.slice(0, limit) : events;
-    const nextCursor = hasMore ? results[limit - 1].createdAt.toISOString() : null;
+    const nextCursor = hasMore
+        ? results[limit - 1].createdAt.toISOString()
+        : null;
 
     return { events: results, nextCursor, hasMore };
 }
@@ -161,14 +163,14 @@ export async function getEvents(cursor?: string, limit = 50) {
 ```typescript
 export async function getUsers(page = 1, limit = 20) {
     const skip = (page - 1) * limit;
-    
+
     const [users, total] = await Promise.all([
         db.user.findMany({
             skip,
             take: limit,
-            orderBy: { createdAt: 'desc' }
+            orderBy: { createdAt: 'desc' },
         }),
-        db.user.count()
+        db.user.count(),
     ]);
 
     return {
@@ -177,8 +179,8 @@ export async function getUsers(page = 1, limit = 20) {
             page,
             limit,
             total,
-            totalPages: Math.ceil(total / limit)
-        }
+            totalPages: Math.ceil(total / limit),
+        },
     };
 }
 ```
@@ -190,7 +192,7 @@ import { cache } from '../services/cache';
 
 export async function getAnalytics(guildId: string) {
     const cacheKey = `analytics:${guildId}`;
-    
+
     return cache.remember(
         cacheKey,
         300, // 5 minutes TTL
@@ -198,7 +200,7 @@ export async function getAnalytics(guildId: string) {
             return expensiveAnalyticsQuery(guildId);
         },
         {
-            tags: [`guild:${guildId}`, 'analytics']
+            tags: [`guild:${guildId}`, 'analytics'],
         }
     );
 }
@@ -285,7 +287,7 @@ const allMessages = await db.messageEvent.findMany();
 const users = await db.user.findMany();
 for (const user of users) {
     user.messages = await db.messageEvent.findMany({
-        where: { userId: user.id }
+        where: { userId: user.id },
     });
 }
 ```
@@ -311,7 +313,7 @@ Add filters or use approximate counts:
 ```typescript
 // Better
 const total = await db.messageEvent.count({
-    where: { createdAt: { gte: recentDate } }
+    where: { createdAt: { gte: recentDate } },
 });
 ```
 
@@ -327,6 +329,7 @@ ts-node scripts/benchmark-queries.ts
 ```
 
 The script will:
+
 - Run each analytics query multiple times
 - Calculate p50, p95, p99 percentiles
 - Report PASS/WARN/FAIL status
@@ -363,42 +366,45 @@ Before deploying a new query:
 ### Query is Slow (> 100ms)
 
 1. **Check EXPLAIN ANALYZE output**
-   ```sql
-   EXPLAIN ANALYZE SELECT * FROM "MessageEvent" WHERE "guildId" = 'xxx';
-   ```
+
+    ```sql
+    EXPLAIN ANALYZE SELECT * FROM "MessageEvent" WHERE "guildId" = 'xxx';
+    ```
 
 2. **Look for Sequential Scans**
-   - If you see "Seq Scan", add an index
-   - Use composite indexes for multi-column filters
+    - If you see "Seq Scan", add an index
+    - Use composite indexes for multi-column filters
 
 3. **Check Data Volume**
-   - How many rows match the WHERE clause?
-   - Consider adding date filters to reduce scope
+    - How many rows match the WHERE clause?
+    - Consider adding date filters to reduce scope
 
 4. **Consider Caching**
-   - Add Redis caching for queries run frequently
-   - Use appropriate TTL based on data freshness needs
+    - Add Redis caching for queries run frequently
+    - Use appropriate TTL based on data freshness needs
 
 ### Query Not Using Index
 
 1. **Verify index exists**
-   ```sql
-   \d "MessageEvent"
-   ```
+
+    ```sql
+    \d "MessageEvent"
+    ```
 
 2. **Check query pattern matches index**
-   - Index: `(guildId, createdAt DESC)`
-   - Query must filter on guildId first
+    - Index: `(guildId, createdAt DESC)`
+    - Query must filter on guildId first
 
 3. **Run ANALYZE**
-   ```sql
-   ANALYZE "MessageEvent";
-   ```
+
+    ```sql
+    ANALYZE "MessageEvent";
+    ```
 
 4. **Check statistics**
-   ```sql
-   SELECT * FROM pg_stats WHERE tablename = 'MessageEvent';
-   ```
+    ```sql
+    SELECT * FROM pg_stats WHERE tablename = 'MessageEvent';
+    ```
 
 ### High Memory Usage
 

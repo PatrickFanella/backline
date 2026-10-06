@@ -10,40 +10,59 @@ interface StatCardProps {
     subtitle?: string;
 }
 
-export function StatCard({ title, value, change, icon: Icon, trend, subtitle }: StatCardProps) {
+export function StatCard({
+    title,
+    value,
+    change,
+    icon: Icon,
+    trend,
+    subtitle,
+}: StatCardProps) {
     return (
         <motion.article
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
-            className="bg-white dark:bg-ctp-surface0 rounded-lg p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-200 dark:border-ctp-surface1"
+            className="bl-card p-6 transition-shadow duration-200"
             aria-label={`${title}: ${value}${subtitle ? `, ${subtitle}` : ''}`}
         >
             <div className="flex items-center justify-between">
                 <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-600 dark:text-ctp-subtext1">
+                    <p className="text-sm font-medium text-bl-muted dark:text-bl-muted">
                         {title}
                     </p>
-                    <p className="text-3xl font-bold text-gray-900 dark:text-ctp-text mt-2" aria-live="polite">
+                    <p
+                        className="text-3xl font-bold text-bl-ink dark:text-bl-ink mt-2"
+                        aria-live="polite"
+                    >
                         {value}
                     </p>
                     {subtitle && (
-                        <p className="text-sm text-gray-500 dark:text-ctp-subtext0 mt-1">
+                        <p className="text-sm text-bl-muted dark:text-bl-muted mt-1">
                             {subtitle}
                         </p>
                     )}
                     {change !== undefined && (
-                        <p className={`text-sm mt-2 flex items-center gap-1 font-medium ${
-                            trend === 'up' ? 'text-ctp-green' : 'text-ctp-red'
-                        }`}
-                        aria-label={`${trend === 'up' ? 'Increased' : 'Decreased'} by ${Math.abs(change)} percent`}
+                        <p
+                            className={`text-sm mt-2 flex items-center gap-1 font-medium ${
+                                trend === 'up'
+                                    ? 'text-bl-success'
+                                    : 'text-bl-danger'
+                            }`}
+                            aria-label={`${trend === 'up' ? 'Increased' : 'Decreased'} by ${Math.abs(change)} percent`}
                         >
-                            <span aria-hidden="true">{trend === 'up' ? '↑' : '↓'}</span> {Math.abs(change)}%
+                            <span aria-hidden="true">
+                                {trend === 'up' ? '↑' : '↓'}
+                            </span>{' '}
+                            {Math.abs(change)}%
                         </p>
                     )}
                 </div>
-                <div className="p-3 bg-ctp-blue/10 dark:bg-ctp-blue/20 rounded-full" aria-hidden="true">
-                    <Icon className="w-6 h-6 text-ctp-blue" />
+                <div
+                    className="p-3 bg-bl-accent/10 dark:bg-bl-accent/20 rounded-full"
+                    aria-hidden="true"
+                >
+                    <Icon className="w-6 h-6 text-bl-accent" />
                 </div>
             </div>
         </motion.article>

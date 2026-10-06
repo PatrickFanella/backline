@@ -1,12 +1,13 @@
 # Query Optimization Implementation Summary
 
-This document summarizes the query performance optimization work completed for Discord Spywatcher.
+This document summarizes the query performance optimization work completed for Backline.
 
 ## Issue Requirements
 
 From issue: **Query Performance Optimization - Efficient Database Queries**
 
 ### Requirements
+
 - ✅ Analyze slow queries with EXPLAIN ANALYZE
 - ✅ Rewrite N+1 queries
 - ✅ Implement proper pagination
@@ -14,6 +15,7 @@ From issue: **Query Performance Optimization - Efficient Database Queries**
 - ✅ Monitor query performance
 
 ### Success Criteria
+
 - ✅ All queries under 100ms
 - ✅ No N+1 query problems
 - ✅ Proper pagination implemented
@@ -25,6 +27,7 @@ From issue: **Query Performance Optimization - Efficient Database Queries**
 **File**: `scripts/benchmark-queries.ts`
 
 A comprehensive benchmarking tool that:
+
 - Tests all analytics queries with multiple iterations
 - Calculates p50, p95, p99 percentiles
 - Reports execution times with color-coded status
@@ -32,6 +35,7 @@ A comprehensive benchmarking tool that:
 - Excludes cold-start with warmup runs
 
 **Usage**:
+
 ```bash
 cd backend
 ts-node scripts/benchmark-queries.ts
@@ -40,6 +44,7 @@ ts-node scripts/benchmark-queries.ts --guild-id=YOUR_GUILD_ID
 ```
 
 **Output**:
+
 ```
 📊 Benchmark Results
 
@@ -56,6 +61,7 @@ ts-node scripts/benchmark-queries.ts --guild-id=YOUR_GUILD_ID
 **File**: `src/utils/queryAnalyzer.ts`
 
 EXPLAIN ANALYZE integration providing:
+
 - Automatic query plan analysis
 - Sequential scan detection
 - Index usage verification
@@ -63,6 +69,7 @@ EXPLAIN ANALYZE integration providing:
 - Table statistics retrieval
 
 **Features**:
+
 - `analyzeQuery(sql, params)` - Analyze any SQL query
 - `parseExplainOutput(plan)` - Parse EXPLAIN ANALYZE output
 - `generateRecommendations(plan)` - Get optimization suggestions
@@ -76,16 +83,17 @@ EXPLAIN ANALYZE integration providing:
 **Added to**: `src/routes/monitoring.ts`
 
 New admin endpoints:
+
 - `POST /api/admin/monitoring/database/explain`
-  - Analyze queries with EXPLAIN ANALYZE
-  - Security: Only SELECT statements allowed
-  - Returns formatted analysis with recommendations
-  
+    - Analyze queries with EXPLAIN ANALYZE
+    - Security: Only SELECT statements allowed
+    - Returns formatted analysis with recommendations
 - `GET /api/admin/monitoring/database/table-stats/:tableName`
-  - Get detailed table statistics
-  - Returns live/dead row counts, vacuum/analyze timestamps
+    - Get detailed table statistics
+    - Returns live/dead row counts, vacuum/analyze timestamps
 
 **Example**:
+
 ```bash
 curl -X POST http://localhost:3000/api/admin/monitoring/database/explain \
   -H "Authorization: Bearer $ADMIN_TOKEN" \
@@ -101,18 +109,21 @@ curl -X POST http://localhost:3000/api/admin/monitoring/database/explain \
 **File**: `scripts/validate-pagination.ts`
 
 Validates pagination across all endpoints:
+
 - Checks for explicit LIMIT clauses
 - Identifies unbounded queries
 - Reports pagination type (cursor/offset)
 - Validates max limits
 
 **Usage**:
+
 ```bash
 cd backend
 ts-node scripts/validate-pagination.ts
 ```
 
 **Output**:
+
 ```
 📋 Analytics Endpoints
 
@@ -129,6 +140,7 @@ ts-node scripts/validate-pagination.ts
 **File**: `docs/QUERY_PERFORMANCE_GUIDE.md`
 
 Comprehensive guide covering:
+
 - Query optimization principles
 - Best practices with code examples
 - Common patterns (aggregation, time-windows, filtering)
@@ -139,9 +151,11 @@ Comprehensive guide covering:
 ### 6. Code Improvements
 
 #### Channel Heatmap Pagination
+
 **File**: `src/analytics/heatmap.ts`
 
 Added explicit limit to prevent unbounded results:
+
 ```typescript
 const rawData = await db.typingEvent.groupBy({
     // ... other options
@@ -155,21 +169,22 @@ const rawData = await db.typingEvent.groupBy({
 
 All queries tested meet the <100ms requirement:
 
-| Query                    | P50    | P95    | P99    | Status |
-|--------------------------|--------|--------|--------|--------|
-| Ghost Detection          | 52ms   | 65ms   | 73ms   | ✅ PASS |
-| Lurker Detection         | 58ms   | 71ms   | 78ms   | ✅ PASS |
-| Channel Heatmap          | 45ms   | 60ms   | 68ms   | ✅ PASS |
-| Role Drift Detection     | 40ms   | 50ms   | 55ms   | ✅ PASS |
-| Client Drift Detection   | 35ms   | 45ms   | 52ms   | ✅ PASS |
-| Behavior Shift Detection | 62ms   | 80ms   | 88ms   | ✅ PASS |
-| Timeline                 | 48ms   | 65ms   | 72ms   | ✅ PASS |
+| Query                    | P50  | P95  | P99  | Status  |
+| ------------------------ | ---- | ---- | ---- | ------- |
+| Ghost Detection          | 52ms | 65ms | 73ms | ✅ PASS |
+| Lurker Detection         | 58ms | 71ms | 78ms | ✅ PASS |
+| Channel Heatmap          | 45ms | 60ms | 68ms | ✅ PASS |
+| Role Drift Detection     | 40ms | 50ms | 55ms | ✅ PASS |
+| Client Drift Detection   | 35ms | 45ms | 52ms | ✅ PASS |
+| Behavior Shift Detection | 62ms | 80ms | 88ms | ✅ PASS |
+| Timeline                 | 48ms | 65ms | 72ms | ✅ PASS |
 
 ### N+1 Query Elimination
 
 All analytics functions use single aggregation queries:
 
 **Before** (N+1 pattern):
+
 ```typescript
 const typings = await db.typingEvent.groupBy(...);
 const messages = await db.messageEvent.groupBy(...);
@@ -177,6 +192,7 @@ const messages = await db.messageEvent.groupBy(...);
 ```
 
 **After** (Single query):
+
 ```typescript
 const result = await db.$queryRaw`
   SELECT ... FROM (
@@ -191,6 +207,7 @@ const result = await db.$queryRaw`
 ### Pagination Status
 
 All endpoints now have proper pagination:
+
 - Analytics: LIMIT clauses on all aggregations
 - Timeline: Cursor-based pagination
 - Admin: Offset-based pagination
@@ -203,30 +220,34 @@ All endpoints now have proper pagination:
 Use these tools to maintain query performance:
 
 1. **Benchmark Script** - Run weekly to validate performance
-   ```bash
-   ts-node scripts/benchmark-queries.ts
-   ```
+
+    ```bash
+    ts-node scripts/benchmark-queries.ts
+    ```
 
 2. **Pagination Validation** - Run after adding new endpoints
-   ```bash
-   ts-node scripts/validate-pagination.ts
-   ```
+
+    ```bash
+    ts-node scripts/validate-pagination.ts
+    ```
 
 3. **Slow Query Logs** - Review daily
-   ```bash
-   curl http://localhost:3000/api/admin/monitoring/database/slow-queries \
-     -H "Authorization: Bearer $ADMIN_TOKEN"
-   ```
+
+    ```bash
+    curl http://localhost:3000/api/admin/monitoring/database/slow-queries \
+      -H "Authorization: Bearer $ADMIN_TOKEN"
+    ```
 
 4. **Index Usage** - Review weekly
-   ```bash
-   curl http://localhost:3000/api/admin/monitoring/database/indexes \
-     -H "Authorization: Bearer $ADMIN_TOKEN"
-   ```
+    ```bash
+    curl http://localhost:3000/api/admin/monitoring/database/indexes \
+      -H "Authorization: Bearer $ADMIN_TOKEN"
+    ```
 
 ### Performance Thresholds
 
 Set up alerts for:
+
 - Queries exceeding 100ms (warning)
 - Queries exceeding 1000ms (critical)
 - Sequential scans on tables >10k rows
@@ -235,6 +256,7 @@ Set up alerts for:
 ### Best Practices
 
 Developers should:
+
 1. Run benchmark script before committing query changes
 2. Use EXPLAIN ANALYZE for new queries
 3. Follow patterns in QUERY_PERFORMANCE_GUIDE.md
@@ -244,24 +266,29 @@ Developers should:
 ## Testing
 
 ### Unit Tests
+
 - 18 tests for query analyzer utility
 - All tests passing
 
 ### Integration Tests
+
 - 5 tests for analytics routes
 - All tests passing
 
 ### Performance Tests
+
 - Benchmark script validates all queries
 - All queries meet <100ms target
 
 ## Security
 
 ### CodeQL Analysis
+
 - ✅ No security alerts
 - All code passes security scan
 
 ### Query Analysis Security
+
 - Only SELECT statements allowed
 - Dangerous keywords blocked
 - SQL injection prevented
@@ -269,6 +296,7 @@ Developers should:
 ## Documentation
 
 All documentation updated:
+
 - ✅ QUERY_PERFORMANCE_GUIDE.md - Developer guide
 - ✅ QUERY_OPTIMIZATIONS.md - Technical details
 - ✅ DATABASE_OPTIMIZATION.md - Infrastructure setup
@@ -279,30 +307,35 @@ All documentation updated:
 All issue requirements have been met:
 
 ✅ **Analyze slow queries with EXPLAIN ANALYZE**
-   - Query analyzer utility with full EXPLAIN ANALYZE integration
-   - Admin endpoint for on-demand analysis
-   - Automatic recommendations
+
+- Query analyzer utility with full EXPLAIN ANALYZE integration
+- Admin endpoint for on-demand analysis
+- Automatic recommendations
 
 ✅ **Rewrite N+1 queries**
-   - All analytics use single aggregation queries
-   - No N+1 patterns detected
-   - Validated with code review
+
+- All analytics use single aggregation queries
+- No N+1 patterns detected
+- Validated with code review
 
 ✅ **Implement proper pagination**
-   - All endpoints have pagination
-   - Validated with pagination script
-   - Mix of cursor and offset pagination
+
+- All endpoints have pagination
+- Validated with pagination script
+- Mix of cursor and offset pagination
 
 ✅ **Use efficient JOINs**
-   - CTEs and FULL OUTER JOINs for multi-table aggregation
-   - Composite indexes support JOIN operations
-   - All JOINs use indexed columns
+
+- CTEs and FULL OUTER JOINs for multi-table aggregation
+- Composite indexes support JOIN operations
+- All JOINs use indexed columns
 
 ✅ **Monitor query performance**
-   - Benchmark script for validation
-   - Slow query logging
-   - Admin monitoring endpoints
-   - Query analyzer for troubleshooting
+
+- Benchmark script for validation
+- Slow query logging
+- Admin monitoring endpoints
+- Query analyzer for troubleshooting
 
 ### Success Criteria Met
 
@@ -313,6 +346,7 @@ All issue requirements have been met:
 ## Files Changed
 
 ### New Files
+
 - `backend/scripts/benchmark-queries.ts` - Performance benchmarking
 - `backend/scripts/validate-pagination.ts` - Pagination validation
 - `backend/src/utils/queryAnalyzer.ts` - Query analysis utility
@@ -321,12 +355,14 @@ All issue requirements have been met:
 - `backend/docs/QUERY_OPTIMIZATION_SUMMARY.md` - This file
 
 ### Modified Files
+
 - `backend/src/routes/monitoring.ts` - Added query analysis endpoints
 - `backend/src/analytics/heatmap.ts` - Added pagination limit
 
 ## Next Steps (Optional)
 
 Potential future enhancements:
+
 1. Materialized views for complex analytics
 2. Table partitioning for large event tables
 3. Read replicas for read-heavy workloads

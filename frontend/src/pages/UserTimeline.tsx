@@ -11,7 +11,13 @@ import api from '../lib/api';
 
 interface TimelineEvent {
     id: string;
-    type: 'presence' | 'message' | 'typing' | 'role' | 'join' | 'deleted_message';
+    type:
+        | 'presence'
+        | 'message'
+        | 'typing'
+        | 'role'
+        | 'join'
+        | 'deleted_message';
     userId: string;
     username: string;
     timestamp: string;
@@ -28,12 +34,12 @@ interface TimelineResponse {
 }
 
 const EVENT_TYPE_OPTIONS = [
-    { value: 'presence', label: 'Presence', color: 'bg-purple-500' },
-    { value: 'message', label: 'Messages', color: 'bg-blue-500' },
-    { value: 'typing', label: 'Typing', color: 'bg-yellow-500' },
-    { value: 'role', label: 'Roles', color: 'bg-green-500' },
+    { value: 'presence', label: 'Presence', color: 'bg-bl-action' },
+    { value: 'message', label: 'Messages', color: 'bg-bl-action' },
+    { value: 'typing', label: 'Typing', color: 'bg-bl-warning-solid' },
+    { value: 'role', label: 'Roles', color: 'bg-bl-success-solid' },
     { value: 'join', label: 'Joins', color: 'bg-pink-500' },
-    { value: 'deleted_message', label: 'Deleted', color: 'bg-red-500' },
+    { value: 'deleted_message', label: 'Deleted', color: 'bg-bl-danger-solid' },
 ];
 
 function UserTimeline() {
@@ -163,23 +169,23 @@ function UserTimeline() {
 
     if (loading && events.length === 0) {
         return (
-            <div className="flex items-center justify-center min-h-screen bg-gray-50">
+            <div className="flex items-center justify-center min-h-screen bg-bl-panel">
                 <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-                    <p className="text-gray-600">Loading timeline...</p>
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-bl-accent mx-auto mb-4"></div>
+                    <p className="text-bl-muted">Loading timeline...</p>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 pb-20">
+        <div className="min-h-screen bg-bl-panel pb-20">
             {/* Header */}
-            <div className="bg-white shadow-sm sticky top-0 z-10">
+            <div className="bg-bl-panel shadow-sm sticky top-0 z-10">
                 <div className="max-w-4xl mx-auto px-4 py-4">
                     <button
                         onClick={() => navigate(-1)}
-                        className="text-blue-600 hover:text-blue-800 mb-2 flex items-center gap-1"
+                        className="text-bl-accent hover:text-bl-accent mb-2 flex items-center gap-1"
                     >
                         <svg
                             className="w-4 h-4"
@@ -198,17 +204,19 @@ function UserTimeline() {
                     </button>
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                         <div>
-                            <h1 className="text-2xl font-bold text-gray-900">
+                            <h1 className="text-2xl font-bold text-bl-ink">
                                 Activity Timeline
                             </h1>
-                            <p className="text-gray-600 mt-1">
+                            <p className="text-bl-muted mt-1">
                                 {username || userId}
                             </p>
                         </div>
                         <div className="flex items-center gap-4">
                             <div className="text-right">
-                                <p className="text-sm text-gray-500">Total Events</p>
-                                <p className="text-2xl font-bold text-gray-900">
+                                <p className="text-sm text-bl-muted">
+                                    Total Events
+                                </p>
+                                <p className="text-2xl font-bold text-bl-ink">
                                     {totalCount.toLocaleString()}
                                 </p>
                             </div>
@@ -255,7 +263,7 @@ function UserTimeline() {
             <div className="max-w-4xl mx-auto px-4">
                 {events.length === 0 ? (
                     <div className="text-center py-12">
-                        <p className="text-gray-500">No events found</p>
+                        <p className="text-bl-muted">No events found</p>
                     </div>
                 ) : (
                     <div className="space-y-2">
@@ -268,7 +276,7 @@ function UserTimeline() {
                 {/* Loading more indicator */}
                 {loadingMore && (
                     <div className="text-center py-8">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-bl-accent mx-auto"></div>
                     </div>
                 )}
 
@@ -278,9 +286,7 @@ function UserTimeline() {
                 {/* End of timeline */}
                 {!hasMore && events.length > 0 && (
                     <div className="text-center py-8">
-                        <p className="text-gray-500 text-sm">
-                            End of timeline
-                        </p>
+                        <p className="text-bl-muted text-sm">End of timeline</p>
                     </div>
                 )}
             </div>

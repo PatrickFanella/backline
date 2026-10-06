@@ -122,7 +122,7 @@ module.exports = {
         title: data.title,
         description: data.description,
         details: data.details,
-        source: 'SpyWatcher',
+        source: 'Backline',
         timestamp: new Date().toISOString()
       });
       

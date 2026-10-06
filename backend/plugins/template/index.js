@@ -1,7 +1,7 @@
 /**
  * Plugin Template
  * 
- * Use this template to create your own SpyWatcher plugin.
+ * Use this template to create your own Backline plugin.
  * Replace this description with your plugin's purpose.
  */
 

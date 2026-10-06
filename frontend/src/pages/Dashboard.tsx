@@ -9,10 +9,8 @@ import {
     CardTitle,
     CardContent,
 } from '../components/ui/Card';
-import { LanguageSwitcher } from '../components/ui/LanguageSwitcher';
 import { CardSkeleton, TableSkeleton } from '../components/ui/LoadingSkeleton';
 import { StatCard } from '../components/ui/StatCard';
-import { ThemeToggle } from '../components/ui/ThemeToggle';
 import api from '../lib/api';
 
 type UserEntry = {
@@ -68,9 +66,9 @@ function Dashboard() {
     const bannedCount = bannedUsers.size;
 
     return (
-        <div className="min-h-screen bg-ctp-base p-6">
+        <div className="min-h-screen bg-bl-canvas p-6">
             <div className="max-w-7xl mx-auto space-y-6">
-                <Link to="/servers" className="text-ctp-blue underline">
+                <Link to="/servers" className="text-bl-accent underline">
                     Server settings
                 </Link>
                 {/* Header */}
@@ -78,17 +76,13 @@ function Dashboard() {
                     <div>
                         <h1
                             id="main-content"
-                            className="text-3xl font-bold text-ctp-text"
+                            className="text-3xl font-bold text-bl-ink"
                         >
                             {t('dashboard.title')}
                         </h1>
-                        <p className="text-ctp-subtext0 mt-1">
+                        <p className="text-bl-muted mt-1">
                             {t('dashboard.subtitle')}
                         </p>
-                    </div>
-                    <div className="flex gap-2">
-                        <LanguageSwitcher />
-                        <ThemeToggle />
                     </div>
                 </header>
 
@@ -156,7 +150,7 @@ function Dashboard() {
                                     <div>
                                         <label
                                             htmlFor="filter-banned"
-                                            className="flex items-center gap-2 text-sm text-ctp-subtext0"
+                                            className="flex items-center gap-2 text-sm text-bl-muted"
                                         >
                                             <input
                                                 id="filter-banned"
@@ -167,7 +161,7 @@ function Dashboard() {
                                                         e.target.checked
                                                     )
                                                 }
-                                                className="rounded border-ctp-surface1"
+                                                className="rounded border-bl-surface"
                                                 aria-describedby="filter-help"
                                             />
                                             {t('dashboard.filters.hideBanned')}
@@ -196,17 +190,17 @@ function Dashboard() {
                                         <caption className="sr-only">
                                             User suspicion scores and actions
                                         </caption>
-                                        <thead className="bg-ctp-surface0 border-b border-ctp-surface1">
+                                        <thead className="bg-bl-panel border-b border-bl-surface">
                                             <tr>
                                                 <th
                                                     scope="col"
-                                                    className="text-left px-4 py-3 text-sm font-semibold text-ctp-text"
+                                                    className="text-left px-4 py-3 text-sm font-semibold text-bl-ink"
                                                 >
                                                     {t('dashboard.table.user')}
                                                 </th>
                                                 <th
                                                     scope="col"
-                                                    className="text-center px-4 py-3 text-sm font-semibold text-ctp-text"
+                                                    className="text-center px-4 py-3 text-sm font-semibold text-bl-ink"
                                                 >
                                                     {t(
                                                         'dashboard.table.suspicionScore'
@@ -214,7 +208,7 @@ function Dashboard() {
                                                 </th>
                                                 <th
                                                     scope="col"
-                                                    className="text-center px-4 py-3 text-sm font-semibold text-ctp-text"
+                                                    className="text-center px-4 py-3 text-sm font-semibold text-bl-ink"
                                                 >
                                                     {t(
                                                         'dashboard.table.ghostScore'
@@ -222,7 +216,7 @@ function Dashboard() {
                                                 </th>
                                                 <th
                                                     scope="col"
-                                                    className="text-center px-4 py-3 text-sm font-semibold text-ctp-text"
+                                                    className="text-center px-4 py-3 text-sm font-semibold text-bl-ink"
                                                 >
                                                     {t(
                                                         'dashboard.table.clients'
@@ -230,7 +224,7 @@ function Dashboard() {
                                                 </th>
                                                 <th
                                                     scope="col"
-                                                    className="text-center px-4 py-3 text-sm font-semibold text-ctp-text"
+                                                    className="text-center px-4 py-3 text-sm font-semibold text-bl-ink"
                                                 >
                                                     {t(
                                                         'dashboard.table.channels'
@@ -238,7 +232,7 @@ function Dashboard() {
                                                 </th>
                                                 <th
                                                     scope="col"
-                                                    className="text-center px-4 py-3 text-sm font-semibold text-ctp-text"
+                                                    className="text-center px-4 py-3 text-sm font-semibold text-bl-ink"
                                                 >
                                                     <abbr
                                                         title={t(
@@ -252,7 +246,7 @@ function Dashboard() {
                                                 </th>
                                                 <th
                                                     scope="col"
-                                                    className="text-center px-4 py-3 text-sm font-semibold text-ctp-text"
+                                                    className="text-center px-4 py-3 text-sm font-semibold text-bl-ink"
                                                 >
                                                     <abbr
                                                         title={t(
@@ -266,13 +260,13 @@ function Dashboard() {
                                                 </th>
                                                 <th
                                                     scope="col"
-                                                    className="text-center px-4 py-3 text-sm font-semibold text-ctp-text"
+                                                    className="text-center px-4 py-3 text-sm font-semibold text-bl-ink"
                                                 >
                                                     {t('common.actions')}
                                                 </th>
                                             </tr>
                                         </thead>
-                                        <tbody className="divide-y divide-ctp-surface1">
+                                        <tbody className="divide-y divide-bl-surface">
                                             {filtered.map((user) => {
                                                 const isBanned =
                                                     bannedUsers.has(
@@ -281,36 +275,36 @@ function Dashboard() {
                                                 return (
                                                     <tr
                                                         key={user.userId}
-                                                        className={`hover:bg-ctp-surface0 transition-colors ${
+                                                        className={`hover:bg-bl-panel transition-colors ${
                                                             isBanned
-                                                                ? 'bg-ctp-red/10'
+                                                                ? 'bg-bl-danger/10'
                                                                 : ''
                                                         }`}
                                                     >
-                                                        <td className="px-4 py-3 text-ctp-text">
+                                                        <td className="px-4 py-3 text-bl-ink">
                                                             {user.username}
                                                         </td>
-                                                        <td className="text-center px-4 py-3 text-ctp-text font-medium">
+                                                        <td className="text-center px-4 py-3 text-bl-ink font-medium">
                                                             {
                                                                 user.suspicionScore
                                                             }
                                                         </td>
-                                                        <td className="text-center px-4 py-3 text-ctp-text">
+                                                        <td className="text-center px-4 py-3 text-bl-ink">
                                                             {user.ghostScore}
                                                         </td>
-                                                        <td className="text-center px-4 py-3 text-ctp-text">
+                                                        <td className="text-center px-4 py-3 text-bl-ink">
                                                             {
                                                                 user.multiClientCount
                                                             }
                                                         </td>
-                                                        <td className="text-center px-4 py-3 text-ctp-text">
+                                                        <td className="text-center px-4 py-3 text-bl-ink">
                                                             {user.channelCount}
                                                         </td>
-                                                        <td className="text-center px-4 py-3 text-ctp-text">
+                                                        <td className="text-center px-4 py-3 text-bl-ink">
                                                             {user.fastReactionCount ??
                                                                 0}
                                                         </td>
-                                                        <td className="text-center px-4 py-3 text-ctp-text">
+                                                        <td className="text-center px-4 py-3 text-bl-ink">
                                                             {
                                                                 user.accountAgeDays
                                                             }
@@ -318,7 +312,7 @@ function Dashboard() {
                                                         <td className="text-center px-4 py-3">
                                                             {isBanned ? (
                                                                 <button
-                                                                    className="text-sm text-ctp-blue hover:text-ctp-blue/80 underline focus:outline-none focus:ring-2 focus:ring-ctp-blue rounded"
+                                                                    className="text-sm text-bl-accent hover:text-bl-accent/80 underline focus:outline-none focus:ring-2 focus:ring-bl-accent rounded"
                                                                     onClick={() =>
                                                                         api
                                                                             .post(
@@ -354,7 +348,7 @@ function Dashboard() {
                                                                 </button>
                                                             ) : (
                                                                 <button
-                                                                    className="text-sm text-ctp-red hover:text-ctp-red/80 underline focus:outline-none focus:ring-2 focus:ring-ctp-red rounded"
+                                                                    className="text-sm text-bl-danger hover:text-bl-danger/80 underline focus:outline-none focus:ring-2 focus:ring-bl-danger rounded"
                                                                     onClick={() =>
                                                                         api
                                                                             .post(

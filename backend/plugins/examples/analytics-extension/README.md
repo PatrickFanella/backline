@@ -14,7 +14,7 @@ Adds custom analytics endpoints for advanced data analysis.
 This plugin is included as an example. To enable:
 
 1. Copy to `backend/plugins/analytics-extension/`
-2. Restart SpyWatcher
+2. Restart Backline
 3. Access the new endpoints
 
 ## Endpoints
@@ -25,10 +25,10 @@ Returns overall statistics:
 
 ```json
 {
-  "messages": 12345,
-  "presenceEvents": 6789,
-  "users": 123,
-  "timestamp": "2024-01-01T12:00:00.000Z"
+    "messages": 12345,
+    "presenceEvents": 6789,
+    "users": 123,
+    "timestamp": "2024-01-01T12:00:00.000Z"
 }
 ```
 
@@ -38,13 +38,13 @@ Returns top message senders:
 
 ```json
 {
-  "topUsers": [
-    {
-      "userId": "123456789",
-      "username": "user1",
-      "messageCount": 456
-    }
-  ]
+    "topUsers": [
+        {
+            "userId": "123456789",
+            "username": "user1",
+            "messageCount": 456
+        }
+    ]
 }
 ```
 
@@ -54,13 +54,13 @@ Returns hourly activity timeline:
 
 ```json
 {
-  "hours": 24,
-  "timeline": [
-    {
-      "hour": "2024-01-01T12:00:00",
-      "count": 45
-    }
-  ]
+    "hours": 24,
+    "timeline": [
+        {
+            "hour": "2024-01-01T12:00:00",
+            "count": 45
+        }
+    ]
 }
 ```
 

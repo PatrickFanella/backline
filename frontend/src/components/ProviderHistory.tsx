@@ -96,7 +96,7 @@ export default function ProviderHistory({ guildId }: { guildId: string }) {
             <form
                 onSubmit={create}
                 aria-label="Add provider feed"
-                className="space-y-2 border border-ctp-surface1 rounded p-3"
+                className="space-y-2 border border-bl-surface rounded p-3"
             >
                 <h3>Add provider feed</h3>
                 <label className="block">
@@ -150,7 +150,7 @@ export default function ProviderHistory({ guildId }: { guildId: string }) {
                 {history?.feeds.map((feed) => (
                     <li
                         key={feed.id}
-                        className="border border-ctp-surface1 p-3 rounded break-words"
+                        className="border border-bl-surface p-3 rounded break-words"
                     >
                         <p>
                             {feed.provider} ·{' '}

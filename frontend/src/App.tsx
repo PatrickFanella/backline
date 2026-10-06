@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 
 import AnalyticsConsentBanner from './components/AnalyticsConsentBanner';
+import BrandHeader from './components/BrandHeader';
 import RequireAdmin from './components/RequireAdmin';
 import RequireAuth from './components/RequireAuth';
 import SuspicionDetail from './components/suspicion/SuspicionDetail';
@@ -35,10 +36,11 @@ function AppContent() {
             {/* Skip to main content link for keyboard navigation */}
             <a
                 href="#main-content"
-                className="sr-only sr-only-focusable fixed top-4 left-4 z-50 bg-ctp-blue text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-ctp-blue focus:ring-offset-2"
+                className="sr-only focus:not-sr-only fixed top-4 left-4 z-50 bg-bl-action text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-bl-accent focus:ring-offset-2"
             >
                 {t('navigation.skipToContent')}
             </a>
+            <BrandHeader />
             <Routes>
                 <Route path="/" element={<BacklineLanding />} />
                 <Route path="/login" element={<Login />} />

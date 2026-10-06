@@ -13,7 +13,7 @@ A simple example plugin that logs all Discord messages to a file.
 This plugin is included as an example. To enable:
 
 1. Copy to `backend/plugins/message-logger/`
-2. Restart SpyWatcher
+2. Restart Backline
 3. Check logs for initialization message
 
 ## Configuration

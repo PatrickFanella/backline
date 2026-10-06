@@ -41,7 +41,7 @@ router.use('/docs', swaggerUi.serve);
 router.get(
     '/docs',
     swaggerUi.setup(swaggerSpec, {
-        customSiteTitle: 'Spywatcher API Documentation',
+        customSiteTitle: 'Backline API Documentation',
         customCss: '.swagger-ui .topbar { display: none }',
     })
 );
@@ -56,7 +56,7 @@ router.get('/openapi.json', (_req, res) => {
 router.get(
     '/redoc',
     redoc({
-        title: 'Spywatcher API Documentation',
+        title: 'Backline API Documentation',
         specUrl: '/api/openapi.json',
         redocOptions: {
             theme: {

@@ -117,7 +117,7 @@ async function sendDiscordAlert(
                 fields,
                 timestamp: new Date().toISOString(),
                 footer: {
-                    text: 'Discord SpyWatcher Security Alert',
+                    text: 'Backline Security Alert',
                 },
             },
         ],
@@ -158,7 +158,7 @@ async function sendSlackAlert(webhookUrl: string, alert: Alert): Promise<void> {
                 title: `${getSeverityEmoji(alert.severity)} ${alert.severity}: ${alert.title}`,
                 text: alert.message,
                 fields,
-                footer: 'Discord SpyWatcher Security Alert',
+                footer: 'Backline Security Alert',
                 ts: Math.floor(Date.now() / 1000),
             },
         ],

@@ -46,7 +46,7 @@ export default function BirthdaysConfig({
         }
     }
     const style =
-        'block w-full bg-ctp-surface0 border border-ctp-surface2 rounded p-2';
+        'block w-full bg-bl-panel border border-bl-border rounded p-2';
     return (
         <form onSubmit={save} className="space-y-3">
             <label className="block">

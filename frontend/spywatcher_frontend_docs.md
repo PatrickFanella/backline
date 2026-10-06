@@ -1,6 +1,6 @@
-# Frontend Documentation: Spywatcher UI
+# Frontend Documentation: Backline UI
 
-This frontend is built using **React** with **TypeScript** and bundled by **Vite**. It serves as the visual interface for interacting with the Discord Spywatcher backend.
+This frontend is built using **React** with **TypeScript** and bundled by **Vite**. It serves as the visual interface for interacting with the Backline backend.
 
 ---
 
@@ -101,4 +101,4 @@ This creates a static output in `dist/` which can be deployed to platforms like 
 
 ---
 
-This documentation summarizes the technical structure and intent of the frontend codebase for Spywatcher. Reach out if you'd like visual diagrams, onboarding guides, or admin panel walkthroughs.
+This documentation summarizes the technical structure and intent of the frontend codebase for Backline. Reach out if you'd like visual diagrams, onboarding guides, or admin panel walkthroughs.

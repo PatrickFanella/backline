@@ -1,0 +1,18 @@
+@font-face {
+    font-family: 'Backline Oswald';
+    src: url('/brand/backline/fonts/Oswald.woff2') format('woff2');
+    font-weight: 700;
+    font-display: swap;
+}
+@font-face {
+    font-family: 'Backline Space';
+    src: url('/brand/backline/fonts/Space-Grotesk.woff2') format('woff2');
+    font-weight: 400 700;
+    font-display: swap;
+}
+@font-face {
+    font-family: 'Backline Mono';
+    src: url('/brand/backline/fonts/JetBrains-Mono.woff2') format('woff2');
+    font-weight: 400;
+    font-display: swap;
+}

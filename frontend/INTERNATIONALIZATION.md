@@ -1,6 +1,6 @@
 # Internationalization (i18n) Feature
 
-Discord Spywatcher now supports multiple languages through a comprehensive internationalization system.
+Backline now supports multiple languages through a comprehensive internationalization system.
 
 ## Features
 
@@ -23,12 +23,12 @@ Discord Spywatcher now supports multiple languages through a comprehensive inter
 4. **RTL Support**: Full support for right-to-left (RTL) languages with automatic layout adjustments.
 
 5. **Comprehensive Coverage**: All user-facing strings are translated, including:
-   - Navigation menus
-   - Buttons and form labels
-   - Dashboard statistics
-   - Error messages
-   - Toast notifications
-   - Accessibility labels
+    - Navigation menus
+    - Buttons and form labels
+    - Dashboard statistics
+    - Error messages
+    - Toast notifications
+    - Accessibility labels
 
 ## Implementation Details
 
@@ -67,7 +67,7 @@ import { useTranslation } from 'react-i18next';
 
 function MyComponent() {
     const { t } = useTranslation();
-    
+
     return (
         <div>
             <h1>{t('dashboard.title')}</h1>
@@ -100,8 +100,7 @@ function MyComponent() {
 The i18n system is configured in `src/config/i18n.ts`:
 
 ```typescript
-i18n
-    .use(LanguageDetector)
+i18n.use(LanguageDetector)
     .use(initReactI18next)
     .init({
         resources: { en, es, fr, de, ja },
@@ -127,6 +126,7 @@ Comprehensive test coverage includes:
 - RTL support tests
 
 Run tests with:
+
 ```bash
 npm test -- src/__tests__/config/i18n.test.ts
 npm test -- src/__tests__/components/ui/LanguageSwitcher.test.tsx
@@ -135,17 +135,18 @@ npm test -- src/__tests__/components/ui/LanguageSwitcher.test.tsx
 ### Manual Testing
 
 1. Start the development server:
-   ```bash
-   npm run dev
-   ```
+
+    ```bash
+    npm run dev
+    ```
 
 2. Click the language switcher (globe icon)
 
 3. Select a language and verify:
-   - All text is translated
-   - Layout remains intact
-   - Language persists on page refresh
-   - RTL languages (if any) render correctly
+    - All text is translated
+    - Layout remains intact
+    - Language persists on page refresh
+    - RTL languages (if any) render correctly
 
 ## RTL (Right-to-Left) Support
 
@@ -158,7 +159,7 @@ import { useRTL } from '../hooks/useRTL';
 
 function MyComponent() {
     const { isRTL, dir } = useRTL();
-    
+
     return (
         <div dir={dir}>
             {/* Content automatically adjusts for RTL */}
@@ -170,6 +171,7 @@ function MyComponent() {
 ### Automatic Direction Setting
 
 The `useRTL` hook automatically:
+
 - Sets `document.documentElement.dir` to 'rtl' or 'ltr'
 - Updates `document.documentElement.lang` to the current language
 - Provides helper values for conditional rendering
@@ -215,6 +217,7 @@ See [TRANSLATIONS.md](./TRANSLATIONS.md) for detailed guidelines on contributing
 ### Missing Translations
 
 If you see translation keys instead of text:
+
 1. Check that the key exists in `locales/[lang]/common.json`
 2. Verify the language file is properly imported in `config/i18n.ts`
 3. Ensure i18n is initialized before rendering (in `main.tsx`)
@@ -222,6 +225,7 @@ If you see translation keys instead of text:
 ### RTL Issues
 
 For RTL languages:
+
 1. Verify the language is in `RTL_LANGUAGES` array
 2. Check that `useRTL()` hook is called in the component
 3. Ensure Tailwind CSS classes support RTL (use logical properties)

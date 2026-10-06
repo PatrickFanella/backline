@@ -18,18 +18,18 @@ function DateRangeFilter({
     const hasDateFilter = startDate || endDate;
 
     return (
-        <div className="bg-white rounded-lg shadow-sm p-4">
+        <div className="bg-bl-panel rounded-lg shadow-sm p-4">
             <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4 text-gray-600" />
-                    <h3 className="text-sm font-semibold text-gray-700">
+                    <Calendar className="h-4 w-4 text-bl-muted" />
+                    <h3 className="text-sm font-semibold text-bl-ink">
                         Date Range
                     </h3>
                 </div>
                 {hasDateFilter && (
                     <button
                         onClick={onClear}
-                        className="text-xs text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1"
+                        className="text-xs text-bl-accent hover:text-bl-accent font-medium flex items-center gap-1"
                     >
                         <X className="h-3 w-3" />
                         Clear
@@ -40,7 +40,7 @@ function DateRangeFilter({
                 <div>
                     <label
                         htmlFor="startDate"
-                        className="block text-xs text-gray-600 mb-1"
+                        className="block text-xs text-bl-muted mb-1"
                     >
                         Start Date
                     </label>
@@ -49,13 +49,13 @@ function DateRangeFilter({
                         id="startDate"
                         value={startDate}
                         onChange={(e) => onStartDateChange(e.target.value)}
-                        className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                        className="block w-full px-3 py-2 border border-bl-border rounded-lg focus:ring-2 focus:ring-bl-accent focus:border-bl-accent text-sm"
                     />
                 </div>
                 <div>
                     <label
                         htmlFor="endDate"
-                        className="block text-xs text-gray-600 mb-1"
+                        className="block text-xs text-bl-muted mb-1"
                     >
                         End Date
                     </label>
@@ -64,7 +64,7 @@ function DateRangeFilter({
                         id="endDate"
                         value={endDate}
                         onChange={(e) => onEndDateChange(e.target.value)}
-                        className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                        className="block w-full px-3 py-2 border border-bl-border rounded-lg focus:ring-2 focus:ring-bl-accent focus:border-bl-accent text-sm"
                     />
                 </div>
             </div>

@@ -81,7 +81,7 @@ export default function OnboardingConfig({
                 <label className="block">
                     Welcome channel ID
                     <input
-                        className="block w-full p-2 bg-ctp-surface0 rounded"
+                        className="block w-full p-2 bg-bl-panel rounded"
                         value={channel}
                         onChange={(event) => setChannel(event.target.value)}
                         pattern="[0-9]{17,20}"
@@ -90,20 +90,20 @@ export default function OnboardingConfig({
                 <label className="block">
                     Welcome message
                     <textarea
-                        className="block w-full p-2 bg-ctp-surface0 rounded"
+                        className="block w-full p-2 bg-bl-panel rounded"
                         value={welcome}
                         onChange={(event) => setWelcome(event.target.value)}
                         maxLength={1800}
                     />
                 </label>
-                <p className="text-sm text-ctp-subtext0">
+                <p className="text-sm text-bl-muted">
                     Use {'{user}'} and {'{server}'} for the member name and
                     server name. Mentions are disabled.
                 </p>
                 <label className="block">
                     Departure channel ID
                     <input
-                        className="block w-full p-2 bg-ctp-surface0 rounded"
+                        className="block w-full p-2 bg-bl-panel rounded"
                         value={departureChannel}
                         onChange={(event) =>
                             setDepartureChannel(event.target.value)
@@ -114,7 +114,7 @@ export default function OnboardingConfig({
                 <label className="block">
                     Departure message
                     <textarea
-                        className="block w-full p-2 bg-ctp-surface0 rounded"
+                        className="block w-full p-2 bg-bl-panel rounded"
                         value={departure}
                         onChange={(event) => setDeparture(event.target.value)}
                         maxLength={1800}
@@ -123,12 +123,12 @@ export default function OnboardingConfig({
                 <label className="block">
                     Join role IDs, separated by commas
                     <input
-                        className="block w-full p-2 bg-ctp-surface0 rounded"
+                        className="block w-full p-2 bg-bl-panel rounded"
                         value={roles}
                         onChange={(event) => setRoles(event.target.value)}
                     />
                 </label>
-                <p className="text-sm text-ctp-subtext0">
+                <p className="text-sm text-bl-muted">
                     Only roles with basic chat and voice permissions can be
                     assigned. Managed roles and roles at or above the bot are
                     excluded.
@@ -146,7 +146,7 @@ export default function OnboardingConfig({
                 <label className="block">
                     Rules
                     <textarea
-                        className="block w-full p-2 bg-ctp-surface0 rounded"
+                        className="block w-full p-2 bg-bl-panel rounded"
                         value={rules}
                         onChange={(event) => setRules(event.target.value)}
                         maxLength={1024}
@@ -155,7 +155,7 @@ export default function OnboardingConfig({
                 </label>
                 <button
                     type="submit"
-                    className="border border-ctp-surface2 rounded p-2"
+                    className="border border-bl-border rounded p-2"
                 >
                     {busy ? 'Saving…' : 'Save onboarding settings'}
                 </button>

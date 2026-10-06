@@ -145,7 +145,7 @@ export default function GiveawayConfig({
             await refresh();
         });
     }
-    const inputClass = 'block bg-ctp-surface0 rounded p-2 w-full';
+    const inputClass = 'block bg-bl-panel rounded p-2 w-full';
     return (
         <section className="space-y-4 mt-4">
             <form

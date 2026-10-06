@@ -9,6 +9,8 @@ import {
     ResponsiveContainer,
 } from 'recharts';
 
+import { chartColors } from '../../lib/design';
+
 interface TimelineData {
     userId: string;
     username: string;
@@ -28,29 +30,36 @@ function TimelineChart({ data, onUserClick }: TimelineChartProps) {
         .slice(0, 10);
 
     const chartData = topUsers.map((user, index) => ({
-        name: user.username.length > 15 ? user.username.substring(0, 15) + '...' : user.username,
+        name:
+            user.username.length > 15
+                ? user.username.substring(0, 15) + '...'
+                : user.username,
         fullName: user.username,
         userId: user.userId,
         suspicion: user.suspicionScore,
         ghost: user.ghostScore,
         rank: index + 1,
     }));
-    
+
     const handleLineClick = (data: unknown) => {
         if (!onUserClick || !data || typeof data !== 'object') {
             return;
         }
-        
+
         // Type guard for chart data
-        if ('userId' in data && 'fullName' in data &&
-            typeof data.userId === 'string' && typeof data.fullName === 'string') {
+        if (
+            'userId' in data &&
+            'fullName' in data &&
+            typeof data.userId === 'string' &&
+            typeof data.fullName === 'string'
+        ) {
             onUserClick(data.userId, data.fullName);
         }
     };
 
     if (chartData.length === 0) {
         return (
-            <div className="flex items-center justify-center h-64 text-gray-500">
+            <div className="flex items-center justify-center h-64 text-bl-muted">
                 No data available
             </div>
         );
@@ -62,14 +71,19 @@ function TimelineChart({ data, onUserClick }: TimelineChartProps) {
                 <ResponsiveContainer width="100%" height={300}>
                     <LineChart data={chartData}>
                         <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="name" angle={-45} textAnchor="end" height={100} />
+                        <XAxis
+                            dataKey="name"
+                            angle={-45}
+                            textAnchor="end"
+                            height={100}
+                        />
                         <YAxis />
                         <Tooltip />
                         <Legend />
                         <Line
                             type="monotone"
                             dataKey="suspicion"
-                            stroke="#ef4444"
+                            stroke={chartColors.danger}
                             name="Suspicion Score"
                             strokeWidth={2}
                             onClick={handleLineClick}
@@ -78,7 +92,7 @@ function TimelineChart({ data, onUserClick }: TimelineChartProps) {
                         <Line
                             type="monotone"
                             dataKey="ghost"
-                            stroke="#8b5cf6"
+                            stroke={chartColors.accent}
                             name="Ghost Score"
                             strokeWidth={2}
                             onClick={handleLineClick}
@@ -89,27 +103,49 @@ function TimelineChart({ data, onUserClick }: TimelineChartProps) {
             </div>
             {/* Screen reader accessible data table */}
             <details className="mt-4">
-                <summary className="cursor-pointer text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200">
+                <summary className="cursor-pointer text-sm text-bl-muted dark:text-bl-muted hover:text-bl-ink dark:hover:text-bl-muted">
                     View suspicion data as table
                 </summary>
                 <div className="mt-2 overflow-x-auto">
-                    <table className="min-w-full text-sm border border-gray-300 dark:border-gray-700">
-                        <caption className="sr-only">User Suspicion and Ghost Score Data</caption>
-                        <thead className="bg-gray-100 dark:bg-gray-800">
+                    <table className="min-w-full text-sm border border-bl-border dark:border-bl-border">
+                        <caption className="sr-only">
+                            User Suspicion and Ghost Score Data
+                        </caption>
+                        <thead className="bg-bl-surface dark:bg-bl-recessed">
                             <tr>
-                                <th scope="col" className="px-4 py-2 text-left">Rank</th>
-                                <th scope="col" className="px-4 py-2 text-left">Username</th>
-                                <th scope="col" className="px-4 py-2 text-right">Suspicion Score</th>
-                                <th scope="col" className="px-4 py-2 text-right">Ghost Score</th>
+                                <th scope="col" className="px-4 py-2 text-left">
+                                    Rank
+                                </th>
+                                <th scope="col" className="px-4 py-2 text-left">
+                                    Username
+                                </th>
+                                <th
+                                    scope="col"
+                                    className="px-4 py-2 text-right"
+                                >
+                                    Suspicion Score
+                                </th>
+                                <th
+                                    scope="col"
+                                    className="px-4 py-2 text-right"
+                                >
+                                    Ghost Score
+                                </th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                        <tbody className="divide-y divide-bl-border dark:divide-bl-border">
                             {topUsers.map((user, index) => (
                                 <tr key={user.userId}>
                                     <td className="px-4 py-2">{index + 1}</td>
-                                    <td className="px-4 py-2">{user.username}</td>
-                                    <td className="px-4 py-2 text-right">{user.suspicionScore}</td>
-                                    <td className="px-4 py-2 text-right">{user.ghostScore}</td>
+                                    <td className="px-4 py-2">
+                                        {user.username}
+                                    </td>
+                                    <td className="px-4 py-2 text-right">
+                                        {user.suspicionScore}
+                                    </td>
+                                    <td className="px-4 py-2 text-right">
+                                        {user.ghostScore}
+                                    </td>
                                 </tr>
                             ))}
                         </tbody>

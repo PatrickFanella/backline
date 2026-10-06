@@ -1,6 +1,6 @@
-# Spywatcher Documentation
+# Backline Documentation
 
-This directory contains the comprehensive documentation for Spywatcher, built with [VitePress](https://vitepress.dev/).
+This directory contains the comprehensive documentation for Backline, built with [VitePress](https://vitepress.dev/).
 
 ## Documentation Structure
 
@@ -67,6 +67,7 @@ npm run docs:preview
 ### Markdown Features
 
 VitePress supports:
+
 - Standard markdown
 - Custom containers (tip, warning, danger)
 - Code syntax highlighting
@@ -82,7 +83,7 @@ Brief introduction to the topic.
 
 ## Section
 
-Content with **bold** and *italic* text.
+Content with **bold** and _italic_ text.
 
 ### Code Example
 
@@ -158,6 +159,7 @@ npm run docs:build
 ### Other Platforms
 
 The built documentation (in `docs/.vitepress/dist`) can be deployed to:
+
 - Netlify
 - Vercel
 - AWS S3
@@ -209,6 +211,7 @@ VitePress includes built-in search functionality. All content is automatically i
 ## Version Control
 
 Documentation is version-controlled alongside code:
+
 - Update docs in the same PR as code changes
 - Keep docs in sync with features
 - Update changelog for documentation changes
@@ -217,11 +220,12 @@ Documentation is version-controlled alongside code:
 
 - [VitePress Documentation](https://vitepress.dev/)
 - [Markdown Guide](https://www.markdownguide.org/)
-- [Spywatcher Repository](https://github.com/subculture-collective/discord-spywatcher)
+- [Backline Repository](https://git.subcult.tv/subculture-collective/backline)
 
 ## Questions?
 
 If you have questions about documentation:
+
 - Open an issue on GitHub
 - Check the [Contributing Guide](./developer/contributing.md)
 - Review the [Developer Guide](./developer/)

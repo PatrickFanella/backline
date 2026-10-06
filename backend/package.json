@@ -1,7 +1,7 @@
 {
-    "name": "backend",
+    "name": "backline-backend",
     "version": "1.0.0",
-    "description": "",
+    "description": "Backline Discord community bot and API",
     "main": "src/index.ts",
     "scripts": {
         "dev": "nodemon --watch src --exec ts-node src/index.ts",
@@ -37,7 +37,7 @@
     },
     "keywords": [],
     "author": "",
-    "license": "ISC",
+    "license": "GPL-3.0-or-later",
     "type": "commonjs",
     "dependencies": {
         "@discordjs/voice": "0.19.2",

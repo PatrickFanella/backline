@@ -44,9 +44,9 @@ const router = express.Router();
 router.get('/docs', publicApiLimiter, (_req, res) => {
     const apiDocs = {
         version: '1.0.0',
-        title: 'Spywatcher Public API',
+        title: 'Backline Public API',
         description:
-            'RESTful API for Discord Spywatcher - Analytics and Monitoring',
+            'RESTful API for Backline - Community Management and Analytics',
         baseUrl: '/api',
         authentication: {
             type: 'API Key',
@@ -375,7 +375,7 @@ router.get('/docs', publicApiLimiter, (_req, res) => {
             curl: {
                 description: 'Example cURL request',
                 command:
-                    'curl -H "Authorization: Bearer spy_live_your_api_key" https://api.spywatcher.com/api/ghosts',
+                    'curl -H "Authorization: Bearer spy_live_your_api_key" http://localhost:3001/api/ghosts',
             },
             javascript: {
                 description: 'Example JavaScript/TypeScript request',
@@ -383,7 +383,7 @@ router.get('/docs', publicApiLimiter, (_req, res) => {
 import { Spywatcher } from '@spywatcher/sdk';
 
 const client = new Spywatcher({
-  baseUrl: 'https://api.spywatcher.com/api',
+  baseUrl: 'http://localhost:3001/api',
   apiKey: 'spy_live_your_api_key'
 });
 
@@ -401,7 +401,7 @@ headers = {
 }
 
 response = requests.get(
-    'https://api.spywatcher.com/api/ghosts',
+    'http://localhost:3001/api/ghosts',
     headers=headers
 )
 
@@ -412,11 +412,12 @@ print(data)
         },
         sdk: {
             name: '@spywatcher/sdk',
+            description:
+                'Backline SDK integration uses the legacy @spywatcher/sdk package and Spywatcher class names.',
             version: '1.0.0',
-            repository:
-                'https://github.com/subculture-collective/discord-spywatcher',
+            repository: 'https://git.subcult.tv/subculture-collective/backline',
             documentation:
-                'https://github.com/subculture-collective/discord-spywatcher/tree/main/sdk',
+                'https://git.subcult.tv/subculture-collective/backline/src/branch/main/sdk',
             installation: 'npm install @spywatcher/sdk',
         },
     };
@@ -431,16 +432,16 @@ router.get('/openapi', publicApiLimiter, (_req, res) => {
     const openApiSpec = {
         openapi: '3.0.0',
         info: {
-            title: 'Spywatcher Public API',
+            title: 'Backline Public API',
             version: '1.0.0',
             description:
-                'RESTful API for Discord Spywatcher - Analytics and Monitoring',
+                'RESTful API for Backline - Community Management and Analytics',
             contact: {
                 name: 'Subculture Collective',
-                url: 'https://github.com/subculture-collective/discord-spywatcher',
+                url: 'https://git.subcult.tv/subculture-collective/backline',
             },
             license: {
-                name: 'MIT',
+                name: 'GPL-3.0-or-later',
             },
         },
         servers: [

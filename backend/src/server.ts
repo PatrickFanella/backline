@@ -256,7 +256,7 @@ const allowedOrigins =
             `🔐 Starting server with bot in guild(s):`,
             env.BOT_GUILD_IDS
         );
-        console.log(`🔐 Spywatcher API running at http://localhost:${PORT}`);
+        console.log(`🔐 Backline API running at http://localhost:${PORT}`);
         console.log(`🌐 WebSocket server available`);
         console.log(`🛡️  Security headers enabled`);
         console.log(

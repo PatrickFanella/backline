@@ -68,7 +68,7 @@ export default function TicketConfig({
                 <label className="block">
                     Category ID (optional)
                     <input
-                        className="block bg-ctp-surface0 p-2 rounded w-full"
+                        className="block bg-bl-panel p-2 rounded w-full"
                         pattern="[0-9]{17,20}"
                         value={category}
                         onChange={(event) => setCategory(event.target.value)}
@@ -77,7 +77,7 @@ export default function TicketConfig({
                 <label className="block">
                     Panel channel ID (optional)
                     <input
-                        className="block bg-ctp-surface0 p-2 rounded w-full"
+                        className="block bg-bl-panel p-2 rounded w-full"
                         pattern="[0-9]{17,20}"
                         value={panel}
                         onChange={(event) => setPanel(event.target.value)}
@@ -86,7 +86,7 @@ export default function TicketConfig({
                 <label className="block">
                     Staff role IDs, separated by commas
                     <input
-                        className="block bg-ctp-surface0 p-2 rounded w-full"
+                        className="block bg-bl-panel p-2 rounded w-full"
                         required
                         value={staff}
                         onChange={(event) => setStaff(event.target.value)}
@@ -95,7 +95,7 @@ export default function TicketConfig({
                 <label className="block">
                     Delete closed ticket channels after (days)
                     <input
-                        className="block bg-ctp-surface0 p-2 rounded"
+                        className="block bg-bl-panel p-2 rounded"
                         required
                         type="number"
                         min={1}
@@ -109,7 +109,7 @@ export default function TicketConfig({
                 <label className="block">
                     Maximum active and retained ticket channels
                     <input
-                        className="block bg-ctp-surface0 p-2 rounded"
+                        className="block bg-bl-panel p-2 rounded"
                         required
                         type="number"
                         min={1}
@@ -128,7 +128,7 @@ export default function TicketConfig({
                     />
                     Include available content in requested transcripts
                 </label>
-                <p className="text-sm text-ctp-subtext0">
+                <p className="text-sm text-bl-muted">
                     Use /ticket open or publish /ticket-panel after enabling.
                     Tickets allow the opener, invited participants, configured
                     staff and server administrators. Transcripts contain at most
@@ -138,7 +138,7 @@ export default function TicketConfig({
                 </p>
                 <button
                     type="submit"
-                    className="border border-ctp-surface2 rounded p-2"
+                    className="border border-bl-border rounded p-2"
                 >
                     {busy ? 'Saving…' : 'Save ticket settings'}
                 </button>

@@ -1,7 +1,7 @@
 /**
- * Plugin System for SpyWatcher
+ * Plugin System for Backline
  *
- * This module provides a comprehensive plugin system for extending SpyWatcher functionality.
+ * This module provides a comprehensive plugin system for extending Backline functionality.
  * Plugins can hook into Discord events, register API routes, and access various services.
  */
 

@@ -27,7 +27,7 @@ const logger = createLogger({
         format.errors({ stack: true }),
         format.splat()
     ),
-    defaultMeta: { service: 'discord-spywatcher' },
+    defaultMeta: { service: 'backline' },
     transports: [
         new transports.Console({
             level: env.LOG_LEVEL,

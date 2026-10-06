@@ -22,11 +22,11 @@ export default function SessionStatus() {
     };
 
     if (loading) return <p>Loading session...</p>;
-    if (error) return <p className="text-red-500">Error: {error}</p>;
+    if (error) return <p className="text-bl-danger">Error: {error}</p>;
     if (!session) return <p>Not logged in</p>;
 
     return (
-        <div className="flex items-center gap-4 p-4 border rounded bg-gray-900 text-white">
+        <div className="flex items-center gap-4 p-4 border rounded bg-bl-recessed text-white">
             <img
                 src={`https://cdn.discordapp.com/avatars/${session.discordId}/${session.avatar}.png`}
                 alt="Avatar"
@@ -34,14 +34,14 @@ export default function SessionStatus() {
             />
             <div className="flex-1">
                 <p className="font-bold">{session.username}</p>
-                <p className="text-sm text-gray-400">{session.email}</p>
+                <p className="text-sm text-bl-muted">{session.email}</p>
                 <p className="text-xs mt-1">
                     Role: <span className="font-mono">{session.role}</span>
                 </p>
             </div>
             <button
                 onClick={handleLogout}
-                className="px-3 py-1 text-sm bg-red-600 rounded hover:bg-red-700"
+                className="px-3 py-1 text-sm bg-bl-danger-solid rounded hover:bg-bl-danger-solid"
             >
                 Logout
             </button>

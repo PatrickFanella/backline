@@ -6,7 +6,11 @@ interface ExportButtonProps {
     label?: string;
 }
 
-function ExportButton({ data, filename, label = 'Export CSV' }: ExportButtonProps) {
+function ExportButton({
+    data,
+    filename,
+    label = 'Export CSV',
+}: ExportButtonProps) {
     const handleExport = () => {
         if (!data || data.length === 0) {
             toast.error('No data to export');
@@ -28,7 +32,10 @@ function ExportButton({ data, filename, label = 'Export CSV' }: ExportButtonProp
                         const value = (row as Record<string, unknown>)[header];
                         // Escape values that contain commas or quotes
                         const stringValue = String(value ?? '');
-                        if (stringValue.includes(',') || stringValue.includes('"')) {
+                        if (
+                            stringValue.includes(',') ||
+                            stringValue.includes('"')
+                        ) {
                             return `"${stringValue.replace(/"/g, '""')}"`;
                         }
                         return stringValue;
@@ -38,28 +45,33 @@ function ExportButton({ data, filename, label = 'Export CSV' }: ExportButtonProp
         ].join('\n');
 
         // Create and download file
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const blob = new Blob([csvContent], {
+            type: 'text/csv;charset=utf-8;',
+        });
         const link = document.createElement('a');
         const url = URL.createObjectURL(blob);
-        
+
         link.setAttribute('href', url);
-        link.setAttribute('download', `${filename}_${new Date().toISOString().split('T')[0]}.csv`);
+        link.setAttribute(
+            'download',
+            `${filename}_${new Date().toISOString().split('T')[0]}.csv`
+        );
         link.style.visibility = 'hidden';
-        
+
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        
+
         // Clean up the URL object to prevent memory leaks
         URL.revokeObjectURL(url);
-        
+
         toast.success('Data exported successfully');
     };
 
     return (
         <button
             onClick={handleExport}
-            className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-colors"
+            className="px-4 py-2 bg-bl-success-solid hover:bg-bl-success-solid text-white rounded-lg text-sm font-medium transition-colors"
         >
             {label}
         </button>

@@ -131,7 +131,7 @@ export default function CommunityReportsConfig({
                     <legend className="font-medium">
                         Community report settings
                     </legend>
-                    <p className="text-sm text-ctp-subtext0">
+                    <p className="text-sm text-bl-muted">
                         Collect message, join and departure counts without
                         message content. Bots and webhooks are excluded. Reports
                         show gaps in collection; permission limits can also
@@ -148,7 +148,7 @@ export default function CommunityReportsConfig({
                             onChange={(event) =>
                                 setRetention(Number(event.target.value))
                             }
-                            className="block p-2 bg-ctp-surface0 rounded"
+                            className="block p-2 bg-bl-panel rounded"
                         />
                     </label>
                     <label className="block">
@@ -158,10 +158,10 @@ export default function CommunityReportsConfig({
                             onChange={(event) =>
                                 setExcluded(event.target.value)
                             }
-                            className="block w-full p-2 bg-ctp-surface0 rounded"
+                            className="block w-full p-2 bg-bl-panel rounded"
                         />
                     </label>
-                    <p className="text-sm text-ctp-subtext0">
+                    <p className="text-sm text-bl-muted">
                         Counter channels are renamed to observed-messages,
                         observed-joins or observed-departures with the chosen
                         time window and count. Each channel updates at most once
@@ -180,7 +180,7 @@ export default function CommunityReportsConfig({
                                             channelId: event.target.value,
                                         })
                                     }
-                                    className="block p-2 bg-ctp-surface0 rounded"
+                                    className="block p-2 bg-bl-panel rounded"
                                 />
                             </label>
                             <label>
@@ -193,7 +193,7 @@ export default function CommunityReportsConfig({
                                                 .value as Counter['metric'],
                                         })
                                     }
-                                    className="block p-2 bg-ctp-surface0 rounded"
+                                    className="block p-2 bg-bl-panel rounded"
                                 >
                                     <option value="messages">Messages</option>
                                     <option value="joins">Joins</option>
@@ -215,7 +215,7 @@ export default function CommunityReportsConfig({
                                             days: Number(event.target.value),
                                         })
                                     }
-                                    className="block p-2 bg-ctp-surface0 rounded"
+                                    className="block p-2 bg-bl-panel rounded"
                                 />
                             </label>
                             <label>
@@ -233,7 +233,7 @@ export default function CommunityReportsConfig({
                                             ),
                                         })
                                     }
-                                    className="block p-2 bg-ctp-surface0 rounded"
+                                    className="block p-2 bg-bl-panel rounded"
                                 />
                             </label>
                             <button
@@ -280,7 +280,7 @@ export default function CommunityReportsConfig({
                     required
                     value={days}
                     onChange={(event) => setDays(Number(event.target.value))}
-                    className="block p-2 bg-ctp-surface0 rounded"
+                    className="block p-2 bg-bl-panel rounded"
                 />
             </label>
             <button

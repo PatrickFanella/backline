@@ -28,10 +28,10 @@ export function LiveAnalytics({ guildId }: LiveAnalyticsProps) {
         }
 
         let socket;
-        let handleAnalyticsUpdate: ((data: AnalyticsUpdateData) => void) | null =
-            null;
-        let handleNewMessage: ((message: NewMessageData) => void) | null =
-            null;
+        let handleAnalyticsUpdate:
+            | ((data: AnalyticsUpdateData) => void)
+            | null = null;
+        let handleNewMessage: ((message: NewMessageData) => void) | null = null;
         let handleMultiClientAlert:
             | ((alert: MultiClientAlertData) => void)
             | null = null;
@@ -124,7 +124,7 @@ export function LiveAnalytics({ guildId }: LiveAnalyticsProps) {
             {/* Connection Status */}
             <div className="flex items-center gap-2">
                 <div
-                    className={`w-3 h-3 rounded-full ${isConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}
+                    className={`w-3 h-3 rounded-full ${isConnected ? 'bg-bl-success-solid animate-pulse' : 'bg-bl-danger-solid'}`}
                 />
                 <span className="text-sm">
                     {isConnected

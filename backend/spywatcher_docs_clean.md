@@ -1,4 +1,4 @@
-# Project Documentation: Discord Spywatcher
+# Project Documentation: Backline
 
 This project is composed of two main parts:
 

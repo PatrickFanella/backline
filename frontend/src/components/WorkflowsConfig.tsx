@@ -118,7 +118,7 @@ export default function WorkflowsConfig({
                     {rules.map((rule, index) => (
                         <fieldset
                             key={index}
-                            className="space-y-2 border border-ctp-surface2 p-3 rounded"
+                            className="space-y-2 border border-bl-border p-3 rounded"
                         >
                             <legend>Workflow {index + 1}</legend>
                             <label className="block">
@@ -132,7 +132,7 @@ export default function WorkflowsConfig({
                                             id: event.target.value,
                                         })
                                     }
-                                    className="block w-full p-2 bg-ctp-surface0 rounded"
+                                    className="block w-full p-2 bg-bl-panel rounded"
                                 />
                             </label>
                             <label className="block">
@@ -148,7 +148,7 @@ export default function WorkflowsConfig({
                                             requiredRole: null,
                                         })
                                     }
-                                    className="block w-full p-2 bg-ctp-surface0 rounded"
+                                    className="block w-full p-2 bg-bl-panel rounded"
                                 >
                                     <option value="member_join">
                                         Member joins
@@ -172,7 +172,7 @@ export default function WorkflowsConfig({
                                             channelId: event.target.value,
                                         })
                                     }
-                                    className="block w-full p-2 bg-ctp-surface0 rounded"
+                                    className="block w-full p-2 bg-bl-panel rounded"
                                 />
                             </label>
                             <label className="block">
@@ -186,7 +186,7 @@ export default function WorkflowsConfig({
                                             message: event.target.value,
                                         })
                                     }
-                                    className="block w-full p-2 bg-ctp-surface0 rounded"
+                                    className="block w-full p-2 bg-bl-panel rounded"
                                 />
                             </label>
                             {rule.trigger === 'provider_event' && (
@@ -201,7 +201,7 @@ export default function WorkflowsConfig({
                                                         event.target.value,
                                                 })
                                             }
-                                            className="block w-full p-2 bg-ctp-surface0 rounded"
+                                            className="block w-full p-2 bg-bl-panel rounded"
                                         >
                                             <option value="any">
                                                 Any provider
@@ -228,7 +228,7 @@ export default function WorkflowsConfig({
                                                         event.target.value,
                                                 })
                                             }
-                                            className="block w-full p-2 bg-ctp-surface0 rounded"
+                                            className="block w-full p-2 bg-bl-panel rounded"
                                         />
                                     </label>
                                 </>
@@ -245,7 +245,7 @@ export default function WorkflowsConfig({
                                                     event.target.value || null,
                                             })
                                         }
-                                        className="block w-full p-2 bg-ctp-surface0 rounded"
+                                        className="block w-full p-2 bg-bl-panel rounded"
                                     />
                                 </label>
                             )}
@@ -264,7 +264,7 @@ export default function WorkflowsConfig({
                                             ),
                                         })
                                     }
-                                    className="block w-full p-2 bg-ctp-surface0 rounded"
+                                    className="block w-full p-2 bg-bl-panel rounded"
                                 />
                             </label>
                             <button
@@ -311,7 +311,7 @@ export default function WorkflowsConfig({
                 {runs?.map((run) => (
                     <li
                         key={run.id}
-                        className="border border-ctp-surface1 p-3 rounded break-words"
+                        className="border border-bl-surface p-3 rounded break-words"
                     >
                         {run.ruleId}: {run.state}; delivery{' '}
                         {run.delivery?.state ?? 'no job reserved'}

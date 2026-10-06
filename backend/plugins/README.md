@@ -1,6 +1,6 @@
-# SpyWatcher Plugins
+# Backline Plugins
 
-This directory contains plugins for extending SpyWatcher functionality.
+This directory contains plugins for extending Backline functionality. The `spywatcherVersion` manifest field retains its legacy name for compatibility; its value specifies the required Backline version.
 
 ## Directory Structure
 
@@ -19,37 +19,41 @@ plugins/
 ### Quick Start
 
 1. **Use the template** to create a new plugin:
-   ```bash
-   cp -r template my-plugin
-   cd my-plugin
-   ```
+
+    ```bash
+    cp -r template my-plugin
+    cd my-plugin
+    ```
 
 2. **Edit manifest.json**:
-   - Change the `id`, `name`, `author`, and `description`
-   - Add required `permissions`
+    - Change the `id`, `name`, `author`, and `description`
+    - Add required `permissions`
 
 3. **Implement your plugin** in `index.js`:
-   - Implement the `init()` method (required)
-   - Add hooks with `registerHooks()` (optional)
-   - Register API routes with `registerRoutes()` (optional)
+    - Implement the `init()` method (required)
+    - Add hooks with `registerHooks()` (optional)
+    - Register API routes with `registerRoutes()` (optional)
 
-4. **Restart SpyWatcher** to load your plugin
+4. **Restart Backline** to load your plugin
 
 ### Example Plugins
 
 We provide three example plugins to help you get started:
 
 #### 1. Message Logger
+
 - **Path**: `examples/message-logger/`
 - **Purpose**: Logs all Discord messages to a file
 - **Features**: Basic plugin structure, Discord event hooks, file I/O
 
 #### 2. Analytics Extension
+
 - **Path**: `examples/analytics-extension/`
 - **Purpose**: Adds custom analytics endpoints
 - **Features**: API routes, database access, Redis caching
 
 #### 3. Webhook Notifier
+
 - **Path**: `examples/webhook-notifier/`
 - **Purpose**: Sends notifications to external webhooks
 - **Features**: Discord event monitoring, HTTP requests, configuration
@@ -59,6 +63,7 @@ We provide three example plugins to help you get started:
 ### Plugin Structure
 
 Each plugin must have:
+
 - `manifest.json` - Plugin metadata and configuration
 - `index.js` - Plugin implementation
 - `README.md` - Plugin documentation (recommended)
@@ -67,12 +72,12 @@ Each plugin must have:
 
 ```json
 {
-  "id": "my-plugin",
-  "name": "My Plugin",
-  "version": "1.0.0",
-  "author": "Your Name",
-  "description": "What your plugin does",
-  "permissions": ["discord:events", "api:routes"]
+    "id": "my-plugin",
+    "name": "My Plugin",
+    "version": "1.0.0",
+    "author": "Your Name",
+    "description": "What your plugin does",
+    "permissions": ["discord:events", "api:routes"]
 }
 ```
 
@@ -80,20 +85,20 @@ Each plugin must have:
 
 ```javascript
 module.exports = {
-  manifest: require('./manifest.json'),
-  
-  // Required
-  async init(context) {
-    // Initialize plugin
-  },
-  
-  // Optional
-  async start() {},
-  async stop() {},
-  async destroy() {},
-  registerHooks(hooks) {},
-  registerRoutes(router) {},
-  async healthCheck() {}
+    manifest: require('./manifest.json'),
+
+    // Required
+    async init(context) {
+        // Initialize plugin
+    },
+
+    // Optional
+    async start() {},
+    async stop() {},
+    async destroy() {},
+    registerHooks(hooks) {},
+    registerRoutes(router) {},
+    async healthCheck() {},
 };
 ```
 
@@ -119,18 +124,19 @@ Plugins must declare required permissions:
 The plugin context provides access to services:
 
 ```javascript
-context.discordClient  // Discord bot client
-context.app            // Express app
-context.config         // Plugin configuration
-context.dataDir        // Plugin data directory
-context.logger         // Logger instance
-context.events         // Event emitter
-context.services       // Services (database, cache, websocket)
+context.discordClient; // Discord bot client
+context.app; // Express app
+context.config; // Plugin configuration
+context.dataDir; // Plugin data directory
+context.logger; // Logger instance
+context.events; // Event emitter
+context.services; // Services (database, cache, websocket)
 ```
 
 ### Event Hooks
 
 Available hooks:
+
 - `discord:ready`
 - `discord:presenceUpdate`
 - `discord:messageCreate`
@@ -161,7 +167,7 @@ registerRoutes(router) {
 ### Manual Testing
 
 1. Place plugin in `plugins/` directory
-2. Restart SpyWatcher
+2. Restart Backline
 3. Check logs for initialization messages
 4. Test API endpoints (if any)
 5. Verify functionality
@@ -216,7 +222,7 @@ curl -X POST http://localhost:3001/api/plugins/my-plugin/stop
 ### Permission Denied
 
 - Add required permissions to `manifest.json`
-- Restart SpyWatcher after changes
+- Restart Backline after changes
 
 ### Plugin Crashes
 
@@ -227,6 +233,7 @@ curl -X POST http://localhost:3001/api/plugins/my-plugin/stop
 ## Documentation
 
 For complete documentation, see:
+
 - [Plugin System Documentation](../../PLUGIN_SYSTEM.md)
 - [Plugin API Reference](../../backend/src/plugins/)
 - [Contributing Guide](../../CONTRIBUTING.md)
@@ -234,12 +241,14 @@ For complete documentation, see:
 ## Support
 
 For questions and support:
-- GitHub Issues: [discord-spywatcher/issues](https://github.com/subculture-collective/discord-spywatcher/issues)
+
+- Gitea Issues: [Backline issues](https://git.subcult.tv/subculture-collective/backline/issues)
 - Documentation: [PLUGIN_SYSTEM.md](../../PLUGIN_SYSTEM.md)
 
 ## Contributing
 
 To contribute a plugin:
+
 1. Create your plugin following this guide
 2. Test thoroughly
 3. Document usage and configuration
@@ -247,4 +256,4 @@ To contribute a plugin:
 
 ## License
 
-Plugins should specify their own license. SpyWatcher core is licensed under [LICENSE](../../LICENSE).
+Plugins should specify their own license. Backline core is licensed under [LICENSE](../../LICENSE).
