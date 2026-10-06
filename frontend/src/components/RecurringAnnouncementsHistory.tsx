@@ -134,7 +134,7 @@ export default function RecurringAnnouncementsHistory({
             <form
                 onSubmit={create}
                 aria-label="New recurring announcement"
-                className="space-y-2 border border-ctp-surface1 rounded p-3"
+                className="space-y-2 border border-bl-surface rounded p-3"
             >
                 <h3>New recurring announcement</h3>
                 <label className="block">
@@ -234,7 +234,7 @@ export default function RecurringAnnouncementsHistory({
                 {series.map((row) => (
                     <li
                         key={row.id}
-                        className="border border-ctp-surface1 p-3 rounded break-words"
+                        className="border border-bl-surface p-3 rounded break-words"
                     >
                         <p>
                             {row.cadence} · {row.state} · next {row.localTime}{' '}

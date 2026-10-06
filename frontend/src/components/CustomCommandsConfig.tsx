@@ -62,7 +62,7 @@ export default function CustomCommandsConfig({
         >
             <fieldset disabled={busy} className="space-y-3">
                 <legend className="font-medium">Custom command replies</legend>
-                <p className="text-sm text-ctp-subtext0">
+                <p className="text-sm text-bl-muted">
                     Members use /custom name in Discord. Replies are visible
                     only to the member who ran the command. Use {'{user}'},{' '}
                     {'{server}'} and {'{channel}'} to insert names. Templates do
@@ -71,7 +71,7 @@ export default function CustomCommandsConfig({
                 {commands.map((command, index) => (
                     <fieldset
                         key={index}
-                        className="space-y-2 border border-ctp-surface2 rounded p-3"
+                        className="space-y-2 border border-bl-border rounded p-3"
                     >
                         <legend>Command {index + 1}</legend>
                         <label className="block">
@@ -84,7 +84,7 @@ export default function CustomCommandsConfig({
                                 onChange={(event) =>
                                     update(index, { name: event.target.value })
                                 }
-                                className="block w-full p-2 bg-ctp-surface0 rounded"
+                                className="block w-full p-2 bg-bl-panel rounded"
                             />
                         </label>
                         <label className="block">
@@ -100,7 +100,7 @@ export default function CustomCommandsConfig({
                                         },
                                     })
                                 }
-                                className="block w-full p-2 bg-ctp-surface0 rounded"
+                                className="block w-full p-2 bg-bl-panel rounded"
                             />
                         </label>
                         <label className="block">
@@ -116,7 +116,7 @@ export default function CustomCommandsConfig({
                                         },
                                     })
                                 }
-                                className="block w-full p-2 bg-ctp-surface0 rounded"
+                                className="block w-full p-2 bg-bl-panel rounded"
                             />
                         </label>
                         <label className="block">
@@ -132,7 +132,7 @@ export default function CustomCommandsConfig({
                                         },
                                     })
                                 }
-                                className="block w-full p-2 bg-ctp-surface0 rounded"
+                                className="block w-full p-2 bg-bl-panel rounded"
                             />
                         </label>
                         <label className="block">
@@ -147,10 +147,10 @@ export default function CustomCommandsConfig({
                                             .filter(Boolean),
                                     })
                                 }
-                                className="block w-full p-2 bg-ctp-surface0 rounded"
+                                className="block w-full p-2 bg-bl-panel rounded"
                             />
                         </label>
-                        <p className="text-sm text-ctp-subtext0">
+                        <p className="text-sm text-bl-muted">
                             Leave roles empty to allow all members. With roles
                             configured, a member must currently hold at least
                             one.

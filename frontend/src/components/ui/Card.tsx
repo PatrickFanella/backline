@@ -12,7 +12,7 @@ export function Card({ children, hover = false, className = '' }: CardProps) {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
-            className={`bg-white dark:bg-ctp-surface0 rounded-lg p-6 shadow-lg border border-gray-200 dark:border-ctp-surface1 ${
+            className={`bl-card p-6 ${
                 hover ? 'hover:shadow-xl transition-shadow duration-300' : ''
             } ${className}`}
         >
@@ -27,11 +27,7 @@ interface CardHeaderProps {
 }
 
 export function CardHeader({ children, className = '' }: CardHeaderProps) {
-    return (
-        <div className={`mb-4 ${className}`}>
-            {children}
-        </div>
-    );
+    return <div className={`mb-4 ${className}`}>{children}</div>;
 }
 
 interface CardTitleProps {
@@ -41,9 +37,17 @@ interface CardTitleProps {
     id?: string;
 }
 
-export function CardTitle({ children, className = '', as: Component = 'h2', id }: CardTitleProps) {
+export function CardTitle({
+    children,
+    className = '',
+    as: Component = 'h2',
+    id,
+}: CardTitleProps) {
     return (
-        <Component id={id} className={`text-xl font-semibold text-gray-900 dark:text-ctp-text ${className}`}>
+        <Component
+            id={id}
+            className={`text-xl font-semibold text-bl-ink dark:text-bl-ink ${className}`}
+        >
             {children}
         </Component>
     );
@@ -55,9 +59,5 @@ interface CardContentProps {
 }
 
 export function CardContent({ children, className = '' }: CardContentProps) {
-    return (
-        <div className={className}>
-            {children}
-        </div>
-    );
+    return <div className={className}>{children}</div>;
 }

@@ -1,6 +1,6 @@
 # Migration Guide: RBAC and Session Management
 
-This guide will help you migrate your existing Discord SpyWatcher installation to use the new authentication and authorization system.
+This guide will help you migrate your existing Backline installation to use the new authentication and authorization system.
 
 ## Prerequisites
 
@@ -57,6 +57,7 @@ npx prisma migrate dev --name add_rbac_session_management
 ```
 
 This will:
+
 - Add new tables: Permission, RolePermission, RefreshToken, Session, ApiKey, LoginLog
 - Update User model with new relations
 - Create necessary indexes
@@ -68,6 +69,7 @@ npm run prisma:seed
 ```
 
 This creates:
+
 - Default permissions (analytics, users, guilds, sessions, apikeys, system)
 - Role-permission mappings for all roles
 
@@ -83,6 +85,7 @@ npx prisma studio
 #### No Changes Required
 
 The following existing features continue to work:
+
 - OAuth login (`/auth/discord`)
 - Token refresh (`/auth/refresh`)
 - Logout (`/auth/logout`)
@@ -98,7 +101,12 @@ The following existing features continue to work:
 router.get('/admin/users', requireAuth, requireAdmin, handler);
 
 // After (more flexible)
-router.get('/admin/users', requireAuth, requirePermission('users.view'), handler);
+router.get(
+    '/admin/users',
+    requireAuth,
+    requirePermission('users.view'),
+    handler
+);
 ```
 
 **Use Role-Based Authorization:**
@@ -107,10 +115,11 @@ router.get('/admin/users', requireAuth, requirePermission('users.view'), handler
 import { requireRole } from './middleware/auth';
 import { Role } from '@prisma/client';
 
-router.post('/moderate', 
-  requireAuth, 
-  requireRole([Role.ADMIN, Role.MODERATOR]), 
-  handler
+router.post(
+    '/moderate',
+    requireAuth,
+    requireRole([Role.ADMIN, Role.MODERATOR]),
+    handler
 );
 ```
 
@@ -119,10 +128,11 @@ router.post('/moderate',
 ```typescript
 import { requireGuildAccess } from './middleware/auth';
 
-router.get('/guilds/:guildId/analytics', 
-  requireAuth, 
-  requireGuildAccess, 
-  handler
+router.get(
+    '/guilds/:guildId/analytics',
+    requireAuth,
+    requireGuildAccess,
+    handler
 );
 ```
 
@@ -135,6 +145,7 @@ npm test
 ```
 
 Expected results:
+
 - 95+ tests should pass
 - 23 new tests for RBAC and sessions
 
@@ -153,20 +164,22 @@ Test manually:
 The refresh endpoint now rotates tokens. Update your frontend to handle new refresh token in response cookie.
 
 **Before:**
+
 ```typescript
 // Old refresh might not update cookie
 const response = await fetch('/auth/refresh', {
-  method: 'POST',
-  credentials: 'include'
+    method: 'POST',
+    credentials: 'include',
 });
 ```
 
 **After:**
+
 ```typescript
 // New refresh updates cookie automatically
 const response = await fetch('/auth/refresh', {
-  method: 'POST',
-  credentials: 'include' // Important: ensure cookies are sent/received
+    method: 'POST',
+    credentials: 'include', // Important: ensure cookies are sent/received
 });
 ```
 
@@ -175,19 +188,19 @@ const response = await fetch('/auth/refresh', {
 ```typescript
 // Fetch active sessions
 const sessions = await fetch('/auth/sessions', {
-  headers: { Authorization: `Bearer ${accessToken}` }
+    headers: { Authorization: `Bearer ${accessToken}` },
 });
 
 // Revoke a session
 await fetch(`/auth/sessions/${sessionId}`, {
-  method: 'DELETE',
-  headers: { Authorization: `Bearer ${accessToken}` }
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${accessToken}` },
 });
 
 // Revoke all sessions
 await fetch('/auth/sessions/revoke-all', {
-  method: 'POST',
-  headers: { Authorization: `Bearer ${accessToken}` }
+    method: 'POST',
+    headers: { Authorization: `Bearer ${accessToken}` },
 });
 ```
 
@@ -196,16 +209,16 @@ await fetch('/auth/sessions/revoke-all', {
 ```typescript
 // Create API key
 const response = await fetch('/auth/api-keys', {
-  method: 'POST',
-  headers: { 
-    'Authorization': `Bearer ${accessToken}`,
-    'Content-Type': 'application/json'
-  },
-  body: JSON.stringify({
-    name: 'My API Key',
-    scopes: ['analytics.view', 'guilds.view'],
-    expiresInDays: 90
-  })
+    method: 'POST',
+    headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+        name: 'My API Key',
+        scopes: ['analytics.view', 'guilds.view'],
+        expiresInDays: 90,
+    }),
 });
 
 const { key } = await response.json();
@@ -227,10 +240,10 @@ After deployment:
 After confirming everything works:
 
 1. **Remove Old Refresh Token Fields** (if desired):
-   - User.refreshToken
-   - User.refreshTokenIssuedAt
-   
-   These are now managed in the RefreshToken table.
+    - User.refreshToken
+    - User.refreshTokenIssuedAt
+
+    These are now managed in the RefreshToken table.
 
 2. **Set up Cleanup Jobs**:
 
@@ -240,10 +253,10 @@ import { cleanupRefreshTokens } from './utils/refreshToken';
 
 // Run daily at 2 AM
 const job = new CronJob('0 2 * * *', async () => {
-  console.log('Running cleanup jobs...');
-  const sessions = await cleanupExpiredSessions();
-  const tokens = await cleanupRefreshTokens();
-  console.log(`Cleaned up ${sessions} sessions and ${tokens} tokens`);
+    console.log('Running cleanup jobs...');
+    const sessions = await cleanupExpiredSessions();
+    const tokens = await cleanupRefreshTokens();
+    console.log(`Cleaned up ${sessions} sessions and ${tokens} tokens`);
 });
 
 job.start();
@@ -285,7 +298,8 @@ npm run prisma:seed
 
 **Cause**: Client is making duplicate refresh requests
 
-**Solution**: 
+**Solution**:
+
 - Add debouncing to refresh logic
 - Ensure only one refresh request at a time
 - Check network for duplicate requests
@@ -293,6 +307,7 @@ npm run prisma:seed
 ### Issue: Sessions not being created
 
 **Check**:
+
 1. Ensure `/auth/discord` callback is being used (not old auth endpoint)
 2. Verify session creation is not throwing errors (check logs)
 3. Check database for session records
@@ -300,6 +315,7 @@ npm run prisma:seed
 ### Issue: API keys not working
 
 **Check**:
+
 1. Verify key format: `spy_live_...`
 2. Check if key is revoked in database
 3. Ensure using `requireApiKey` middleware
@@ -310,6 +326,7 @@ npm run prisma:seed
 ### Database Indexes
 
 The migration creates these indexes automatically:
+
 - RefreshToken: userId, familyId
 - Session: userId
 - ApiKey: userId
@@ -348,6 +365,7 @@ If you encounter issues:
 5. Ensure all dependencies are installed
 
 For questions, create an issue in the repository with:
+
 - Error messages
 - Steps to reproduce
 - Environment details (Node version, database version, etc.)

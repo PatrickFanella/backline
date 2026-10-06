@@ -29,7 +29,7 @@ describe('i18n Configuration', () => {
         });
 
         it('should include all required languages', () => {
-            const codes = SUPPORTED_LANGUAGES.map(lang => lang.code);
+            const codes = SUPPORTED_LANGUAGES.map((lang) => lang.code);
             expect(codes).toContain('en');
             expect(codes).toContain('es');
             expect(codes).toContain('fr');
@@ -38,12 +38,16 @@ describe('i18n Configuration', () => {
         });
 
         it('should have proper language names', () => {
-            const english = SUPPORTED_LANGUAGES.find(lang => lang.code === 'en');
+            const english = SUPPORTED_LANGUAGES.find(
+                (lang) => lang.code === 'en'
+            );
             expect(english).toBeDefined();
             expect(english?.name).toBe('English');
             expect(english?.nativeName).toBe('English');
 
-            const spanish = SUPPORTED_LANGUAGES.find(lang => lang.code === 'es');
+            const spanish = SUPPORTED_LANGUAGES.find(
+                (lang) => lang.code === 'es'
+            );
             expect(spanish).toBeDefined();
             expect(spanish?.name).toBe('Spanish');
             expect(spanish?.nativeName).toBe('Español');
@@ -74,7 +78,7 @@ describe('i18n Configuration', () => {
 
     describe('Translation Keys', () => {
         it('should have common translations in English', () => {
-            expect(i18n.t('app.name')).toBe('Discord Spywatcher');
+            expect(i18n.t('app.name')).toBe('Backline');
             expect(i18n.t('common.loading')).toBe('Loading...');
             expect(i18n.t('common.save')).toBe('Save');
         });
@@ -160,7 +164,9 @@ describe('i18n Configuration', () => {
 
     describe('Interpolation', () => {
         it('should interpolate threshold values', () => {
-            const result = i18n.t('dashboard.stats.scoreThreshold', { threshold: 50 });
+            const result = i18n.t('dashboard.stats.scoreThreshold', {
+                threshold: 50,
+            });
             expect(result).toBe('Score > 50');
         });
 
@@ -188,7 +194,9 @@ describe('i18n Configuration', () => {
         it('should fallback to English for missing translations', async () => {
             await i18n.changeLanguage('es');
             // Use a key that might not exist
-            const result = i18n.t('nonexistent.key', { defaultValue: 'Fallback text' });
+            const result = i18n.t('nonexistent.key', {
+                defaultValue: 'Fallback text',
+            });
             expect(result).toBe('Fallback text');
         });
     });

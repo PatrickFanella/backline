@@ -4,7 +4,12 @@ import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 
 import { Button } from '../components/ui/Button';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
+import {
+    Card,
+    CardContent,
+    CardHeader,
+    CardTitle,
+} from '../components/ui/Card';
 import { CardSkeleton } from '../components/ui/LoadingSkeleton';
 import api from '../lib/api';
 import type { AnalyticsRule, RuleTemplate } from '../types/rules';
@@ -51,7 +56,7 @@ function Rules() {
             const newStatus = rule.status === 'ACTIVE' ? 'PAUSED' : 'ACTIVE';
             await api.put(`/analytics/rules/${rule.id}`, { status: newStatus });
             toast.success(
-                `Rule ${newStatus === 'ACTIVE' ? 'activated' : 'paused'}`,
+                `Rule ${newStatus === 'ACTIVE' ? 'activated' : 'paused'}`
             );
             fetchData();
         } catch {
@@ -84,13 +89,13 @@ function Rules() {
     const getStatusColor = (status: string) => {
         switch (status) {
             case 'ACTIVE':
-                return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
+                return 'bg-bl-success/10 text-bl-success dark:bg-bl-success-solid dark:text-bl-success';
             case 'PAUSED':
-                return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
+                return 'bg-bl-warning/10 text-bl-warning dark:bg-bl-warning-solid dark:text-bl-warning';
             case 'DRAFT':
-                return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
+                return 'bg-bl-surface text-bl-ink dark:bg-bl-recessed dark:text-bl-muted';
             default:
-                return 'bg-gray-100 text-gray-800';
+                return 'bg-bl-surface text-bl-ink';
         }
     };
 
@@ -207,13 +212,14 @@ function Rules() {
                                                     conditions
                                                 </span>
                                                 <span>
-                                                    {rule.actions.length} actions
+                                                    {rule.actions.length}{' '}
+                                                    actions
                                                 </span>
                                                 {rule.lastExecutedAt && (
                                                     <span>
                                                         Last run:{' '}
                                                         {new Date(
-                                                            rule.lastExecutedAt,
+                                                            rule.lastExecutedAt
                                                         ).toLocaleString()}
                                                     </span>
                                                 )}
@@ -223,14 +229,18 @@ function Rules() {
                                             <Button
                                                 variant="ghost"
                                                 size="sm"
-                                                onClick={() => executeRule(rule.id)}
+                                                onClick={() =>
+                                                    executeRule(rule.id)
+                                                }
                                             >
                                                 <Play className="w-4 h-4" />
                                             </Button>
                                             <Button
                                                 variant="ghost"
                                                 size="sm"
-                                                onClick={() => toggleRuleStatus(rule)}
+                                                onClick={() =>
+                                                    toggleRuleStatus(rule)
+                                                }
                                             >
                                                 {rule.status === 'ACTIVE' ? (
                                                     <Pause className="w-4 h-4" />
@@ -242,7 +252,9 @@ function Rules() {
                                                 variant="ghost"
                                                 size="sm"
                                                 onClick={() =>
-                                                    navigate(`/rules/${rule.id}/edit`)
+                                                    navigate(
+                                                        `/rules/${rule.id}/edit`
+                                                    )
                                                 }
                                             >
                                                 <Edit className="w-4 h-4" />
@@ -250,7 +262,9 @@ function Rules() {
                                             <Button
                                                 variant="ghost"
                                                 size="sm"
-                                                onClick={() => deleteRule(rule.id)}
+                                                onClick={() =>
+                                                    deleteRule(rule.id)
+                                                }
                                             >
                                                 <Trash2 className="w-4 h-4" />
                                             </Button>
@@ -269,12 +283,14 @@ function Rules() {
                                                         .slice(0, 3)
                                                         .map((execution) => (
                                                             <div
-                                                                key={execution.id}
+                                                                key={
+                                                                    execution.id
+                                                                }
                                                                 className="text-xs text-surface-text-secondary flex items-center justify-between"
                                                             >
                                                                 <span>
                                                                     {new Date(
-                                                                        execution.startedAt,
+                                                                        execution.startedAt
                                                                     ).toLocaleString()}
                                                                 </span>
                                                                 <span>
@@ -291,11 +307,13 @@ function Rules() {
                                                                     className={
                                                                         execution.status ===
                                                                         'SUCCESS'
-                                                                            ? 'text-green-600'
-                                                                            : 'text-red-600'
+                                                                            ? 'text-bl-success'
+                                                                            : 'text-bl-danger'
                                                                     }
                                                                 >
-                                                                    {execution.status}
+                                                                    {
+                                                                        execution.status
+                                                                    }
                                                                 </span>
                                                             </div>
                                                         ))}

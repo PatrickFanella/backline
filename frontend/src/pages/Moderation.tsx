@@ -114,10 +114,10 @@ export default function Moderation() {
     return (
         <main
             id="main-content"
-            className="min-h-screen bg-ctp-base text-ctp-text p-6 pb-64"
+            className="min-h-screen bg-bl-canvas text-bl-ink p-6 pb-64"
         >
             <div className="max-w-4xl mx-auto space-y-6">
-                <Link to="/servers" className="text-ctp-blue">
+                <Link to="/servers" className="text-bl-accent">
                     Server setup
                 </Link>
                 <h1 className="text-3xl font-semibold">Moderation cases</h1>
@@ -148,7 +148,7 @@ export default function Moderation() {
                                 <label className="block">
                                     Action
                                     <select
-                                        className="block bg-ctp-surface0 p-2"
+                                        className="block bg-bl-panel p-2"
                                         value={action}
                                         onChange={(event) =>
                                             setAction(event.target.value)
@@ -171,7 +171,7 @@ export default function Moderation() {
                                         ? 'Channel ID'
                                         : 'Discord user ID'}
                                     <input
-                                        className="block bg-ctp-surface0 p-2 w-full"
+                                        className="block bg-bl-panel p-2 w-full"
                                         value={target}
                                         onChange={(event) =>
                                             setTarget(event.target.value)
@@ -186,7 +186,7 @@ export default function Moderation() {
                                             ? 'Minutes'
                                             : 'Messages to consider'}
                                         <input
-                                            className="block bg-ctp-surface0 p-2"
+                                            className="block bg-bl-panel p-2"
                                             type="number"
                                             min={1}
                                             max={
@@ -207,7 +207,7 @@ export default function Moderation() {
                                 <label className="block">
                                     Reason
                                     <textarea
-                                        className="block bg-ctp-surface0 p-2 w-full"
+                                        className="block bg-bl-panel p-2 w-full"
                                         value={reason}
                                         onChange={(event) =>
                                             setReason(event.target.value)
@@ -220,7 +220,7 @@ export default function Moderation() {
                             <button
                                 disabled={busy || job !== null}
                                 type="submit"
-                                className="border border-ctp-surface2 p-2 rounded disabled:opacity-50"
+                                className="border border-bl-border p-2 rounded disabled:opacity-50"
                             >
                                 {request.current
                                     ? 'Retry same request'
@@ -234,7 +234,7 @@ export default function Moderation() {
                             onClick={() => {
                                 void refresh();
                             }}
-                            className="border border-ctp-surface2 p-2 rounded"
+                            className="border border-bl-border p-2 rounded"
                         >
                             Refresh outcomes
                         </button>
@@ -242,7 +242,7 @@ export default function Moderation() {
                         {cases.map((record) => (
                             <article
                                 key={record.id}
-                                className="border border-ctp-surface1 p-4 rounded space-y-2"
+                                className="border border-bl-surface p-4 rounded space-y-2"
                             >
                                 <p>
                                     {record.action} · {record.state} ·{' '}

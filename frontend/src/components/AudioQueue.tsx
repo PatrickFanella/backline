@@ -79,7 +79,7 @@ export default function AudioQueue({ guildId, onBusy }: Props) {
             <h4 id="audio-queue-heading" className="font-medium">
                 Queue and playback diagnostics
             </h4>
-            <p className="text-sm text-ctp-subtext0">
+            <p className="text-sm text-bl-muted">
                 The dashboard records an action for the bot worker; it cannot
                 control voice playback directly. Join the intended voice channel
                 before starting or controlling playback.

@@ -10,9 +10,9 @@ export function LanguageSwitcher() {
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
 
-    const currentLanguage = SUPPORTED_LANGUAGES.find(
-        (lang) => lang.code === i18n.language
-    ) || SUPPORTED_LANGUAGES[0];
+    const currentLanguage =
+        SUPPORTED_LANGUAGES.find((lang) => lang.code === i18n.language) ||
+        SUPPORTED_LANGUAGES[0];
 
     // Close dropdown when clicking outside
     useEffect(() => {
@@ -26,7 +26,8 @@ export function LanguageSwitcher() {
         };
 
         document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
+        return () =>
+            document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
     const handleLanguageChange = (langCode: string) => {
@@ -40,13 +41,15 @@ export function LanguageSwitcher() {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setIsOpen(!isOpen)}
-                className="flex items-center gap-2 px-3 py-2 rounded-lg bg-ctp-surface0 hover:bg-ctp-surface1 text-ctp-text transition-colors focus:outline-none focus:ring-2 focus:ring-ctp-blue focus:ring-offset-2 border border-ctp-surface1"
+                className="flex items-center gap-2 px-3 py-2 rounded-lg bg-bl-panel hover:bg-bl-surface text-bl-ink transition-colors focus:outline-none focus:ring-2 focus:ring-bl-accent focus:ring-offset-2 border border-bl-surface"
                 aria-label={t('common.changeLanguage')}
                 aria-expanded={isOpen}
                 aria-haspopup="true"
             >
                 <Globe className="w-4 h-4" aria-hidden="true" />
-                <span className="text-sm font-medium">{currentLanguage.code.toUpperCase()}</span>
+                <span className="text-sm font-medium">
+                    {currentLanguage.code.toUpperCase()}
+                </span>
             </motion.button>
 
             {isOpen && (
@@ -54,7 +57,7 @@ export function LanguageSwitcher() {
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
-                    className="absolute right-0 mt-2 w-48 bg-ctp-surface0 rounded-lg shadow-lg border border-ctp-surface1 overflow-hidden z-50"
+                    className="absolute right-0 mt-2 w-48 bg-bl-panel rounded-lg shadow-lg border border-bl-surface overflow-hidden z-50"
                     role="menu"
                     aria-orientation="vertical"
                 >
@@ -62,21 +65,25 @@ export function LanguageSwitcher() {
                         <button
                             key={lang.code}
                             onClick={() => handleLanguageChange(lang.code)}
-                            className={`w-full text-left px-4 py-3 hover:bg-ctp-surface1 transition-colors flex items-center justify-between ${
+                            className={`w-full text-left px-4 py-3 hover:bg-bl-surface transition-colors flex items-center justify-between ${
                                 currentLanguage.code === lang.code
-                                    ? 'bg-ctp-surface1 text-ctp-blue font-semibold'
-                                    : 'text-ctp-text'
+                                    ? 'bg-bl-surface text-bl-accent font-semibold'
+                                    : 'text-bl-ink'
                             }`}
                             role="menuitem"
                             aria-label={`Switch to ${lang.name}`}
                         >
                             <span className="flex flex-col">
-                                <span className="text-sm">{lang.nativeName}</span>
-                                <span className="text-xs text-ctp-subtext0">{lang.name}</span>
+                                <span className="text-sm">
+                                    {lang.nativeName}
+                                </span>
+                                <span className="text-xs text-bl-muted">
+                                    {lang.name}
+                                </span>
                             </span>
                             {currentLanguage.code === lang.code && (
                                 <svg
-                                    className="w-4 h-4 text-ctp-blue"
+                                    className="w-4 h-4 text-bl-accent"
                                     fill="none"
                                     stroke="currentColor"
                                     viewBox="0 0 24 24"

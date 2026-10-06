@@ -23,7 +23,7 @@ export const securityLogger = createLogger({
         format.errors({ stack: true }),
         format.json()
     ),
-    defaultMeta: { service: 'spywatcher-security' },
+    defaultMeta: { service: 'backline-security' },
     transports: [
         new transports.File({
             filename: path.join('logs', 'security.log'),

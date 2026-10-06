@@ -123,7 +123,7 @@ export default function LevelingConfig({
             >
                 <fieldset disabled={busy} className="space-y-3">
                     <legend className="font-medium">Leveling settings</legend>
-                    <p className="text-sm text-ctp-subtext0">
+                    <p className="text-sm text-bl-muted">
                         Repeated messages earn no XP for 24 hours. Message
                         content is discarded after checking. AFK channels and
                         bots earn no voice XP. Partial voice minutes reset after
@@ -144,7 +144,7 @@ export default function LevelingConfig({
                                         [key]: Number(event.target.value),
                                     }))
                                 }
-                                className="block p-2 rounded bg-ctp-surface0"
+                                className="block p-2 rounded bg-bl-panel"
                             />
                         </label>
                     ))}
@@ -176,7 +176,7 @@ export default function LevelingConfig({
                             onChange={(event) =>
                                 setChannels(event.target.value)
                             }
-                            className="block w-full p-2 rounded bg-ctp-surface0"
+                            className="block w-full p-2 rounded bg-bl-panel"
                         />
                     </label>
                     <label className="block">
@@ -184,10 +184,10 @@ export default function LevelingConfig({
                         <input
                             value={roles}
                             onChange={(event) => setRoles(event.target.value)}
-                            className="block w-full p-2 rounded bg-ctp-surface0"
+                            className="block w-full p-2 rounded bg-bl-panel"
                         />
                     </label>
-                    <p className="text-sm text-ctp-subtext0">
+                    <p className="text-sm text-bl-muted">
                         Level rewards accept basic chat and voice roles below
                         the bot. Rewards are added once and remain assigned when
                         a profile expires. No rewards are configured by default.
@@ -213,7 +213,7 @@ export default function LevelingConfig({
                                             )
                                         )
                                     }
-                                    className="block p-2 rounded bg-ctp-surface0"
+                                    className="block p-2 rounded bg-bl-panel"
                                 />
                             </label>
                             <label>
@@ -238,7 +238,7 @@ export default function LevelingConfig({
                                             )
                                         )
                                     }
-                                    className="block p-2 rounded bg-ctp-surface0"
+                                    className="block p-2 rounded bg-bl-panel"
                                 />
                             </label>
                             <button

@@ -2,6 +2,7 @@ import html2canvas from 'html2canvas';
 import { Download } from 'lucide-react';
 import toast from 'react-hot-toast';
 
+import { resolveBrandColor } from '../../lib/design';
 import { Button } from '../ui/Button';
 
 interface ChartExportProps {
@@ -10,10 +11,14 @@ interface ChartExportProps {
     buttonText?: string;
 }
 
-function ChartExport({ elementId, filename = 'chart', buttonText = 'Export' }: ChartExportProps) {
+function ChartExport({
+    elementId,
+    filename = 'chart',
+    buttonText = 'Export',
+}: ChartExportProps) {
     const handleExport = async () => {
         const element = document.getElementById(elementId);
-        
+
         if (!element) {
             toast.error('Chart element not found');
             return;
@@ -22,7 +27,7 @@ function ChartExport({ elementId, filename = 'chart', buttonText = 'Export' }: C
         try {
             // Create canvas from element
             const canvas = await html2canvas(element, {
-                backgroundColor: '#1e1e2e',
+                backgroundColor: resolveBrandColor('canvas'),
                 scale: 2, // Higher quality
                 logging: false,
             });

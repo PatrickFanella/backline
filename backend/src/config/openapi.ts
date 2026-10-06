@@ -1,16 +1,14 @@
 import swaggerJsdoc from 'swagger-jsdoc';
 
-import { env } from '../utils/env';
-
 const options: swaggerJsdoc.Options = {
     definition: {
         openapi: '3.0.0',
         info: {
-            title: 'Spywatcher API',
+            title: 'Backline API',
             version: '1.0.0',
-            description: `# Discord Spywatcher API
+            description: `# Backline API
 
-A comprehensive Discord surveillance and analytics API that provides insights into user behavior, activity patterns, and security monitoring.
+The API for Backline, a configurable Discord community bot with server management, community modules, and optional activity analytics.
 
 ## Features
 - 🔐 **Discord OAuth2 Authentication** - Secure authentication using Discord
@@ -49,22 +47,18 @@ Rate limit information is returned in response headers:
 
 When rate limited, you'll receive a \`429 Too Many Requests\` response with a \`Retry-After\` header.`,
             contact: {
-                name: 'API Support',
-                email: 'support@spywatcher.dev',
+                name: 'Backline',
+                url: 'https://git.subcult.tv/subculture-collective/backline',
             },
             license: {
-                name: 'MIT',
-                url: 'https://opensource.org/licenses/MIT',
+                name: 'GPL-3.0-or-later',
+                url: 'https://www.gnu.org/licenses/gpl-3.0.html',
             },
         },
         servers: [
             {
-                url: `http://localhost:${env.PORT || 3001}/api`,
-                description: 'Development server',
-            },
-            {
-                url: 'https://api.spywatcher.dev/api',
-                description: 'Production server',
+                url: '/api',
+                description: 'Backline API on this server',
             },
         ],
         components: {
@@ -503,7 +497,7 @@ When rate limited, you'll receive a \`429 Too Many Requests\` response with a \`
         ],
         externalDocs: {
             description: 'Full API Documentation',
-            url: 'https://github.com/subculture-collective/discord-spywatcher/blob/main/docs/API_DOCUMENTATION.md',
+            url: 'https://git.subcult.tv/subculture-collective/backline/src/branch/main/docs/API_DOCUMENTATION.md',
         },
     },
     apis: ['./src/routes/*.ts', './src/routes/**/*.ts'], // Path to the API routes

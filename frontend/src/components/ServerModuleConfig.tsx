@@ -84,7 +84,7 @@ export default function ServerModuleConfig({
                         pattern="[0-9]{17,20}"
                         value={channelId}
                         onChange={(event) => setChannelId(event.target.value)}
-                        className="block bg-ctp-surface0 p-2 rounded w-full"
+                        className="block bg-bl-panel p-2 rounded w-full"
                     />
                 </label>
                 <label className="block">
@@ -98,7 +98,7 @@ export default function ServerModuleConfig({
                         onChange={(event) =>
                             setRetention(Number(event.target.value))
                         }
-                        className="block bg-ctp-surface0 p-2 rounded"
+                        className="block bg-bl-panel p-2 rounded"
                     />
                 </label>
                 <label className="flex gap-2">
@@ -111,7 +111,7 @@ export default function ServerModuleConfig({
                     />
                     Include available message content
                 </label>
-                <p className="text-sm text-ctp-subtext0">
+                <p className="text-sm text-bl-muted">
                     Message content requires the operator to enable Discord’s
                     Message Content intent. Turning this off removes retained
                     content from local records; messages already delivered to
@@ -139,7 +139,7 @@ export default function ServerModuleConfig({
                 </div>
                 <button
                     type="submit"
-                    className="border border-ctp-surface2 rounded p-2"
+                    className="border border-bl-border rounded p-2"
                 >
                     {busy ? 'Saving…' : 'Save log settings'}
                 </button>

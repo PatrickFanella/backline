@@ -46,7 +46,7 @@ export default function SuggestionsConfig({
                     value={channel}
                     onChange={(e) => setChannel(e.target.value)}
                     pattern="[0-9]{17,20}"
-                    className="block w-full bg-ctp-surface0 border border-ctp-surface2 rounded p-2"
+                    className="block w-full bg-bl-panel border border-bl-border rounded p-2"
                 />
             </label>
             <p>

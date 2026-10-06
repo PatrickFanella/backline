@@ -9,7 +9,7 @@ function DateRangeSelector({ onRangeChange }: DateRangeSelectorProps) {
 
     const handleRangeChange = (range: string) => {
         setSelectedRange(range);
-        
+
         if (range === 'all') {
             onRangeChange(null);
             return;
@@ -58,8 +58,8 @@ function DateRangeSelector({ onRangeChange }: DateRangeSelectorProps) {
                     onClick={() => handleRangeChange(range.value)}
                     className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                         selectedRange === range.value
-                            ? 'bg-blue-600 text-white'
-                            : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                            ? 'bg-bl-action text-white'
+                            : 'bg-bl-surface dark:bg-bl-recessed text-bl-ink dark:text-bl-muted hover:bg-bl-recessed dark:hover:bg-bl-recessed'
                     }`}
                 >
                     {range.label}

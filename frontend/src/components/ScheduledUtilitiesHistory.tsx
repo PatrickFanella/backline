@@ -65,7 +65,7 @@ export default function ScheduledUtilitiesHistory({
                 {events.map((event) => (
                     <li
                         key={event.id}
-                        className="border border-ctp-surface1 p-3 rounded break-words"
+                        className="border border-bl-surface p-3 rounded break-words"
                     >
                         <p>
                             {event.kind === 'REMINDER'
@@ -83,7 +83,7 @@ export default function ScheduledUtilitiesHistory({
                         </p>
                         <p className="text-sm break-all">ID: {event.id}</p>
                         {event.delivery?.state === 'RECONCILE' && (
-                            <p className="text-ctp-yellow">
+                            <p className="text-bl-warning">
                                 Delivery is uncertain. Investigate the
                                 destination before creating another message;
                                 Backline will hold this send.

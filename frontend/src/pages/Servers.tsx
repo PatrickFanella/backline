@@ -22,7 +22,6 @@ import SelfRolesConfig from '../components/SelfRolesConfig';
 import ServerModuleConfig from '../components/ServerModuleConfig';
 import SuggestionsConfig from '../components/SuggestionsConfig';
 import TicketConfig from '../components/TicketConfig';
-import { ThemeToggle } from '../components/ui/ThemeToggle';
 import WorkflowsConfig from '../components/WorkflowsConfig';
 import api from '../lib/api';
 import { useGuild } from '../store/guild';
@@ -121,44 +120,43 @@ export default function Servers() {
     return (
         <main
             id="main-content"
-            className="min-h-screen bg-ctp-base text-ctp-text p-4 sm:p-8 pb-64 sm:pb-32"
+            className="min-h-screen bg-bl-canvas text-bl-ink p-4 sm:p-8 pb-64 sm:pb-32"
         >
             <div className="max-w-5xl mx-auto space-y-8">
                 <header className="flex justify-between gap-4 items-start">
                     <div>
-                        <p className="text-sm text-ctp-subtext0 mb-2">
+                        <p className="text-sm text-bl-muted mb-2">
                             Backline · Server setup
                         </p>
                         <h1 className="text-3xl font-semibold">
                             Set up your server
                         </h1>
-                        <p className="text-ctp-subtext1 mt-3">
+                        <p className="text-bl-muted mt-3">
                             Choose a server and enable the modules your
                             community needs.
                         </p>
                     </div>
-                    <ThemeToggle />
                 </header>
                 {error && (
                     <div
                         role="alert"
-                        className="border border-ctp-red rounded-lg p-4"
+                        className="border border-bl-danger rounded-lg p-4"
                     >
                         {error}
                     </div>
                 )}
                 {notice && (
-                    <p role="status" className="text-ctp-green">
+                    <p role="status" className="text-bl-success">
                         {notice}
                     </p>
                 )}
                 {loading && <p role="status">Loading server settings…</p>}
                 {!loading && !servers.length && !error && (
-                    <section className="border border-ctp-surface1 rounded-lg p-6">
+                    <section className="border border-bl-surface rounded-lg p-6">
                         <h2 className="text-xl font-medium">
                             No manageable servers found
                         </h2>
-                        <p className="mt-3 text-ctp-subtext1">
+                        <p className="mt-3 text-bl-muted">
                             The bot must be installed, and your Discord account
                             must have Manage Server permission. Use /setup
                             inside your server to check its installation.
@@ -180,7 +178,7 @@ export default function Servers() {
                                 selectGuild(event.target.value)
                             }
                             disabled={busy !== null}
-                            className="w-full sm:max-w-md bg-ctp-surface0 border border-ctp-surface2 rounded-lg p-3 focus:ring-2 focus:ring-ctp-blue"
+                            className="w-full sm:max-w-md bg-bl-panel border border-bl-border rounded-lg p-3 focus:ring-2 focus:ring-bl-accent"
                         >
                             {servers.map((server) => (
                                 <option key={server.id} value={server.id}>
@@ -201,7 +199,7 @@ export default function Servers() {
                         >
                             Server modules
                         </h2>
-                        <p className="text-ctp-subtext1">
+                        <p className="text-bl-muted">
                             Modules start disabled. Settings apply to the
                             selected server and are shared with /settings in
                             Discord.
@@ -209,7 +207,7 @@ export default function Servers() {
                         {modules.map((module) => (
                             <article
                                 key={module.id}
-                                className="border border-ctp-surface1 bg-ctp-mantle rounded-lg p-5 flex flex-col sm:flex-row gap-5 justify-between"
+                                className="bl-card p-5 flex flex-col sm:flex-row gap-5 justify-between"
                             >
                                 <div className="space-y-2">
                                     <h3 className="font-semibold">
@@ -219,11 +217,11 @@ export default function Servers() {
                                               ? 'Extensions'
                                               : module.id.replace(/-/g, ' ')}
                                     </h3>
-                                    <p className="text-ctp-subtext1">
+                                    <p className="text-bl-muted">
                                         {module.description}
                                     </p>
                                     {!module.operatorReady && (
-                                        <p className="text-ctp-yellow">
+                                        <p className="text-bl-warning">
                                             This module needs the operator to
                                             enable its Discord intents and
                                             restart the bot.
@@ -714,7 +712,7 @@ export default function Servers() {
                                             }
                                         }}
                                     />
-                                    <p className="text-sm text-ctp-subtext0">
+                                    <p className="text-sm text-bl-muted">
                                         Use /setup in Discord to check the bot’s
                                         required permissions.
                                     </p>
@@ -730,7 +728,7 @@ export default function Servers() {
                                     onClick={() => {
                                         void toggle(module);
                                     }}
-                                    className="self-start shrink-0 border border-ctp-surface2 rounded-lg px-4 py-2 focus:ring-2 focus:ring-ctp-blue disabled:opacity-50"
+                                    className="self-start shrink-0 border border-bl-border rounded-lg px-4 py-2 focus:ring-2 focus:ring-bl-accent disabled:opacity-50"
                                 >
                                     {busy === module.id
                                         ? 'Saving…'
@@ -742,7 +740,7 @@ export default function Servers() {
                         ))}
                     </section>
                 )}
-                <footer className="flex flex-wrap gap-5 text-ctp-blue">
+                <footer className="flex flex-wrap gap-5 text-bl-accent">
                     {guildId && <Link to="/moderation">Moderation cases</Link>}
                     {guildId && (
                         <Link to="/observed-activity">

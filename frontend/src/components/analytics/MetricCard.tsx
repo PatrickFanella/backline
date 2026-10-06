@@ -9,25 +9,19 @@ interface MetricCardProps {
     icon?: React.ReactNode;
 }
 
-function MetricCard({
-    title,
-    value,
-    subtitle,
-    trend,
-    icon,
-}: MetricCardProps) {
+function MetricCard({ title, value, subtitle, trend, icon }: MetricCardProps) {
     return (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-700">
+        <div className="bg-bl-panel dark:bg-bl-recessed rounded-lg shadow p-6 border border-bl-border dark:border-bl-border">
             <div className="flex items-start justify-between">
                 <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                    <p className="text-sm font-medium text-bl-muted dark:text-bl-muted">
                         {title}
                     </p>
-                    <p className="mt-2 text-3xl font-bold text-gray-900 dark:text-white">
+                    <p className="mt-2 text-3xl font-bold text-bl-ink dark:text-white">
                         {value}
                     </p>
                     {subtitle && (
-                        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                        <p className="mt-1 text-sm text-bl-muted dark:text-bl-muted">
                             {subtitle}
                         </p>
                     )}
@@ -35,16 +29,17 @@ function MetricCard({
                         <p
                             className={`mt-2 text-sm font-medium ${
                                 trend.isPositive
-                                    ? 'text-green-600 dark:text-green-400'
-                                    : 'text-red-600 dark:text-red-400'
+                                    ? 'text-bl-success dark:text-bl-success'
+                                    : 'text-bl-danger dark:text-bl-danger'
                             }`}
                         >
-                            {trend.isPositive ? '↑' : '↓'} {Math.abs(trend.value)}%
+                            {trend.isPositive ? '↑' : '↓'}{' '}
+                            {Math.abs(trend.value)}%
                         </p>
                     )}
                 </div>
                 {icon && (
-                    <div className="ml-4 flex-shrink-0 text-gray-400">
+                    <div className="ml-4 flex-shrink-0 text-bl-muted">
                         {icon}
                     </div>
                 )}

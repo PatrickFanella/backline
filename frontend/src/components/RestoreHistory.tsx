@@ -192,7 +192,7 @@ export default function RestoreHistory({ guildId }: { guildId: string }) {
             </p>
             <form
                 onSubmit={preview}
-                className="space-y-2 border border-ctp-surface1 rounded p-3"
+                className="space-y-2 border border-bl-surface rounded p-3"
             >
                 <fieldset className="space-y-2">
                     <legend>Create restore preview</legend>
@@ -219,7 +219,7 @@ export default function RestoreHistory({ guildId }: { guildId: string }) {
                             <legend>
                                 Pick snapshot roles and channels (up to twenty)
                             </legend>
-                            <p className="text-sm text-ctp-subtext0">
+                            <p className="text-sm text-bl-muted">
                                 {resources.length} of 20 selected. Names come
                                 from this retained snapshot.
                             </p>
@@ -296,7 +296,7 @@ export default function RestoreHistory({ guildId }: { guildId: string }) {
             </form>
             <form
                 onSubmit={map}
-                className="space-y-2 border border-ctp-surface1 rounded p-3"
+                className="space-y-2 border border-bl-surface rounded p-3"
             >
                 <fieldset className="space-y-2">
                     <legend>Map verified resource</legend>
@@ -363,7 +363,7 @@ export default function RestoreHistory({ guildId }: { guildId: string }) {
                 {plans?.map((plan) => (
                     <li
                         key={plan.id}
-                        className="border border-ctp-surface1 rounded p-3 break-words"
+                        className="border border-bl-surface rounded p-3 break-words"
                     >
                         <p>
                             Plan {plan.id}: {plan.state}

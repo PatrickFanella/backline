@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { DataSet, Network } from 'vis-network/standalone';
 
+import { useTheme } from '../../contexts/ThemeContext';
+import { resolveBrandColor } from '../../lib/design';
 import type { NetworkNode, NetworkEdge } from '../../types/vis-network';
 
 interface NetworkGraphProps {
@@ -17,6 +19,7 @@ interface NetworkGraphProps {
 }
 
 function NetworkGraph({ data, height = 500 }: NetworkGraphProps) {
+    const { effectiveTheme } = useTheme();
     const containerRef = useRef<HTMLDivElement>(null);
     const networkRef = useRef<Network | null>(null);
     const [selectedNode, setSelectedNode] = useState<string | null>(null);
@@ -87,7 +90,7 @@ function NetworkGraph({ data, height = 500 }: NetworkGraphProps) {
                 },
                 font: {
                     size: 12,
-                    color: '#cdd6f4',
+                    color: resolveBrandColor('ink'),
                 },
             },
             edges: {
@@ -102,16 +105,22 @@ function NetworkGraph({ data, height = 500 }: NetworkGraphProps) {
             groups: {
                 user: {
                     color: {
-                        background: '#89b4fa',
-                        border: '#74c7ec',
-                        highlight: { background: '#74c7ec', border: '#89dceb' },
+                        background: resolveBrandColor('accent'),
+                        border: resolveBrandColor('accent'),
+                        highlight: {
+                            background: resolveBrandColor('accent'),
+                            border: resolveBrandColor('accent'),
+                        },
                     },
                 },
                 channel: {
                     color: {
-                        background: '#a6e3a1',
-                        border: '#94e2d5',
-                        highlight: { background: '#94e2d5', border: '#89dceb' },
+                        background: resolveBrandColor('success'),
+                        border: resolveBrandColor('success'),
+                        highlight: {
+                            background: resolveBrandColor('success'),
+                            border: resolveBrandColor('accent'),
+                        },
                     },
                 },
             },
@@ -150,15 +159,15 @@ function NetworkGraph({ data, height = 500 }: NetworkGraphProps) {
         return () => {
             network.destroy();
         };
-    }, [data]);
+    }, [data, effectiveTheme]);
 
     if (data.length === 0) {
         return (
             <div
-                className="flex items-center justify-center bg-ctp-surface0 rounded-lg"
+                className="flex items-center justify-center bg-bl-panel rounded-lg"
                 style={{ height: `${height}px` }}
             >
-                <p className="text-ctp-subtext0">No network data available</p>
+                <p className="text-bl-muted">No network data available</p>
             </div>
         );
     }
@@ -167,11 +176,11 @@ function NetworkGraph({ data, height = 500 }: NetworkGraphProps) {
         <div className="space-y-2">
             <div
                 ref={containerRef}
-                className="bg-ctp-surface0 rounded-lg"
+                className="bg-bl-panel rounded-lg"
                 style={{ height: `${height}px` }}
             />
             {selectedNode && (
-                <div className="text-sm text-ctp-subtext0 p-2 bg-ctp-surface0 rounded">
+                <div className="text-sm text-bl-muted p-2 bg-bl-panel rounded">
                     Selected: {selectedNode}
                 </div>
             )}

@@ -13,7 +13,7 @@ Sends notifications to external webhooks for important events.
 
 1. Copy to `backend/plugins/webhook-notifier/`
 2. Set environment variable: `WEBHOOK_NOTIFIER_URL=https://your-webhook-url`
-3. Restart SpyWatcher
+3. Restart Backline
 
 ## Configuration
 
@@ -22,6 +22,7 @@ Sends notifications to external webhooks for important events.
 - `WEBHOOK_NOTIFIER_URL` - Webhook URL to send notifications to (required)
 
 Example:
+
 ```bash
 export WEBHOOK_NOTIFIER_URL=https://hooks.slack.com/services/YOUR/WEBHOOK/URL
 ```
@@ -32,18 +33,18 @@ Notifications are sent as JSON POST requests:
 
 ```json
 {
-  "event": "multi-client",
-  "severity": "warning",
-  "title": "Multi-Client Login Detected",
-  "description": "User username is online on multiple clients",
-  "details": {
-    "userId": "123456789",
-    "username": "username",
-    "platforms": "desktop, mobile",
+    "event": "multi-client",
+    "severity": "warning",
+    "title": "Multi-Client Login Detected",
+    "description": "User username is online on multiple clients",
+    "details": {
+        "userId": "123456789",
+        "username": "username",
+        "platforms": "desktop, mobile",
+        "timestamp": "2024-01-01T12:00:00.000Z"
+    },
+    "source": "Backline",
     "timestamp": "2024-01-01T12:00:00.000Z"
-  },
-  "source": "SpyWatcher",
-  "timestamp": "2024-01-01T12:00:00.000Z"
 }
 ```
 
@@ -59,6 +60,7 @@ The plugin monitors and notifies for:
 ### Slack
 
 Use Slack Incoming Webhooks:
+
 ```bash
 export WEBHOOK_NOTIFIER_URL=https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXX
 ```
@@ -66,6 +68,7 @@ export WEBHOOK_NOTIFIER_URL=https://hooks.slack.com/services/T00000000/B00000000
 ### Discord
 
 Use Discord Webhooks:
+
 ```bash
 export WEBHOOK_NOTIFIER_URL=https://discord.com/api/webhooks/123456789/abcdefghijklmnop
 ```
@@ -93,11 +96,11 @@ Any service that accepts JSON POST requests can be used.
 2. Verify webhook URL is accessible
 3. Check plugin logs for error messages
 4. Test webhook with curl:
-   ```bash
-   curl -X POST -H "Content-Type: application/json" \
-     -d '{"test": "message"}' \
-     $WEBHOOK_NOTIFIER_URL
-   ```
+    ```bash
+    curl -X POST -H "Content-Type: application/json" \
+      -d '{"test": "message"}' \
+      $WEBHOOK_NOTIFIER_URL
+    ```
 
 ### Too Many Notifications
 

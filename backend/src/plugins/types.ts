@@ -15,7 +15,7 @@ export interface PluginManifest {
     author: string;
     /** Plugin description */
     description: string;
-    /** Required SpyWatcher version (semver range) */
+    /** Required Backline version (semver range); legacy manifest field retained. */
     spywatcherVersion?: string;
     /** Plugin dependencies (other plugin IDs) */
     dependencies?: string[];

@@ -79,23 +79,23 @@ function InteractiveFilter({
                 <Filter className="w-4 h-4 mr-2" />
                 Filters
                 {activeFiltersCount > 0 && (
-                    <span className="ml-2 px-2 py-0.5 text-xs bg-ctp-red text-ctp-base rounded-full">
+                    <span className="ml-2 px-2 py-0.5 text-xs bg-bl-danger-solid text-white rounded-full">
                         {activeFiltersCount}
                     </span>
                 )}
             </Button>
 
             {isOpen && (
-                <div className="absolute top-full mt-2 right-0 z-50 w-96 bg-ctp-surface0 border border-ctp-surface1 rounded-lg shadow-lg p-4">
+                <div className="absolute top-full mt-2 right-0 z-50 w-96 bg-bl-panel border border-bl-surface rounded-lg shadow-lg p-4">
                     <div className="flex justify-between items-center mb-4">
-                        <h3 className="text-lg font-semibold text-ctp-text">
+                        <h3 className="text-lg font-semibold text-bl-ink">
                             Filter Options
                         </h3>
                         <button
                             type="button"
                             aria-label="Close filters"
                             onClick={() => setIsOpen(false)}
-                            className="text-ctp-subtext0 hover:text-ctp-text"
+                            className="text-bl-muted hover:text-bl-ink"
                         >
                             <X className="w-5 h-5" />
                         </button>
@@ -104,7 +104,7 @@ function InteractiveFilter({
                     <div className="space-y-4">
                         {/* Suspicion Score Range */}
                         <fieldset>
-                            <legend className="block text-sm font-medium text-ctp-text mb-2">
+                            <legend className="block text-sm font-medium text-bl-ink mb-2">
                                 Suspicion Score Range
                             </legend>
                             <div className="flex items-center gap-2">
@@ -120,9 +120,9 @@ function InteractiveFilter({
                                             parseInt(e.target.value) || 0
                                         )
                                     }
-                                    className="w-20 px-2 py-1 bg-ctp-surface1 text-ctp-text rounded border border-ctp-surface2 focus:border-ctp-blue focus:outline-none"
+                                    className="w-20 px-2 py-1 bg-bl-surface text-bl-ink rounded border border-bl-border focus:border-bl-accent focus:outline-none"
                                 />
-                                <span className="text-ctp-subtext0">to</span>
+                                <span className="text-bl-muted">to</span>
                                 <input
                                     aria-label="Maximum suspicion score"
                                     type="number"
@@ -135,14 +135,14 @@ function InteractiveFilter({
                                             parseInt(e.target.value) || 100
                                         )
                                     }
-                                    className="w-20 px-2 py-1 bg-ctp-surface1 text-ctp-text rounded border border-ctp-surface2 focus:border-ctp-blue focus:outline-none"
+                                    className="w-20 px-2 py-1 bg-bl-surface text-bl-ink rounded border border-bl-border focus:border-bl-accent focus:outline-none"
                                 />
                             </div>
                         </fieldset>
 
                         {/* Ghost Score Range */}
                         <fieldset>
-                            <legend className="block text-sm font-medium text-ctp-text mb-2">
+                            <legend className="block text-sm font-medium text-bl-ink mb-2">
                                 Ghost Score Range
                             </legend>
                             <div className="flex items-center gap-2">
@@ -158,9 +158,9 @@ function InteractiveFilter({
                                             parseInt(e.target.value) || 0
                                         )
                                     }
-                                    className="w-20 px-2 py-1 bg-ctp-surface1 text-ctp-text rounded border border-ctp-surface2 focus:border-ctp-blue focus:outline-none"
+                                    className="w-20 px-2 py-1 bg-bl-surface text-bl-ink rounded border border-bl-border focus:border-bl-accent focus:outline-none"
                                 />
-                                <span className="text-ctp-subtext0">to</span>
+                                <span className="text-bl-muted">to</span>
                                 <input
                                     aria-label="Maximum ghost score"
                                     type="number"
@@ -173,7 +173,7 @@ function InteractiveFilter({
                                             parseInt(e.target.value) || 100
                                         )
                                     }
-                                    className="w-20 px-2 py-1 bg-ctp-surface1 text-ctp-text rounded border border-ctp-surface2 focus:border-ctp-blue focus:outline-none"
+                                    className="w-20 px-2 py-1 bg-bl-surface text-bl-ink rounded border border-bl-border focus:border-bl-accent focus:outline-none"
                                 />
                             </div>
                         </fieldset>
@@ -182,7 +182,7 @@ function InteractiveFilter({
                         <div>
                             <label
                                 htmlFor="minimum-interactions"
-                                className="block text-sm font-medium text-ctp-text mb-2"
+                                className="block text-sm font-medium text-bl-ink mb-2"
                             >
                                 Minimum Interactions
                             </label>
@@ -197,7 +197,7 @@ function InteractiveFilter({
                                         parseInt(e.target.value) || 0
                                     )
                                 }
-                                className="w-full px-3 py-2 bg-ctp-surface1 text-ctp-text rounded border border-ctp-surface2 focus:border-ctp-blue focus:outline-none"
+                                className="w-full px-3 py-2 bg-bl-surface text-bl-ink rounded border border-bl-border focus:border-bl-accent focus:outline-none"
                             />
                         </div>
 
@@ -205,7 +205,7 @@ function InteractiveFilter({
                         <div>
                             <label
                                 htmlFor="user-search"
-                                className="block text-sm font-medium text-ctp-text mb-2"
+                                className="block text-sm font-medium text-bl-ink mb-2"
                             >
                                 Search Users
                             </label>
@@ -220,7 +220,7 @@ function InteractiveFilter({
                                     )
                                 }
                                 placeholder="Enter username..."
-                                className="w-full px-3 py-2 bg-ctp-surface1 text-ctp-text rounded border border-ctp-surface2 focus:border-ctp-blue focus:outline-none"
+                                className="w-full px-3 py-2 bg-bl-surface text-bl-ink rounded border border-bl-border focus:border-bl-accent focus:outline-none"
                             />
                         </div>
 
@@ -228,7 +228,7 @@ function InteractiveFilter({
                         <div>
                             <label
                                 htmlFor="channel-search"
-                                className="block text-sm font-medium text-ctp-text mb-2"
+                                className="block text-sm font-medium text-bl-ink mb-2"
                             >
                                 Search Channels
                             </label>
@@ -243,7 +243,7 @@ function InteractiveFilter({
                                     )
                                 }
                                 placeholder="Enter channel name..."
-                                className="w-full px-3 py-2 bg-ctp-surface1 text-ctp-text rounded border border-ctp-surface2 focus:border-ctp-blue focus:outline-none"
+                                className="w-full px-3 py-2 bg-bl-surface text-bl-ink rounded border border-bl-border focus:border-bl-accent focus:outline-none"
                             />
                         </div>
 

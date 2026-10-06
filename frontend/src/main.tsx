@@ -1,3 +1,4 @@
+import { MotionConfig } from 'framer-motion';
 import { createRoot } from 'react-dom/client';
 
 import App from './App.tsx';
@@ -13,9 +14,11 @@ initSentry();
 
 createRoot(document.getElementById('root')!).render(
     <ErrorBoundary>
-        <ThemeProvider>
-            <App />
-            <ThemedToaster />
-        </ThemeProvider>
+        <MotionConfig reducedMotion="user">
+            <ThemeProvider>
+                <App />
+                <ThemedToaster />
+            </ThemeProvider>
+        </MotionConfig>
     </ErrorBoundary>
 );

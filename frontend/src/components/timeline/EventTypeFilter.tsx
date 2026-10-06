@@ -10,7 +10,11 @@ interface EventTypeFilterProps {
     onChange: (selected: string[]) => void;
 }
 
-function EventTypeFilter({ options, selected, onChange }: EventTypeFilterProps) {
+function EventTypeFilter({
+    options,
+    selected,
+    onChange,
+}: EventTypeFilterProps) {
     const handleToggle = (value: string) => {
         if (selected.includes(value)) {
             // Don't allow deselecting all
@@ -32,22 +36,22 @@ function EventTypeFilter({ options, selected, onChange }: EventTypeFilterProps) 
     };
 
     return (
-        <div className="bg-white rounded-lg shadow-sm p-4">
+        <div className="bg-bl-panel rounded-lg shadow-sm p-4">
             <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-semibold text-gray-700">
+                <h3 className="text-sm font-semibold text-bl-ink">
                     Filter by Event Type
                 </h3>
                 <div className="flex gap-2">
                     <button
                         onClick={handleSelectAll}
-                        className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+                        className="text-xs text-bl-accent hover:text-bl-accent font-medium"
                     >
                         All
                     </button>
-                    <span className="text-gray-400">|</span>
+                    <span className="text-bl-muted">|</span>
                     <button
                         onClick={handleDeselectAll}
-                        className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+                        className="text-xs text-bl-accent hover:text-bl-accent font-medium"
                     >
                         None
                     </button>
@@ -63,7 +67,7 @@ function EventTypeFilter({ options, selected, onChange }: EventTypeFilterProps) 
                             className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
                                 isSelected
                                     ? `${option.color} text-white shadow-sm`
-                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                    : 'bg-bl-surface text-bl-muted hover:bg-bl-surface'
                             }`}
                         >
                             {option.label}

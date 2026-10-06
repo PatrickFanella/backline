@@ -110,7 +110,7 @@ export default function EconomyConfig({
                             maxLength={20}
                             value={currencyName}
                             onChange={(e) => setCurrencyName(e.target.value)}
-                            className="block w-full p-2 bg-ctp-surface0 rounded"
+                            className="block w-full p-2 bg-bl-panel rounded"
                         />
                     </label>
                     <label className="block">
@@ -124,7 +124,7 @@ export default function EconomyConfig({
                             onChange={(e) =>
                                 setDailyReward(Number(e.target.value))
                             }
-                            className="block w-full p-2 bg-ctp-surface0 rounded"
+                            className="block w-full p-2 bg-bl-panel rounded"
                         />
                     </label>
                     <label className="block">
@@ -159,7 +159,7 @@ export default function EconomyConfig({
                 {entries?.map((entry) => (
                     <li
                         key={entry.id}
-                        className="border border-ctp-surface1 p-3 rounded break-words"
+                        className="border border-bl-surface p-3 rounded break-words"
                     >
                         {entry.kind}: {entry.delta >= 0 ? '+' : ''}
                         {entry.delta}; balance {entry.balanceAfter}

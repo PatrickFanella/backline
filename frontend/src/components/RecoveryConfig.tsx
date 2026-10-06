@@ -154,7 +154,7 @@ export default function RecoveryConfig({
                             onChange={(event) =>
                                 setInterval(Number(event.target.value))
                             }
-                            className="block w-full p-2 bg-ctp-surface0 rounded"
+                            className="block w-full p-2 bg-bl-panel rounded"
                         />
                     </label>
                     <label className="block">
@@ -168,7 +168,7 @@ export default function RecoveryConfig({
                             onChange={(event) =>
                                 setRetainDays(Number(event.target.value))
                             }
-                            className="block w-full p-2 bg-ctp-surface0 rounded"
+                            className="block w-full p-2 bg-bl-panel rounded"
                         />
                     </label>
                     <label className="block">
@@ -178,7 +178,7 @@ export default function RecoveryConfig({
                             onChange={(event) =>
                                 setProtectedChannels(event.target.value)
                             }
-                            className="block w-full p-2 bg-ctp-surface0 rounded"
+                            className="block w-full p-2 bg-bl-panel rounded"
                         />
                     </label>
                     <label className="block">
@@ -188,7 +188,7 @@ export default function RecoveryConfig({
                             onChange={(event) =>
                                 setProtectedRoles(event.target.value)
                             }
-                            className="block w-full p-2 bg-ctp-surface0 rounded"
+                            className="block w-full p-2 bg-bl-panel rounded"
                         />
                     </label>
                     <button type="submit">Save snapshot settings</button>
@@ -204,7 +204,7 @@ export default function RecoveryConfig({
                 {snapshots?.map((snapshot) => (
                     <li
                         key={snapshot.id}
-                        className="border border-ctp-surface1 p-3 rounded break-words"
+                        className="border border-bl-surface p-3 rounded break-words"
                     >
                         <p>
                             {snapshot.kind} ·{' '}

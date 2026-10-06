@@ -1,10 +1,10 @@
-# Spywatcher
+# Backline
 
 [![Backend CI](https://github.com/subculture-collective/discord-spywatcher/actions/workflows/backend-ci.yml/badge.svg)](https://github.com/subculture-collective/discord-spywatcher/actions/workflows/backend-ci.yml)
 [![Frontend CI](https://github.com/subculture-collective/discord-spywatcher/actions/workflows/frontend-ci.yml/badge.svg)](https://github.com/subculture-collective/discord-spywatcher/actions/workflows/frontend-ci.yml)
 [![Security Scan](https://github.com/subculture-collective/discord-spywatcher/actions/workflows/security.yml/badge.svg)](https://github.com/subculture-collective/discord-spywatcher/actions/workflows/security.yml)
 
-Spywatcher is a full-stack surveillance and analytics tool for Discord servers. It consists of a presence-monitoring Discord bot and a web-based dashboard powered by a REST API.
+Backline is a configurable Discord community bot and dashboard for server management, onboarding, moderation, engagement, support, audio, and optional activity analytics. It is currently a release candidate in a private pilot.
 
 ## 🧩 Features
 
@@ -18,6 +18,8 @@ Spywatcher is a full-stack surveillance and analytics tool for Discord servers. 
 - **Tier-based quotas** with FREE, PRO, and ENTERPRISE subscription tiers
 - **Per-endpoint rate limiting** and daily usage quotas
 - **Plugin System** for extending functionality with custom features
+
+Design system: [Backline app design system](./docs/design/APP-SYSTEM.md).
 
 ## 🏗️ Tech Stack
 
@@ -168,7 +170,7 @@ For detailed testing documentation, see [TESTING.md](./TESTING.md).
 
 ## 🔐 Environment Variables
 
-Spywatcher uses environment variables for configuration with strict validation to ensure security and proper setup.
+Backline uses environment variables for configuration with strict validation to ensure security and proper setup.
 
 ### Backend Configuration
 
@@ -255,7 +257,7 @@ Example validation error:
 
 ## 🛡️ Security & Rate Limiting
 
-Spywatcher implements comprehensive security measures to protect against abuse and ensure service availability:
+Backline implements comprehensive security measures to protect against abuse and ensure service availability:
 
 - **Multi-layer rate limiting** with Redis-backed distributed storage
 - **DDoS protection** including request validation, parameter limits, and header validation
@@ -272,7 +274,7 @@ See [RATE_LIMITING.md](./RATE_LIMITING.md) for detailed documentation on:
 
 ## 🗄️ Database & Connection Pooling
 
-Spywatcher uses PostgreSQL with PgBouncer for efficient connection pooling and resource management:
+Backline uses PostgreSQL with PgBouncer for efficient connection pooling and resource management:
 
 - **PgBouncer** - Transaction-mode connection pooling for optimal performance
 - **Prisma** - Type-safe database access with connection pool monitoring
@@ -295,7 +297,7 @@ Additional database documentation:
 
 ## 🔄 Backup & Disaster Recovery
 
-Spywatcher implements comprehensive backup and disaster recovery procedures to ensure data safety and business continuity:
+Backline implements comprehensive backup and disaster recovery procedures to ensure data safety and business continuity:
 
 - **Automated Backups** - Daily full backups and 6-hour incremental backups
 - **WAL Archiving** - Point-in-time recovery (PITR) capability
@@ -336,7 +338,7 @@ cd backend && npm run backup:health-check
 
 ## 📊 Monitoring & Observability
 
-Spywatcher includes comprehensive monitoring and observability features:
+Backline includes comprehensive monitoring and observability features:
 
 - **Sentry** - Error tracking and Application Performance Monitoring (APM)
 - **Prometheus** - Metrics collection for system and application metrics
@@ -401,7 +403,7 @@ Available at `http://localhost:3001`
 
 ## 🌐 Public API & SDK
 
-Spywatcher provides a comprehensive public API for third-party integrations with an official TypeScript/JavaScript SDK.
+Backline provides a comprehensive public API for third-party integrations with an official TypeScript/JavaScript SDK.
 
 ### Quick Start with SDK
 
@@ -413,7 +415,7 @@ npm install @spywatcher/sdk
 import { Spywatcher } from '@spywatcher/sdk';
 
 const client = new Spywatcher({
-    baseUrl: 'https://api.spywatcher.com/api',
+    baseUrl: 'http://localhost:3001/api',
     apiKey: 'spy_live_your_api_key_here',
 });
 
@@ -453,7 +455,7 @@ Access API documentation at `/api/public/docs` or see the [Public API Reference]
 
 ## 🔌 Plugin System
 
-SpyWatcher includes a comprehensive plugin system for extending functionality without modifying core code.
+Backline includes a comprehensive plugin system for extending functionality without modifying core code.
 
 ### Features
 
@@ -477,7 +479,7 @@ cd backend/plugins/my-plugin
 nano manifest.json
 nano index.js
 
-# Restart SpyWatcher to load the plugin
+# Restart Backline to load the plugin
 npm run dev:api
 ```
 

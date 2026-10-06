@@ -3,7 +3,13 @@ import { useMemo } from 'react';
 interface TimelineEventProps {
     event: {
         id: string;
-        type: 'presence' | 'message' | 'typing' | 'role' | 'join' | 'deleted_message';
+        type:
+            | 'presence'
+            | 'message'
+            | 'typing'
+            | 'role'
+            | 'join'
+            | 'deleted_message';
         userId: string;
         username: string;
         timestamp: string;
@@ -52,7 +58,7 @@ function TimelineEvent({ event }: TimelineEventProps) {
                             />
                         </svg>
                     ),
-                    color: 'bg-purple-500',
+                    color: 'bg-bl-action',
                     title: 'Presence Change',
                     description: `Clients: ${Array.isArray(event.metadata.clients) ? (event.metadata.clients as string[]).join(', ') : 'Unknown'}`,
                 };
@@ -73,7 +79,7 @@ function TimelineEvent({ event }: TimelineEventProps) {
                             />
                         </svg>
                     ),
-                    color: 'bg-blue-500',
+                    color: 'bg-bl-action',
                     title: 'Message',
                     description: `#${event.metadata.channel || 'unknown'}: ${
                         typeof event.metadata.content === 'string'
@@ -98,7 +104,7 @@ function TimelineEvent({ event }: TimelineEventProps) {
                             />
                         </svg>
                     ),
-                    color: 'bg-yellow-500',
+                    color: 'bg-bl-warning-solid',
                     title: 'Typing',
                     description: `in #${event.metadata.channel || 'unknown'}`,
                 };
@@ -119,7 +125,7 @@ function TimelineEvent({ event }: TimelineEventProps) {
                             />
                         </svg>
                     ),
-                    color: 'bg-green-500',
+                    color: 'bg-bl-success-solid',
                     title: 'Role Change',
                     description: `Added roles: ${Array.isArray(event.metadata.addedRoles) ? (event.metadata.addedRoles as string[]).join(', ') : 'Unknown'}`,
                 };
@@ -161,14 +167,14 @@ function TimelineEvent({ event }: TimelineEventProps) {
                             />
                         </svg>
                     ),
-                    color: 'bg-red-500',
+                    color: 'bg-bl-danger-solid',
                     title: 'Message Deleted',
                     description: `from #${event.metadata.channel || 'unknown'}`,
                 };
             default:
                 return {
                     icon: null,
-                    color: 'bg-gray-500',
+                    color: 'bg-bl-recessed',
                     title: 'Unknown Event',
                     description: '',
                 };
@@ -177,13 +183,15 @@ function TimelineEvent({ event }: TimelineEventProps) {
 
     return (
         <div
-            className={`bg-white rounded-lg shadow-sm p-4 hover:shadow-md transition-shadow ${
-                event.isAnomalous ? 'ring-2 ring-orange-400' : ''
+            className={`bg-bl-panel rounded-lg shadow-sm p-4 hover:shadow-md transition-shadow ${
+                event.isAnomalous ? 'ring-2 ring-bl-warning' : ''
             }`}
         >
             <div className="flex items-start gap-3">
                 {/* Icon */}
-                <div className={`${color} rounded-full p-2 text-white flex-shrink-0`}>
+                <div
+                    className={`${color} rounded-full p-2 text-white flex-shrink-0`}
+                >
                     {icon}
                 </div>
 
@@ -191,15 +199,15 @@ function TimelineEvent({ event }: TimelineEventProps) {
                 <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-2">
                         <div className="flex-1 min-w-0">
-                            <h3 className="font-semibold text-gray-900 text-sm">
+                            <h3 className="font-semibold text-bl-ink text-sm">
                                 {title}
                             </h3>
-                            <p className="text-gray-600 text-sm mt-1 break-words">
+                            <p className="text-bl-muted text-sm mt-1 break-words">
                                 {description}
                             </p>
                         </div>
                         <span
-                            className="text-xs text-gray-500 whitespace-nowrap flex-shrink-0"
+                            className="text-xs text-bl-muted whitespace-nowrap flex-shrink-0"
                             title={fullTime}
                         >
                             {formattedTime}
@@ -208,7 +216,7 @@ function TimelineEvent({ event }: TimelineEventProps) {
 
                     {/* Anomaly indicator */}
                     {event.isAnomalous && (
-                        <div className="mt-2 flex items-center gap-1 text-orange-600 text-xs">
+                        <div className="mt-2 flex items-center gap-1 text-bl-warning text-xs">
                             <svg
                                 className="w-4 h-4"
                                 fill="none"
@@ -223,7 +231,8 @@ function TimelineEvent({ event }: TimelineEventProps) {
                                 />
                             </svg>
                             <span className="font-medium">
-                                {event.anomalyReason || 'Unusual pattern detected'}
+                                {event.anomalyReason ||
+                                    'Unusual pattern detected'}
                             </span>
                         </div>
                     )}

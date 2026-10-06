@@ -104,7 +104,7 @@ export default function AudioConfig({
                     <input
                         required
                         pattern="[a-z0-9-]{1,40}"
-                        className="block bg-ctp-surface0 p-2 rounded w-full"
+                        className="block bg-bl-panel p-2 rounded w-full"
                         value={station}
                         onChange={(event) => setStation(event.target.value)}
                     />
@@ -112,7 +112,7 @@ export default function AudioConfig({
                 <label className="block">
                     DJ role IDs (optional, comma-separated)
                     <input
-                        className="block bg-ctp-surface0 p-2 rounded w-full"
+                        className="block bg-bl-panel p-2 rounded w-full"
                         value={roles}
                         onChange={(event) => setRoles(event.target.value)}
                     />
@@ -124,7 +124,7 @@ export default function AudioConfig({
                         required
                         min={0}
                         max={100}
-                        className="block bg-ctp-surface0 p-2 rounded"
+                        className="block bg-bl-panel p-2 rounded"
                         value={volume}
                         onChange={(event) =>
                             setVolume(Number(event.target.value))
@@ -138,7 +138,7 @@ export default function AudioConfig({
                         required
                         min={1}
                         max={120}
-                        className="block bg-ctp-surface0 p-2 rounded"
+                        className="block bg-bl-panel p-2 rounded"
                         value={duration}
                         onChange={(event) =>
                             setDuration(Number(event.target.value))
@@ -152,14 +152,14 @@ export default function AudioConfig({
                         required
                         min={10}
                         max={300}
-                        className="block bg-ctp-surface0 p-2 rounded"
+                        className="block bg-bl-panel p-2 rounded"
                         value={idle}
                         onChange={(event) =>
                             setIdle(Number(event.target.value))
                         }
                     />
                 </label>
-                <p className="text-sm text-ctp-subtext0">
+                <p className="text-sm text-bl-muted">
                     Join a voice channel and use /radio play. DEF CON Radio uses
                     station ID defcon; /radio stations lists the catalog.
                     Sources come from SomaFM’s published playlists. With no DJ
@@ -178,7 +178,7 @@ export default function AudioConfig({
                 </a>
                 <button
                     type="submit"
-                    className="border border-ctp-surface2 rounded p-2"
+                    className="border border-bl-border rounded p-2"
                 >
                     {busy ? 'Saving…' : 'Save radio settings'}
                 </button>

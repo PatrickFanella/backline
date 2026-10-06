@@ -1,6 +1,6 @@
 # Rate Limiting & DDoS Protection
 
-This document describes the comprehensive rate limiting and DDoS protection mechanisms implemented in the Discord SpyWatcher backend.
+This document describes the comprehensive rate limiting and DDoS protection mechanisms implemented in the Backline backend.
 
 ## Overview
 
@@ -16,6 +16,7 @@ The application implements a multi-layer defense strategy to prevent abuse and e
 ### Global Rate Limiting
 
 All API endpoints are protected by a global rate limiter:
+
 - **Limit**: 100 requests per 15 minutes per IP
 - **Storage**: Redis (distributed) or in-memory (single instance)
 - **Whitelisted IPs**: localhost (127.0.0.1, ::1)
@@ -24,27 +25,28 @@ All API endpoints are protected by a global rate limiter:
 
 Different endpoint types have specific rate limits:
 
-| Endpoint Type | Limit | Window | Description |
-|--------------|-------|--------|-------------|
-| Authentication | 5 req | 15 min | Prevents brute force attacks |
-| Analytics | 30 req | 1 min | Moderate limit for data queries |
-| Admin | 100 req | 15 min | Higher limit for admin operations |
-| Public | 60 req | 1 min | Standard public endpoint limit |
-| Webhooks | 1000 req | 1 hour | High volume for webhook endpoints |
-| Refresh Token | 10 req | 15 min | Prevents token refresh abuse |
+| Endpoint Type  | Limit    | Window | Description                       |
+| -------------- | -------- | ------ | --------------------------------- |
+| Authentication | 5 req    | 15 min | Prevents brute force attacks      |
+| Analytics      | 30 req   | 1 min  | Moderate limit for data queries   |
+| Admin          | 100 req  | 15 min | Higher limit for admin operations |
+| Public         | 60 req   | 1 min  | Standard public endpoint limit    |
+| Webhooks       | 1000 req | 1 hour | High volume for webhook endpoints |
+| Refresh Token  | 10 req   | 15 min | Prevents token refresh abuse      |
 
 ### User-Based Rate Limiting
 
 Authenticated users have dynamic rate limits based on their role:
 
-| Role | Requests per Minute |
-|------|-------------------|
-| ADMIN | 200 |
-| MODERATOR | 100 |
-| USER | 60 |
-| Unauthenticated | 30 |
+| Role            | Requests per Minute |
+| --------------- | ------------------- |
+| ADMIN           | 200                 |
+| MODERATOR       | 100                 |
+| USER            | 60                  |
+| Unauthenticated | 30                  |
 
 **Key Features:**
+
 - Uses user ID instead of IP for tracking authenticated users
 - Fallback to IP-based tracking for unauthenticated requests
 - Distributed tracking via Redis
@@ -56,18 +58,18 @@ Authenticated users have dynamic rate limits based on their role:
 Multiple layers of request validation protect against malformed and malicious requests:
 
 1. **URL Length Validation**
-   - Maximum URL length: 2048 characters
-   - Rejects excessively long URLs that could cause processing issues
+    - Maximum URL length: 2048 characters
+    - Rejects excessively long URLs that could cause processing issues
 
 2. **User-Agent Validation**
-   - Maximum length: 500 characters
-   - Detects and blocks suspicious or malformed user agents
+    - Maximum length: 500 characters
+    - Detects and blocks suspicious or malformed user agents
 
 3. **Content-Type Validation**
-   - POST/PUT/PATCH requests must use supported content types:
-     - application/json
-     - application/x-www-form-urlencoded
-     - multipart/form-data
+    - POST/PUT/PATCH requests must use supported content types:
+        - application/json
+        - application/x-www-form-urlencoded
+        - multipart/form-data
 
 ### Parameter Pollution Protection
 
@@ -84,17 +86,17 @@ Multiple layers of request validation protect against malformed and malicious re
 
 - **Maximum Payload**: 10MB
 - Enforced at multiple levels:
-  - Express JSON parser
-  - Custom middleware validation
+    - Express JSON parser
+    - Custom middleware validation
 - Returns detailed error messages with received payload size
 
 ### Slowloris Protection
 
 - **Progressive Delay**: Requests exceeding limits are progressively delayed
 - **Configuration**:
-  - Starts delaying after 50 requests
-  - Adds 500ms delay per request
-  - Maximum delay: 20 seconds
+    - Starts delaying after 50 requests
+    - Adds 500ms delay per request
+    - Maximum delay: 20 seconds
 - Prevents slow request attacks while allowing legitimate traffic
 
 ### Request Timeout
@@ -110,9 +112,9 @@ Multiple layers of request validation protect against malformed and malicious re
 - Stored in Redis with automatic expiration
 - Default duration: 1 hour (configurable)
 - Use cases:
-  - Automatic blocking after rate limit violations
-  - Suspicious activity detection
-  - Manual temporary blocks
+    - Automatic blocking after rate limit violations
+    - Suspicious activity detection
+    - Manual temporary blocks
 
 ### Permanent Blocks (Database)
 
@@ -133,6 +135,7 @@ The system automatically blocks IPs that violate rate limits repeatedly:
 ### Whitelisting
 
 Trusted IPs can be whitelisted to bypass rate limiting:
+
 - Default: localhost (127.0.0.1, ::1, ::ffff:127.0.0.1)
 - Configurable for additional trusted IPs
 
@@ -143,10 +146,12 @@ Trusted IPs can be whitelisted to bypass rate limiting:
 The system monitors CPU and memory usage and sheds non-critical load under stress:
 
 **Thresholds:**
+
 - CPU usage > 80%
 - Memory usage > 90%
 
 **Behavior:**
+
 - Critical endpoints remain available (health checks)
 - Admin users always have access
 - Other requests receive 503 Service Unavailable
@@ -157,11 +162,13 @@ The system monitors CPU and memory usage and sheds non-critical load under stres
 Implements the circuit breaker pattern to prevent cascading failures:
 
 **States:**
+
 - **CLOSED**: Normal operation
 - **OPEN**: Service degraded, fail fast (after 5 failures)
 - **HALF-OPEN**: Testing recovery (after 1 minute)
 
 **Benefits:**
+
 - Prevents cascading failures
 - Provides fast failure feedback
 - Automatic recovery attempts
@@ -172,21 +179,21 @@ Enhanced health check endpoint (`/api/health`) provides system metrics:
 
 ```json
 {
-  "status": "healthy|degraded",
-  "timestamp": "2024-01-01T00:00:00.000Z",
-  "uptime": "3600s",
-  "system": {
-    "cpu": {
-      "usage": "45.2%",
-      "cores": 4,
-      "load": [1.8, 1.5, 1.3]
-    },
-    "memory": {
-      "usage": "62.5%",
-      "free": "3072MB",
-      "total": "8192MB"
+    "status": "healthy|degraded",
+    "timestamp": "2024-01-01T00:00:00.000Z",
+    "uptime": "3600s",
+    "system": {
+        "cpu": {
+            "usage": "45.2%",
+            "cores": 4,
+            "load": [1.8, 1.5, 1.3]
+        },
+        "memory": {
+            "usage": "62.5%",
+            "free": "3072MB",
+            "total": "8192MB"
+        }
     }
-  }
 }
 ```
 
@@ -210,6 +217,7 @@ ENABLE_LOAD_SHEDDING=true        # Enable load shedding
 ### Fallback Behavior
 
 If Redis is unavailable:
+
 - Rate limiting falls back to in-memory storage (not suitable for multi-instance deployments)
 - Temporary IP blocks are unavailable (permanent blocks still work)
 - System logs warnings about missing Redis
@@ -218,15 +226,15 @@ If Redis is unavailable:
 
 The system uses namespaced keys for organization:
 
-| Prefix | Purpose |
-|--------|---------|
-| `rl:global:` | Global rate limiter |
-| `rl:auth:` | Authentication rate limiter |
-| `rl:analytics:` | Analytics rate limiter |
-| `rl:admin:` | Admin rate limiter |
-| `rl:user:` | User-based rate limiter |
-| `blocked:` | Temporary IP blocks |
-| `violations:` | Rate limit violation tracking |
+| Prefix          | Purpose                       |
+| --------------- | ----------------------------- |
+| `rl:global:`    | Global rate limiter           |
+| `rl:auth:`      | Authentication rate limiter   |
+| `rl:analytics:` | Analytics rate limiter        |
+| `rl:admin:`     | Admin rate limiter            |
+| `rl:user:`      | User-based rate limiter       |
+| `blocked:`      | Temporary IP blocks           |
+| `violations:`   | Rate limit violation tracking |
 
 ## Response Headers
 
@@ -245,9 +253,9 @@ Retry-After: 900  (only on 429 responses)
 
 ```json
 {
-  "error": "Too many requests",
-  "message": "Too many authentication attempts. Please try again later.",
-  "retryAfter": 900
+    "error": "Too many requests",
+    "message": "Too many authentication attempts. Please try again later.",
+    "retryAfter": 900
 }
 ```
 
@@ -255,9 +263,9 @@ Retry-After: 900  (only on 429 responses)
 
 ```json
 {
-  "error": "Access denied from this IP",
-  "reason": "Temporary block due to suspicious activity",
-  "retryAfter": 3600
+    "error": "Access denied from this IP",
+    "reason": "Temporary block due to suspicious activity",
+    "retryAfter": 3600
 }
 ```
 
@@ -265,13 +273,13 @@ Retry-After: 900  (only on 429 responses)
 
 ```json
 {
-  "error": "Service temporarily unavailable",
-  "message": "Server under high load, please try again later",
-  "retryAfter": 60,
-  "systemLoad": {
-    "cpu": "85.3%",
-    "memory": "91.2%"
-  }
+    "error": "Service temporarily unavailable",
+    "message": "Server under high load, please try again later",
+    "retryAfter": 60,
+    "systemLoad": {
+        "cpu": "85.3%",
+        "memory": "91.2%"
+    }
 }
 ```
 
@@ -337,6 +345,7 @@ The rate limiting and DDoS protection features include comprehensive test covera
 - Load testing recommended before production deployment
 
 Run tests:
+
 ```bash
 npm test -- --testPathPatterns="ddosProtection|loadShedding|redis"
 ```

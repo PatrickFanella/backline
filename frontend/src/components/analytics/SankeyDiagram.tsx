@@ -3,6 +3,8 @@ import { sankey, sankeyLinkHorizontal } from 'd3-sankey';
 import type { SankeyExtraProperties, SankeyLink, SankeyNode } from 'd3-sankey';
 import { useEffect, useRef } from 'react';
 
+import { chartColors } from '../../lib/design';
+
 interface SankeyNodeData extends SankeyExtraProperties {
     name: string;
     category?: 'channel' | 'user';
@@ -129,7 +131,7 @@ function SankeyDiagram({
         const colorScale = d3
             .scaleOrdinal<string>()
             .domain(['user', 'channel'])
-            .range(['#89b4fa', '#a6e3a1']);
+            .range([chartColors.accent, chartColors.success]);
 
         // Draw links
         svg.append('g')
@@ -162,7 +164,7 @@ function SankeyDiagram({
             .attr('height', (d) => (d.y1 ?? 0) - (d.y0 ?? 0))
             .attr('width', (d) => (d.x1 ?? 0) - (d.x0 ?? 0))
             .attr('fill', (d) => colorScale(d.category ?? 'user'))
-            .attr('stroke', '#1e1e2e')
+            .attr('stroke', chartColors.canvas)
             .attr('stroke-width', 1);
 
         // Add node labels
@@ -180,7 +182,7 @@ function SankeyDiagram({
                 (d.x0 ?? 0) < innerWidth / 2 ? 'start' : 'end'
             )
             .attr('font-size', '10px')
-            .attr('fill', '#cdd6f4')
+            .attr('fill', chartColors.ink)
             .text((d) =>
                 d.name.length > 15 ? d.name.substring(0, 15) + '...' : d.name
             );
@@ -194,16 +196,16 @@ function SankeyDiagram({
     if (data.length === 0) {
         return (
             <div
-                className="flex items-center justify-center bg-ctp-surface0 rounded-lg"
+                className="flex items-center justify-center bg-bl-panel rounded-lg"
                 style={{ width: `${width}px`, height: `${height}px` }}
             >
-                <p className="text-ctp-subtext0">No flow data available</p>
+                <p className="text-bl-muted">No flow data available</p>
             </div>
         );
     }
 
     return (
-        <div className="overflow-auto bg-ctp-surface0 rounded-lg p-4">
+        <div className="overflow-auto bg-bl-panel rounded-lg p-4">
             <svg ref={svgRef} />
         </div>
     );

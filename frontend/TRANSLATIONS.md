@@ -1,6 +1,6 @@
 # Translation Guide
 
-This document provides guidance for contributing translations to Discord Spywatcher.
+This document provides guidance for contributing translations to Backline.
 
 ## Supported Languages
 
@@ -40,48 +40,51 @@ src/locales/
 To add a new language:
 
 1. **Create a new language directory** under `src/locales/`:
-   ```bash
-   mkdir src/locales/[language-code]
-   ```
+
+    ```bash
+    mkdir src/locales/[language-code]
+    ```
 
 2. **Copy the English translation file** as a starting point:
-   ```bash
-   cp src/locales/en/common.json src/locales/[language-code]/common.json
-   ```
+
+    ```bash
+    cp src/locales/en/common.json src/locales/[language-code]/common.json
+    ```
 
 3. **Create an index file** (`src/locales/[language-code]/index.ts`):
-   ```typescript
-   import common from './common.json';
 
-   export default {
-       common,
-   };
-   ```
+    ```typescript
+    import common from './common.json';
+
+    export default {
+        common,
+    };
+    ```
 
 4. **Translate the strings** in `common.json` to the new language.
 
 5. **Update the i18n configuration** (`src/config/i18n.ts`):
-   - Import the new language:
-     ```typescript
-     import [langCode] from '../locales/[language-code]';
-     ```
-   - Add it to `SUPPORTED_LANGUAGES`:
-     ```typescript
-     { code: '[lang-code]', name: 'Language Name', nativeName: 'Native Name' }
-     ```
-   - Add it to the `resources` object in `i18n.init()`:
-     ```typescript
-     resources: {
-         en,
-         // ... other languages
-         [langCode],
-     }
-     ```
+    - Import the new language:
+        ```typescript
+        import [langCode] from '../locales/[language-code]';
+        ```
+    - Add it to `SUPPORTED_LANGUAGES`:
+        ```typescript
+        { code: '[lang-code]', name: 'Language Name', nativeName: 'Native Name' }
+        ```
+    - Add it to the `resources` object in `i18n.init()`:
+        ```typescript
+        resources: {
+            en,
+            // ... other languages
+            [langCode],
+        }
+        ```
 
 6. **If the language is RTL** (right-to-left), add it to `RTL_LANGUAGES`:
-   ```typescript
-   export const RTL_LANGUAGES: SupportedLanguage[] = ['ar', 'he'];
-   ```
+    ```typescript
+    export const RTL_LANGUAGES: SupportedLanguage[] = ['ar', 'he'];
+    ```
 
 ## Translation Guidelines
 
@@ -108,13 +111,14 @@ For dynamic values, use double curly braces:
 
 ```json
 {
-  "dashboard.stats.scoreThreshold": "Score > {{threshold}}"
+    "dashboard.stats.scoreThreshold": "Score > {{threshold}}"
 }
 ```
 
 Usage in code:
+
 ```typescript
-t('dashboard.stats.scoreThreshold', { threshold: 50 })
+t('dashboard.stats.scoreThreshold', { threshold: 50 });
 ```
 
 ### Pluralization
@@ -123,15 +127,16 @@ For strings that need pluralization, use the `_other` suffix:
 
 ```json
 {
-  "dashboard.table.days": "{{count}} day",
-  "dashboard.table.days_other": "{{count}} days"
+    "dashboard.table.days": "{{count}} day",
+    "dashboard.table.days_other": "{{count}} days"
 }
 ```
 
 Usage in code:
+
 ```typescript
-t('dashboard.table.days', { count: 1 })  // "1 day"
-t('dashboard.table.days', { count: 5 })  // "5 days"
+t('dashboard.table.days', { count: 1 }); // "1 day"
+t('dashboard.table.days', { count: 5 }); // "5 days"
 ```
 
 ### Context and Gender
@@ -140,8 +145,8 @@ For languages that require different translations based on context or gender, us
 
 ```json
 {
-  "welcome.male": "Welcome, Mr. {{name}}",
-  "welcome.female": "Welcome, Ms. {{name}}"
+    "welcome.male": "Welcome, Mr. {{name}}",
+    "welcome.female": "Welcome, Ms. {{name}}"
 }
 ```
 
@@ -150,9 +155,10 @@ For languages that require different translations based on context or gender, us
 ### Manual Testing
 
 1. Start the development server:
-   ```bash
-   npm run dev
-   ```
+
+    ```bash
+    npm run dev
+    ```
 
 2. Open the application in your browser.
 
@@ -163,11 +169,13 @@ For languages that require different translations based on context or gender, us
 ### Automated Testing
 
 Run the i18n tests:
+
 ```bash
 npm test -- src/__tests__/config/i18n.test.ts
 ```
 
 To test a specific language's translations:
+
 ```typescript
 import i18n from '../../config/i18n';
 
@@ -213,24 +221,27 @@ The application includes built-in RTL support for languages like Arabic and Hebr
 1. **Fork the repository** on GitHub.
 
 2. **Create a feature branch**:
-   ```bash
-   git checkout -b add-translation-[language-code]
-   ```
+
+    ```bash
+    git checkout -b add-translation-[language-code]
+    ```
 
 3. **Add or update translations** following the guidelines above.
 
 4. **Test your changes** thoroughly.
 
 5. **Commit your changes**:
-   ```bash
-   git add .
-   git commit -m "Add [Language Name] translations"
-   ```
+
+    ```bash
+    git add .
+    git commit -m "Add [Language Name] translations"
+    ```
 
 6. **Push to your fork**:
-   ```bash
-   git push origin add-translation-[language-code]
-   ```
+
+    ```bash
+    git push origin add-translation-[language-code]
+    ```
 
 7. **Open a Pull Request** on the main repository.
 
@@ -242,4 +253,4 @@ If you need help with translations or have questions:
 - Join our community Discord server
 - Check the existing translations for reference
 
-Thank you for contributing to make Discord Spywatcher accessible to users worldwide! 🌍
+Thank you for contributing to make Backline accessible to users worldwide! 🌍

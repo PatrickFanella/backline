@@ -203,7 +203,7 @@ export default function AudioClips({ guildId, onBusy }: Props) {
                     .map((c) => (
                         <li
                             key={c.id}
-                            className="border border-ctp-surface1 p-3 rounded break-words"
+                            className="border border-bl-surface p-3 rounded break-words"
                         >
                             <strong>{c.title}</strong> · {c.durationMs} ms ·{' '}
                             {c.byteSize} bytes<p>{c.id}</p>

@@ -2,6 +2,8 @@
 
 Poster Crew was selected by the owner on October 4, 2026. Maintained brand masters, fonts, generator and full usage guide belong to SUBCULT Studio at `studio/branding/library/brands/backline/`. This product carries only the selected generated assets under `frontend/public/brand/backline/`; `brand/backline/source-provenance.json` records their source and hashes.
 
+The dashboard now shares this identity through the [app design system](./APP-SYSTEM.md).
+
 The product's landing page is `/`. Server setup is `/servers`, still behind RequireAuth. OAuth completion redirects to `/servers`; moderation and observed-activity links return there. `/login`, `/auth/callback` and `/status` retain their routes. The landing page does not create an invite, grant server access, change module defaults or deploy a service.
 
 The page uses purple #8b5cf6, ink #100b19, paper #f0ece4 and green #00ff88. Oswald Bold heads the display; Space Grotesk handles reading and controls; JetBrains Mono labels examples. Fonts are self-hosted with licenses. SVG logo exports use outlined type.

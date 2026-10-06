@@ -138,7 +138,7 @@ export default function AntiSpamConfig({
                         Observe only; record decisions without timing out
                         members
                     </label>
-                    <p className="text-sm text-ctp-subtext0">
+                    <p className="text-sm text-bl-muted">
                         Start with observation and tune thresholds. Enforcement
                         requires the Moderation module and current bot
                         permissions. Bots, server managers and administrators
@@ -157,7 +157,7 @@ export default function AntiSpamConfig({
                             {label}
                             <input
                                 type="number"
-                                className="block p-2 bg-ctp-surface0 rounded"
+                                className="block p-2 bg-bl-panel rounded"
                                 value={numbers[key as keyof typeof numbers]}
                                 onChange={(event) =>
                                     setNumbers((current) => ({
@@ -210,7 +210,7 @@ export default function AntiSpamConfig({
                         <label key={label as string} className="block">
                             {label as string}
                             <input
-                                className="block w-full p-2 bg-ctp-surface0 rounded"
+                                className="block w-full p-2 bg-bl-panel rounded"
                                 value={value as string}
                                 onChange={(event) =>
                                     (setValue as (value: string) => void)(
@@ -222,7 +222,7 @@ export default function AntiSpamConfig({
                     ))}
                     <button
                         type="submit"
-                        className="border border-ctp-surface2 rounded p-2"
+                        className="border border-bl-border rounded p-2"
                     >
                         {busy ? 'Saving…' : 'Save anti-spam policy'}
                     </button>
@@ -233,7 +233,7 @@ export default function AntiSpamConfig({
                 onClick={() => {
                     void history();
                 }}
-                className="border border-ctp-surface2 rounded p-2"
+                className="border border-bl-border rounded p-2"
             >
                 Review spam decisions
             </button>
@@ -247,7 +247,7 @@ export default function AntiSpamConfig({
                             setNotice('Raid mode could not be stopped.')
                         );
                 }}
-                className="border border-ctp-surface2 rounded p-2 ml-2"
+                className="border border-bl-border rounded p-2 ml-2"
             >
                 Stop raid mode
             </button>

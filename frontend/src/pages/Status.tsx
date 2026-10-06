@@ -46,11 +46,11 @@ interface IncidentUpdate {
 
 function StatusBadge({ status }: { status: string }) {
     const colors = {
-        healthy: 'bg-green-500',
-        operational: 'bg-green-500',
-        degraded: 'bg-yellow-500',
-        down: 'bg-red-500',
-        unknown: 'bg-gray-500',
+        healthy: 'bg-bl-success-solid',
+        operational: 'bg-bl-success-solid',
+        degraded: 'bg-bl-warning-solid',
+        down: 'bg-bl-danger-solid',
+        unknown: 'bg-bl-recessed',
     };
 
     const labels = {
@@ -63,7 +63,9 @@ function StatusBadge({ status }: { status: string }) {
 
     return (
         <div className="flex items-center justify-center space-x-3">
-            <div className={`h-4 w-4 rounded-full ${colors[status as keyof typeof colors] || colors.unknown}`} />
+            <div
+                className={`h-4 w-4 rounded-full ${colors[status as keyof typeof colors] || colors.unknown}`}
+            />
             <span className="text-2xl font-semibold">
                 {labels[status as keyof typeof labels] || 'Unknown Status'}
             </span>
@@ -71,11 +73,19 @@ function StatusBadge({ status }: { status: string }) {
     );
 }
 
-function ServiceCard({ name, status, latency }: { name: string; status: string; latency?: number }) {
+function ServiceCard({
+    name,
+    status,
+    latency,
+}: {
+    name: string;
+    status: string;
+    latency?: number;
+}) {
     const statusColors = {
-        operational: 'border-green-500 bg-green-50',
-        down: 'border-red-500 bg-red-50',
-        degraded: 'border-yellow-500 bg-yellow-50',
+        operational: 'border-bl-success bg-bl-success/10',
+        down: 'border-bl-danger bg-bl-danger/10',
+        degraded: 'border-bl-warning bg-bl-warning/10',
     };
 
     const statusLabels = {
@@ -85,15 +95,20 @@ function ServiceCard({ name, status, latency }: { name: string; status: string; 
     };
 
     return (
-        <div className={`border-l-4 p-4 rounded ${statusColors[status as keyof typeof statusColors] || 'border-gray-300 bg-gray-50'}`}>
+        <div
+            className={`border-l-4 p-4 rounded ${statusColors[status as keyof typeof statusColors] || 'border-bl-border bg-bl-panel'}`}
+        >
             <div className="flex justify-between items-center">
                 <h3 className="text-lg font-semibold capitalize">{name}</h3>
                 <span className="text-sm font-medium">
-                    {statusLabels[status as keyof typeof statusLabels] || 'Unknown'}
+                    {statusLabels[status as keyof typeof statusLabels] ||
+                        'Unknown'}
                 </span>
             </div>
             {latency !== undefined && latency > 0 && (
-                <p className="text-sm text-gray-600 mt-1">Latency: {latency}ms</p>
+                <p className="text-sm text-bl-muted mt-1">
+                    Latency: {latency}ms
+                </p>
             )}
         </div>
     );
@@ -102,17 +117,23 @@ function ServiceCard({ name, status, latency }: { name: string; status: string; 
 function UptimeStats({ uptime }: { uptime: StatusData['uptime'] }) {
     return (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-white p-6 rounded-lg shadow">
-                <h4 className="text-sm text-gray-600 mb-2">Last 24 Hours</h4>
-                <p className="text-3xl font-bold text-green-600">{uptime['24h'].toFixed(2)}%</p>
+            <div className="bg-bl-panel p-6 rounded-lg shadow">
+                <h4 className="text-sm text-bl-muted mb-2">Last 24 Hours</h4>
+                <p className="text-3xl font-bold text-bl-success">
+                    {uptime['24h'].toFixed(2)}%
+                </p>
             </div>
-            <div className="bg-white p-6 rounded-lg shadow">
-                <h4 className="text-sm text-gray-600 mb-2">Last 7 Days</h4>
-                <p className="text-3xl font-bold text-green-600">{uptime['7d'].toFixed(2)}%</p>
+            <div className="bg-bl-panel p-6 rounded-lg shadow">
+                <h4 className="text-sm text-bl-muted mb-2">Last 7 Days</h4>
+                <p className="text-3xl font-bold text-bl-success">
+                    {uptime['7d'].toFixed(2)}%
+                </p>
             </div>
-            <div className="bg-white p-6 rounded-lg shadow">
-                <h4 className="text-sm text-gray-600 mb-2">Last 30 Days</h4>
-                <p className="text-3xl font-bold text-green-600">{uptime['30d'].toFixed(2)}%</p>
+            <div className="bg-bl-panel p-6 rounded-lg shadow">
+                <h4 className="text-sm text-bl-muted mb-2">Last 30 Days</h4>
+                <p className="text-3xl font-bold text-bl-success">
+                    {uptime['30d'].toFixed(2)}%
+                </p>
             </div>
         </div>
     );
@@ -120,9 +141,9 @@ function UptimeStats({ uptime }: { uptime: StatusData['uptime'] }) {
 
 function IncidentCard({ incident }: { incident: Incident }) {
     const severityColors = {
-        MINOR: 'bg-blue-100 text-blue-800',
-        MAJOR: 'bg-yellow-100 text-yellow-800',
-        CRITICAL: 'bg-red-100 text-red-800',
+        MINOR: 'bg-bl-accent/10 text-bl-accent',
+        MAJOR: 'bg-bl-warning/10 text-bl-warning',
+        CRITICAL: 'bg-bl-danger/10 text-bl-danger',
     };
 
     const statusLabels = {
@@ -133,35 +154,51 @@ function IncidentCard({ incident }: { incident: Incident }) {
     };
 
     return (
-        <div className="bg-white border border-gray-200 rounded-lg p-6 mb-4">
+        <div className="bg-bl-panel border border-bl-border rounded-lg p-6 mb-4">
             <div className="flex justify-between items-start mb-3">
                 <div>
-                    <h3 className="text-xl font-semibold mb-2">{incident.title}</h3>
+                    <h3 className="text-xl font-semibold mb-2">
+                        {incident.title}
+                    </h3>
                     <div className="flex space-x-2 text-sm">
-                        <span className={`px-2 py-1 rounded ${severityColors[incident.severity as keyof typeof severityColors] || 'bg-gray-100'}`}>
+                        <span
+                            className={`px-2 py-1 rounded ${severityColors[incident.severity as keyof typeof severityColors] || 'bg-bl-surface'}`}
+                        >
                             {incident.severity}
                         </span>
-                        <span className="px-2 py-1 rounded bg-gray-100 text-gray-800">
-                            {statusLabels[incident.status as keyof typeof statusLabels] || incident.status}
+                        <span className="px-2 py-1 rounded bg-bl-surface text-bl-ink">
+                            {statusLabels[
+                                incident.status as keyof typeof statusLabels
+                            ] || incident.status}
                         </span>
                     </div>
                 </div>
-                <div className="text-right text-sm text-gray-600">
-                    <p>Started: {new Date(incident.startedAt).toLocaleString()}</p>
+                <div className="text-right text-sm text-bl-muted">
+                    <p>
+                        Started: {new Date(incident.startedAt).toLocaleString()}
+                    </p>
                     {incident.resolvedAt && (
-                        <p>Resolved: {new Date(incident.resolvedAt).toLocaleString()}</p>
+                        <p>
+                            Resolved:{' '}
+                            {new Date(incident.resolvedAt).toLocaleString()}
+                        </p>
                     )}
                 </div>
             </div>
 
-            <p className="text-gray-700 mb-4">{incident.description}</p>
+            <p className="text-bl-ink mb-4">{incident.description}</p>
 
             {incident.affectedServices.length > 0 && (
                 <div className="mb-4">
-                    <p className="text-sm font-semibold text-gray-700 mb-1">Affected Services:</p>
+                    <p className="text-sm font-semibold text-bl-ink mb-1">
+                        Affected Services:
+                    </p>
                     <div className="flex flex-wrap gap-2">
                         {incident.affectedServices.map((service) => (
-                            <span key={service} className="text-xs px-2 py-1 bg-gray-200 rounded capitalize">
+                            <span
+                                key={service}
+                                className="text-xs px-2 py-1 bg-bl-surface rounded capitalize"
+                            >
                                 {service}
                             </span>
                         ))}
@@ -171,15 +208,20 @@ function IncidentCard({ incident }: { incident: Incident }) {
 
             {incident.updates && incident.updates.length > 0 && (
                 <div className="border-t pt-4">
-                    <h4 className="text-sm font-semibold text-gray-700 mb-3">Updates</h4>
+                    <h4 className="text-sm font-semibold text-bl-ink mb-3">
+                        Updates
+                    </h4>
                     <div className="space-y-3">
                         {incident.updates.map((update) => (
                             <div key={update.id} className="text-sm">
-                                <p className="text-gray-600 mb-1">
-                                    {new Date(update.createdAt).toLocaleString()}
-                                    {update.status && ` - ${statusLabels[update.status as keyof typeof statusLabels] || update.status}`}
+                                <p className="text-bl-muted mb-1">
+                                    {new Date(
+                                        update.createdAt
+                                    ).toLocaleString()}
+                                    {update.status &&
+                                        ` - ${statusLabels[update.status as keyof typeof statusLabels] || update.status}`}
                                 </p>
-                                <p className="text-gray-800">{update.message}</p>
+                                <p className="text-bl-ink">{update.message}</p>
                             </div>
                         ))}
                     </div>
@@ -202,7 +244,7 @@ export default function Status() {
             try {
                 // Clear error state on retry
                 setError(null);
-                
+
                 const [statusRes, incidentsRes] = await Promise.all([
                     fetch(`${apiUrl}/status`),
                     fetch(`${apiUrl}/status/incidents?resolved=false`),
@@ -213,12 +255,16 @@ export default function Status() {
                 }
 
                 const statusData = (await statusRes.json()) as StatusData;
-                const incidentsData = (await incidentsRes.json()) as { incidents: Incident[] };
+                const incidentsData = (await incidentsRes.json()) as {
+                    incidents: Incident[];
+                };
 
                 setStatus(statusData);
                 setIncidents(incidentsData.incidents);
             } catch (err) {
-                setError(err instanceof Error ? err.message : 'Failed to load status');
+                setError(
+                    err instanceof Error ? err.message : 'Failed to load status'
+                );
             } finally {
                 setLoading(false);
             }
@@ -236,10 +282,10 @@ export default function Status() {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+            <div className="min-h-screen bg-bl-panel flex items-center justify-center">
                 <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-                    <p className="mt-4 text-gray-600">Loading status...</p>
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-bl-accent mx-auto"></div>
+                    <p className="mt-4 text-bl-muted">Loading status...</p>
                 </div>
             </div>
         );
@@ -247,9 +293,9 @@ export default function Status() {
 
     if (error) {
         return (
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+            <div className="min-h-screen bg-bl-panel flex items-center justify-center">
                 <div className="text-center">
-                    <p className="text-red-600 text-xl">{error}</p>
+                    <p className="text-bl-danger text-xl">{error}</p>
                 </div>
             </div>
         );
@@ -260,25 +306,32 @@ export default function Status() {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 py-8">
+        <div className="min-h-screen bg-bl-panel py-8">
             <div className="container mx-auto px-4 max-w-5xl">
                 {/* Header */}
                 <div className="text-center mb-8">
-                    <h1 className="text-4xl font-bold text-gray-900 mb-2">System Status</h1>
-                    <p className="text-gray-600">Real-time status and uptime monitoring</p>
+                    <h1 className="text-4xl font-bold text-bl-ink mb-2">
+                        System Status
+                    </h1>
+                    <p className="text-bl-muted">
+                        Real-time status and uptime monitoring
+                    </p>
                 </div>
 
                 {/* Overall Status */}
-                <div className="bg-white rounded-lg shadow-lg p-8 mb-8">
+                <div className="bg-bl-panel rounded-lg shadow-lg p-8 mb-8">
                     <StatusBadge status={status.status} />
-                    <p className="text-center text-sm text-gray-500 mt-2">
-                        Last updated: {new Date(status.timestamp).toLocaleString()}
+                    <p className="text-center text-sm text-bl-muted mt-2">
+                        Last updated:{' '}
+                        {new Date(status.timestamp).toLocaleString()}
                     </p>
                 </div>
 
                 {/* Services Status */}
-                <div className="bg-white rounded-lg shadow-lg p-8 mb-8">
-                    <h2 className="text-2xl font-bold text-gray-900 mb-4">Services</h2>
+                <div className="bg-bl-panel rounded-lg shadow-lg p-8 mb-8">
+                    <h2 className="text-2xl font-bold text-bl-ink mb-4">
+                        Services
+                    </h2>
                     <div className="space-y-3">
                         <ServiceCard
                             name="Database"
@@ -300,27 +353,33 @@ export default function Status() {
 
                 {/* Uptime Statistics */}
                 <div className="mb-8">
-                    <h2 className="text-2xl font-bold text-gray-900 mb-4">Uptime</h2>
+                    <h2 className="text-2xl font-bold text-bl-ink mb-4">
+                        Uptime
+                    </h2>
                     <UptimeStats uptime={status.uptime} />
                 </div>
 
                 {/* Active Incidents */}
                 {incidents.length > 0 && (
                     <div className="mb-8">
-                        <h2 className="text-2xl font-bold text-gray-900 mb-4">
+                        <h2 className="text-2xl font-bold text-bl-ink mb-4">
                             Active Incidents ({incidents.length})
                         </h2>
                         {incidents.map((incident) => (
-                            <IncidentCard key={incident.id} incident={incident} />
+                            <IncidentCard
+                                key={incident.id}
+                                incident={incident}
+                            />
                         ))}
                     </div>
                 )}
 
                 {/* No Incidents Message */}
                 {incidents.length === 0 && status.status === 'healthy' && (
-                    <div className="bg-green-50 border border-green-200 rounded-lg p-6 text-center">
-                        <p className="text-green-800 font-medium">
-                            ✓ No active incidents - All systems operating normally
+                    <div className="bg-bl-success/10 border border-bl-success rounded-lg p-6 text-center">
+                        <p className="text-bl-success font-medium">
+                            ✓ No active incidents - All systems operating
+                            normally
                         </p>
                     </div>
                 )}

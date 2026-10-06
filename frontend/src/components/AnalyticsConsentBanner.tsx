@@ -38,7 +38,7 @@ export default function AnalyticsConsentBanner() {
     return (
         <aside
             aria-labelledby="consent-heading"
-            className="fixed bottom-0 left-0 right-0 z-50 bg-gray-900 border-t border-gray-700 shadow-lg"
+            className="fixed bottom-0 left-0 right-0 z-50 bg-bl-recessed border-t border-bl-border shadow-lg"
         >
             <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -50,28 +50,28 @@ export default function AnalyticsConsentBanner() {
                             <span aria-hidden="true">🍪</span>{' '}
                             {t('consent.analyticsTitle')}
                         </h3>
-                        <p className="text-sm text-gray-300">
+                        <p className="text-sm text-bl-muted">
                             {t('consent.analyticsMessage')}
                         </p>
                     </div>
                     <div className="flex items-center gap-3">
                         <button
                             onClick={handleDeny}
-                            className="px-4 py-2 text-sm font-medium text-gray-300 hover:text-white border border-gray-600 rounded-lg hover:bg-gray-800 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500"
+                            className="px-4 py-2 text-sm font-medium text-bl-muted hover:text-white border border-bl-border rounded-lg hover:bg-bl-recessed transition-colors focus:outline-none focus:ring-2 focus:ring-bl-border"
                             aria-label={t('consent.decline')}
                         >
                             {t('consent.decline')}
                         </button>
                         <button
                             onClick={handleAccept}
-                            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="px-4 py-2 text-sm font-medium text-white bg-bl-action hover:bg-bl-action rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-bl-accent"
                             aria-label={t('consent.accept')}
                         >
                             {t('consent.accept')}
                         </button>
                         <button
                             onClick={handleDeny}
-                            className="p-2 text-gray-400 hover:text-white transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 rounded"
+                            className="p-2 text-bl-muted hover:text-white transition-colors focus:outline-none focus:ring-2 focus:ring-bl-border rounded"
                             aria-label={t('common.close')}
                         >
                             <X className="w-5 h-5" aria-hidden="true" />

@@ -10,8 +10,12 @@ import type { FilterConfig } from '../components/analytics/InteractiveFilter';
 import NetworkGraph from '../components/analytics/NetworkGraph';
 import SankeyDiagram from '../components/analytics/SankeyDiagram';
 import { Button } from '../components/ui/Button';
-import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
-import { ThemeToggle } from '../components/ui/ThemeToggle';
+import {
+    Card,
+    CardHeader,
+    CardTitle,
+    CardContent,
+} from '../components/ui/Card';
 import { useAnalytics } from '../hooks/useAnalytics';
 import api from '../lib/api';
 
@@ -28,7 +32,10 @@ interface AnalyticsData {
 
 function AdvancedAnalytics() {
     const [loading, setLoading] = useState(true);
-    const [dateRange, setDateRange] = useState<{ start: Date; end: Date } | null>(null);
+    const [dateRange, setDateRange] = useState<{
+        start: Date;
+        end: Date;
+    } | null>(null);
     const [data, setData] = useState<AnalyticsData[]>([]);
     const [filteredData, setFilteredData] = useState<AnalyticsData[]>([]);
     const [filters, setFilters] = useState<FilterConfig>({
@@ -40,7 +47,9 @@ function AdvancedAnalytics() {
         userSearch: '',
         minInteractions: 0,
     });
-    const [activeView, setActiveView] = useState<'network' | 'sankey' | 'chord'>('network');
+    const [activeView, setActiveView] = useState<
+        'network' | 'sankey' | 'chord'
+    >('network');
     const { trackFeatureUsage } = useAnalytics();
 
     const fetchData = useCallback(async () => {
@@ -78,7 +87,10 @@ function AdvancedAnalytics() {
             });
 
             // Merge suspicion data efficiently using a Map indexed by userId
-            const suspicionMap = new Map<string, { suspicionScore: number; ghostScore: number }>();
+            const suspicionMap = new Map<
+                string,
+                { suspicionScore: number; ghostScore: number }
+            >();
             suspicionRes.data.forEach((item: unknown) => {
                 const suspicionItem = item as {
                     userId: string;
@@ -102,10 +114,10 @@ function AdvancedAnalytics() {
                 }
             });
 
-            dataMap.forEach(value => combinedData.push(value));
+            dataMap.forEach((value) => combinedData.push(value));
             setData(combinedData);
             setFilteredData(combinedData);
-            
+
             trackFeatureUsage('advanced_analytics_view');
         } catch (error) {
             console.error('Failed to fetch data:', error);
@@ -145,7 +157,9 @@ function AdvancedAnalytics() {
         // User search filter
         if (filters.userSearch) {
             filtered = filtered.filter((item) =>
-                item.username.toLowerCase().includes(filters.userSearch.toLowerCase())
+                item.username
+                    .toLowerCase()
+                    .includes(filters.userSearch.toLowerCase())
             );
         }
 
@@ -154,7 +168,9 @@ function AdvancedAnalytics() {
             filtered = filtered.filter(
                 (item) =>
                     item.channel &&
-                    item.channel.toLowerCase().includes(filters.channelSearch.toLowerCase())
+                    item.channel
+                        .toLowerCase()
+                        .includes(filters.channelSearch.toLowerCase())
             );
         }
 
@@ -162,16 +178,16 @@ function AdvancedAnalytics() {
     }, [data, filters]);
 
     return (
-        <div className="min-h-screen bg-ctp-base p-6">
+        <div className="min-h-screen bg-bl-canvas p-6">
             <div className="max-w-7xl mx-auto space-y-6">
                 {/* Header */}
                 <div className="mb-6">
                     <div className="flex items-center justify-between mb-4">
                         <div>
-                            <h1 className="text-3xl font-bold text-ctp-text">
+                            <h1 className="text-3xl font-bold text-bl-ink">
                                 Advanced Analytics
                             </h1>
-                            <p className="text-sm text-ctp-subtext0 mt-1">
+                            <p className="text-sm text-bl-muted mt-1">
                                 Interactive visualizations and deep insights
                             </p>
                         </div>
@@ -186,7 +202,6 @@ function AdvancedAnalytics() {
                                 {loading ? 'Loading...' : 'Refresh'}
                             </Button>
                             <InteractiveFilter onFilterChange={setFilters} />
-                            <ThemeToggle />
                         </div>
                     </div>
 
@@ -196,7 +211,11 @@ function AdvancedAnalytics() {
                     <div className="flex gap-2 mt-4">
                         <Button
                             onClick={() => setActiveView('network')}
-                            variant={activeView === 'network' ? 'primary' : 'secondary'}
+                            variant={
+                                activeView === 'network'
+                                    ? 'primary'
+                                    : 'secondary'
+                            }
                             size="sm"
                         >
                             <Network className="w-4 h-4 mr-2" />
@@ -204,7 +223,11 @@ function AdvancedAnalytics() {
                         </Button>
                         <Button
                             onClick={() => setActiveView('sankey')}
-                            variant={activeView === 'sankey' ? 'primary' : 'secondary'}
+                            variant={
+                                activeView === 'sankey'
+                                    ? 'primary'
+                                    : 'secondary'
+                            }
                             size="sm"
                         >
                             <GitBranch className="w-4 h-4 mr-2" />
@@ -212,7 +235,9 @@ function AdvancedAnalytics() {
                         </Button>
                         <Button
                             onClick={() => setActiveView('chord')}
-                            variant={activeView === 'chord' ? 'primary' : 'secondary'}
+                            variant={
+                                activeView === 'chord' ? 'primary' : 'secondary'
+                            }
                             size="sm"
                         >
                             <Share2 className="w-4 h-4 mr-2" />
@@ -226,9 +251,15 @@ function AdvancedAnalytics() {
                     <Card>
                         <CardContent className="pt-6">
                             <div className="text-center">
-                                <p className="text-sm text-ctp-subtext0">Total Users</p>
-                                <p className="text-3xl font-bold text-ctp-text mt-2">
-                                    {new Set(filteredData.map((d) => d.userId)).size}
+                                <p className="text-sm text-bl-muted">
+                                    Total Users
+                                </p>
+                                <p className="text-3xl font-bold text-bl-ink mt-2">
+                                    {
+                                        new Set(
+                                            filteredData.map((d) => d.userId)
+                                        ).size
+                                    }
                                 </p>
                             </div>
                         </CardContent>
@@ -236,9 +267,17 @@ function AdvancedAnalytics() {
                     <Card>
                         <CardContent className="pt-6">
                             <div className="text-center">
-                                <p className="text-sm text-ctp-subtext0">Total Channels</p>
-                                <p className="text-3xl font-bold text-ctp-text mt-2">
-                                    {new Set(filteredData.map((d) => d.channelId).filter(Boolean)).size}
+                                <p className="text-sm text-bl-muted">
+                                    Total Channels
+                                </p>
+                                <p className="text-3xl font-bold text-bl-ink mt-2">
+                                    {
+                                        new Set(
+                                            filteredData
+                                                .map((d) => d.channelId)
+                                                .filter(Boolean)
+                                        ).size
+                                    }
                                 </p>
                             </div>
                         </CardContent>
@@ -246,9 +285,15 @@ function AdvancedAnalytics() {
                     <Card>
                         <CardContent className="pt-6">
                             <div className="text-center">
-                                <p className="text-sm text-ctp-subtext0">Interactions</p>
-                                <p className="text-3xl font-bold text-ctp-text mt-2">
-                                    {filteredData.reduce((sum, item) => sum + (item.interactions || 0), 0)}
+                                <p className="text-sm text-bl-muted">
+                                    Interactions
+                                </p>
+                                <p className="text-3xl font-bold text-bl-ink mt-2">
+                                    {filteredData.reduce(
+                                        (sum, item) =>
+                                            sum + (item.interactions || 0),
+                                        0
+                                    )}
                                 </p>
                             </div>
                         </CardContent>
@@ -256,9 +301,16 @@ function AdvancedAnalytics() {
                     <Card>
                         <CardContent className="pt-6">
                             <div className="text-center">
-                                <p className="text-sm text-ctp-subtext0">Filters Active</p>
-                                <p className="text-3xl font-bold text-ctp-text mt-2">
-                                    {Object.values(filters).filter((v) => v !== 0 && v !== 100 && v !== '').length}
+                                <p className="text-sm text-bl-muted">
+                                    Filters Active
+                                </p>
+                                <p className="text-3xl font-bold text-bl-ink mt-2">
+                                    {
+                                        Object.values(filters).filter(
+                                            (v) =>
+                                                v !== 0 && v !== 100 && v !== ''
+                                        ).length
+                                    }
                                 </p>
                             </div>
                         </CardContent>
@@ -270,9 +322,12 @@ function AdvancedAnalytics() {
                     <CardHeader>
                         <div className="flex justify-between items-center">
                             <CardTitle>
-                                {activeView === 'network' && 'Network Relationship Graph'}
-                                {activeView === 'sankey' && 'Sankey Flow Diagram'}
-                                {activeView === 'chord' && 'Chord Interaction Diagram'}
+                                {activeView === 'network' &&
+                                    'Network Relationship Graph'}
+                                {activeView === 'sankey' &&
+                                    'Sankey Flow Diagram'}
+                                {activeView === 'chord' &&
+                                    'Chord Interaction Diagram'}
                             </CardTitle>
                             <ChartExport
                                 elementId="visualization-container"
@@ -283,18 +338,31 @@ function AdvancedAnalytics() {
                     <CardContent>
                         {loading ? (
                             <div className="flex items-center justify-center h-96">
-                                <p className="text-ctp-subtext0">Loading visualization...</p>
+                                <p className="text-bl-muted">
+                                    Loading visualization...
+                                </p>
                             </div>
                         ) : (
                             <div id="visualization-container">
                                 {activeView === 'network' && (
-                                    <NetworkGraph data={filteredData} height={500} />
+                                    <NetworkGraph
+                                        data={filteredData}
+                                        height={500}
+                                    />
                                 )}
                                 {activeView === 'sankey' && (
-                                    <SankeyDiagram data={filteredData} width={800} height={500} />
+                                    <SankeyDiagram
+                                        data={filteredData}
+                                        width={800}
+                                        height={500}
+                                    />
                                 )}
                                 {activeView === 'chord' && (
-                                    <ChordDiagram data={filteredData} width={600} height={600} />
+                                    <ChordDiagram
+                                        data={filteredData}
+                                        width={600}
+                                        height={600}
+                                    />
                                 )}
                             </div>
                         )}
@@ -304,18 +372,27 @@ function AdvancedAnalytics() {
                 {/* Help Text */}
                 <Card>
                     <CardContent className="pt-6">
-                        <div className="text-sm text-ctp-subtext0 space-y-2">
+                        <div className="text-sm text-bl-muted space-y-2">
                             <p>
-                                <strong className="text-ctp-text">Network Graph:</strong> Shows relationships
-                                between users and channels. Node size represents activity level.
+                                <strong className="text-bl-ink">
+                                    Network Graph:
+                                </strong>{' '}
+                                Shows relationships between users and channels.
+                                Node size represents activity level.
                             </p>
                             <p>
-                                <strong className="text-ctp-text">Sankey Flow:</strong> Visualizes the flow
-                                of interactions from users to channels.
+                                <strong className="text-bl-ink">
+                                    Sankey Flow:
+                                </strong>{' '}
+                                Visualizes the flow of interactions from users
+                                to channels.
                             </p>
                             <p>
-                                <strong className="text-ctp-text">Chord Diagram:</strong> Displays
-                                interaction patterns between all entities in a circular layout.
+                                <strong className="text-bl-ink">
+                                    Chord Diagram:
+                                </strong>{' '}
+                                Displays interaction patterns between all
+                                entities in a circular layout.
                             </p>
                         </div>
                     </CardContent>

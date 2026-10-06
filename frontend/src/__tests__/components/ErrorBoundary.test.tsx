@@ -7,7 +7,9 @@ import ErrorBoundary from '../../components/ErrorBoundary';
 // Mock Sentry
 vi.mock('@sentry/react', () => ({
     captureException: vi.fn(),
-    ErrorBoundary: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+    ErrorBoundary: ({ children }: { children: React.ReactNode }) => (
+        <div>{children}</div>
+    ),
 }));
 
 // Component that throws an error
@@ -71,7 +73,9 @@ describe('ErrorBoundary', () => {
         );
 
         expect(screen.getByText('Custom error message')).toBeInTheDocument();
-        expect(screen.queryByText('Something went wrong')).not.toBeInTheDocument();
+        expect(
+            screen.queryByText('Something went wrong')
+        ).not.toBeInTheDocument();
     });
 
     it('should have a try again button', () => {
@@ -105,7 +109,7 @@ describe('ErrorBoundary', () => {
 
         const tryAgainButton = screen.getByText('Try Again');
         const reloadButton = screen.getByText('Reload Page');
-        
+
         // Both buttons should be present and clickable
         expect(tryAgainButton).toBeInTheDocument();
         expect(reloadButton).toBeInTheDocument();
@@ -129,8 +133,8 @@ describe('ErrorBoundary', () => {
         );
 
         // Check for key styling classes
-        expect(container.querySelector('.bg-ctp-base')).toBeInTheDocument();
-        expect(container.querySelector('.border-ctp-surface0')).toBeInTheDocument();
-        expect(container.querySelector('.bg-ctp-mantle')).toBeInTheDocument();
+        expect(container.querySelector('.bg-bl-canvas')).toBeInTheDocument();
+        expect(container.querySelector('.border-bl-panel')).toBeInTheDocument();
+        expect(container.querySelector('.bg-bl-recessed')).toBeInTheDocument();
     });
 });

@@ -16,10 +16,14 @@ export function ThemeToggle() {
         let timeoutId: NodeJS.Timeout | null = null;
 
         const handleKeyPress = (event: KeyboardEvent) => {
-            if ((event.ctrlKey || event.metaKey) && event.shiftKey && event.key === 'T') {
+            if (
+                (event.ctrlKey || event.metaKey) &&
+                event.shiftKey &&
+                event.key === 'T'
+            ) {
                 event.preventDefault();
                 toggleTheme();
-                
+
                 // Show tooltip briefly when triggered by keyboard
                 setShowTooltip(true);
                 timeoutId = setTimeout(() => setShowTooltip(false), 2000);
@@ -69,12 +73,12 @@ export function ThemeToggle() {
             >
                 {getIcon()}
             </Button>
-            
+
             {showTooltip && (
                 <div
                     role="status"
                     aria-live="polite"
-                    className="absolute top-full mt-2 right-0 bg-ctp-surface0 text-ctp-text px-3 py-2 rounded-lg text-sm whitespace-nowrap shadow-lg border border-ctp-surface1 z-50 animate-fade-in"
+                    className="absolute top-full mt-2 right-0 bg-bl-panel text-bl-ink px-3 py-2 rounded-lg text-sm whitespace-nowrap shadow-lg border border-bl-surface z-50 animate-fade-in"
                 >
                     {t('theme.toggle')}: {getThemeLabel()}
                 </div>

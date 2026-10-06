@@ -19,10 +19,17 @@ interface ExportButtonProps {
 
 // Helper function to validate string arrays
 const isStringArray = (arr: unknown): arr is string[] => {
-    return Array.isArray(arr) && arr.every((item): item is string => typeof item === 'string');
+    return (
+        Array.isArray(arr) &&
+        arr.every((item): item is string => typeof item === 'string')
+    );
 };
 
-function ExportButton({ events, username, disabled = false }: ExportButtonProps) {
+function ExportButton({
+    events,
+    username,
+    disabled = false,
+}: ExportButtonProps) {
     const [isExporting, setIsExporting] = useState(false);
 
     const exportToJSON = () => {
@@ -48,7 +55,13 @@ function ExportButton({ events, username, disabled = false }: ExportButtonProps)
     const exportToCSV = () => {
         try {
             setIsExporting(true);
-            const headers = ['Timestamp', 'Type', 'Username', 'Description', 'Anomalous'];
+            const headers = [
+                'Timestamp',
+                'Type',
+                'Username',
+                'Description',
+                'Anomalous',
+            ];
             const rows = events.map((event) => {
                 let description = '';
                 switch (event.type) {
@@ -86,7 +99,9 @@ function ExportButton({ events, username, disabled = false }: ExportButtonProps)
                     event.username,
                     description.replace(/"/g, '""'), // Escape quotes
                     event.isAnomalous ? 'Yes' : 'No',
-                ].map((field) => `"${field}"`).join(',');
+                ]
+                    .map((field) => `"${field}"`)
+                    .join(',');
             });
 
             const csv = [headers.join(','), ...rows].join('\n');
@@ -110,7 +125,7 @@ function ExportButton({ events, username, disabled = false }: ExportButtonProps)
         <div className="relative group">
             <button
                 disabled={disabled || isExporting || events.length === 0}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors text-sm font-medium"
+                className="flex items-center gap-2 px-4 py-2 bg-bl-action text-white rounded-lg hover:bg-bl-action disabled:bg-bl-recessed disabled:cursor-not-allowed transition-colors text-sm font-medium"
             >
                 <Download className="h-4 w-4" />
                 <span>{isExporting ? 'Exporting...' : 'Export'}</span>
@@ -118,16 +133,16 @@ function ExportButton({ events, username, disabled = false }: ExportButtonProps)
 
             {/* Dropdown menu */}
             {!disabled && !isExporting && events.length > 0 && (
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-20">
+                <div className="absolute right-0 mt-2 w-48 bg-bl-panel rounded-lg shadow-lg border border-bl-border opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-20">
                     <button
                         onClick={exportToJSON}
-                        className="block w-full text-left px-4 py-2 hover:bg-gray-50 text-sm text-gray-700 rounded-t-lg"
+                        className="block w-full text-left px-4 py-2 hover:bg-bl-panel text-sm text-bl-ink rounded-t-lg"
                     >
                         Export as JSON
                     </button>
                     <button
                         onClick={exportToCSV}
-                        className="block w-full text-left px-4 py-2 hover:bg-gray-50 text-sm text-gray-700 rounded-b-lg"
+                        className="block w-full text-left px-4 py-2 hover:bg-bl-panel text-sm text-bl-ink rounded-b-lg"
                     >
                         Export as CSV
                     </button>
