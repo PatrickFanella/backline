@@ -31,6 +31,7 @@ describe('Load Shedding Middleware', () => {
         os = jest.requireMock('os');
         mockRequest = {
             path: '/api/test',
+            method: 'GET',
         };
         mockResponse = {
             status: jest.fn().mockReturnThis(),
@@ -108,6 +109,37 @@ describe('Load Shedding Middleware', () => {
             expect(mockResponse.status).not.toHaveBeenCalled();
         });
 
+        it.each(['/health/live', '/health/ready'])(
+            'allows the real probe %s under CPU and memory pressure',
+            (path) => {
+                mockRequest = { path, method: 'GET' };
+                os.loadavg.mockReturnValue([4, 4, 4]);
+                os.freemem.mockReturnValue(0);
+                loadSheddingMiddleware(
+                    mockRequest as Request,
+                    mockResponse as Response,
+                    nextFunction
+                );
+                expect(nextFunction).toHaveBeenCalledTimes(1);
+                expect(mockResponse.status).not.toHaveBeenCalled();
+            }
+        );
+
+        it.each(['/health/ready-extra', '/health/ready/private'])(
+            'keeps load protection on non-probe path %s',
+            (path) => {
+                mockRequest = { path, method: 'GET' };
+                os.loadavg.mockReturnValue([4, 4, 4]);
+                loadSheddingMiddleware(
+                    mockRequest as Request,
+                    mockResponse as Response,
+                    nextFunction
+                );
+                expect(mockResponse.status).toHaveBeenCalledWith(503);
+                expect(nextFunction).not.toHaveBeenCalled();
+            }
+        );
+
         it('should always allow admin users even under high load', () => {
             (mockRequest as any).user = { role: 'ADMIN' };
             os.loadavg.mockReturnValue([3.4, 3.2, 3.0]); // High CPU
@@ -163,6 +195,17 @@ describe('Load Shedding Middleware', () => {
     });
 
     describe('circuitBreakerMiddleware', () => {
+        it('does not count dependency probe failures against normal traffic', () => {
+            mockRequest = { path: '/health/ready', method: 'GET' };
+            circuitBreakerMiddleware(
+                mockRequest as Request,
+                mockResponse as Response,
+                nextFunction
+            );
+            expect(nextFunction).toHaveBeenCalledTimes(1);
+            expect(mockResponse.on).not.toHaveBeenCalled();
+        });
+
         it('should allow requests when circuit is closed', () => {
             circuitBreakerMiddleware(
                 mockRequest as Request,
@@ -189,6 +232,37 @@ describe('Load Shedding Middleware', () => {
                 'finish',
                 expect.any(Function)
             );
+        });
+        it('allows probes through an open circuit while keeping application traffic blocked', () => {
+            (mockResponse.on as jest.Mock).mockImplementation(
+                (_event, finish: () => void) => finish()
+            );
+            mockResponse.statusCode = 500;
+            for (let i = 0; i < 5; i++) {
+                circuitBreakerMiddleware(
+                    mockRequest as Request,
+                    mockResponse as Response,
+                    nextFunction
+                );
+            }
+            nextFunction = jest.fn();
+            mockResponse.status = jest.fn().mockReturnThis();
+            mockResponse.on = jest.fn();
+            circuitBreakerMiddleware(
+                { path: '/health/ready', method: 'GET' } as Request,
+                mockResponse as Response,
+                nextFunction
+            );
+            expect(nextFunction).toHaveBeenCalledTimes(1);
+            expect(mockResponse.status).not.toHaveBeenCalled();
+            nextFunction = jest.fn();
+            circuitBreakerMiddleware(
+                { path: '/api/guilds', method: 'GET' } as Request,
+                mockResponse as Response,
+                nextFunction
+            );
+            expect(mockResponse.status).toHaveBeenCalledWith(503);
+            expect(nextFunction).not.toHaveBeenCalled();
         });
     });
 });

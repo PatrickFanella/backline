@@ -5,6 +5,20 @@ import { Request, Response, NextFunction } from 'express';
 
 import { env } from '../utils/env';
 
+const healthProbePaths = new Set([
+    '/health',
+    '/api/health',
+    '/health/live',
+    '/health/ready',
+]);
+
+function isHealthProbe(req: Request): boolean {
+    return (
+        (req.method === 'GET' || req.method === 'HEAD') &&
+        healthProbePaths.has(req.path)
+    );
+}
+
 /**
  * Load shedding middleware
  * Rejects non-critical requests when system is under heavy load
@@ -15,7 +29,7 @@ export const loadSheddingMiddleware = (
     next: NextFunction
 ): void => {
     // Skip if load shedding is disabled
-    if (!env.ENABLE_LOAD_SHEDDING) {
+    if (!env.ENABLE_LOAD_SHEDDING || isHealthProbe(req)) {
         next();
         return;
     }
@@ -30,12 +44,6 @@ export const loadSheddingMiddleware = (
 
     // If system is under heavy load
     if (cpuUsage > cpuThreshold || memUsage > memThreshold) {
-        // Always allow health checks
-        if (req.path === '/api/health' || req.path === '/health') {
-            next();
-            return;
-        }
-
         // Always allow admin users
         const user = (req as any).user;
         if (user && user.role === 'ADMIN') {
@@ -168,10 +176,16 @@ const circuitBreaker = new CircuitBreaker();
  * Fails fast when system is experiencing errors
  */
 export const circuitBreakerMiddleware = (
-    _req: Request,
+    req: Request,
     res: Response,
     next: NextFunction
 ): void => {
+    // Dependency probes must reach their checks even when application traffic
+    // is shed. Their failures must not open the application circuit either.
+    if (isHealthProbe(req)) {
+        next();
+        return;
+    }
     if (circuitBreaker.isOpen()) {
         res.status(503).json({
             error: 'Circuit breaker open',
