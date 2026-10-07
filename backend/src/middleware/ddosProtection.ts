@@ -5,6 +5,8 @@ import slowDown from 'express-slow-down';
 import { getRedisClient } from '../utils/redis';
 import { sanitizeForLog } from '../utils/security';
 
+import { isHealthProbe } from './healthProbe';
+
 const redis = getRedisClient();
 
 /**
@@ -16,6 +18,7 @@ export const slowDownMiddleware = slowDown({
     delayAfter: 50, // Start delaying after 50 requests
     delayMs: (hits) => hits * 500, // Add 500ms delay per request after limit
     maxDelayMs: 20000, // Max 20 second delay
+    skip: isHealthProbe, // Monitoring must not delay probes or consume user budgets.
 });
 
 /**

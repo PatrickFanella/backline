@@ -5,19 +5,7 @@ import { Request, Response, NextFunction } from 'express';
 
 import { env } from '../utils/env';
 
-const healthProbePaths = new Set([
-    '/health',
-    '/api/health',
-    '/health/live',
-    '/health/ready',
-]);
-
-function isHealthProbe(req: Request): boolean {
-    return (
-        (req.method === 'GET' || req.method === 'HEAD') &&
-        healthProbePaths.has(req.path)
-    );
-}
+import { isHealthProbe } from './healthProbe';
 
 /**
  * Load shedding middleware
