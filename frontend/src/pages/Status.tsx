@@ -54,7 +54,7 @@ function StatusBadge({ status }: { status: string }) {
     };
 
     const labels = {
-        healthy: 'All Systems Operational',
+        healthy: 'API Services Operational',
         operational: 'Operational',
         degraded: 'Degraded Performance',
         down: 'System Outage',
@@ -311,10 +311,12 @@ export default function Status() {
                 {/* Header */}
                 <div className="text-center mb-8">
                     <h1 className="text-4xl font-bold text-bl-ink mb-2">
-                        System Status
+                        API Service Status
                     </h1>
                     <p className="text-bl-muted">
-                        Real-time status and uptime monitoring
+                        Database, cache and Discord API availability. These
+                        checks do not verify the bot connection or command
+                        delivery.
                     </p>
                 </div>
 
@@ -354,7 +356,7 @@ export default function Status() {
                 {/* Uptime Statistics */}
                 <div className="mb-8">
                     <h2 className="text-2xl font-bold text-bl-ink mb-4">
-                        Uptime
+                        API service uptime
                     </h2>
                     <UptimeStats uptime={status.uptime} />
                 </div>
@@ -378,8 +380,7 @@ export default function Status() {
                 {incidents.length === 0 && status.status === 'healthy' && (
                     <div className="bg-bl-success/10 border border-bl-success rounded-lg p-6 text-center">
                         <p className="text-bl-success font-medium">
-                            ✓ No active incidents - All systems operating
-                            normally
+                            ✓ No active incidents reported
                         </p>
                     </div>
                 )}
