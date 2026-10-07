@@ -23,6 +23,11 @@ import { registerCollectors } from './collectors';
 import { registerGuildCommands, routeInteraction } from './commands';
 
 export async function startBot(): Promise<Client> {
+    // Database/schema failures must not consume a Gateway IDENTIFY session.
+    // Installation discovery also provides the baseline used after login.
+    const known = await db.guildInstallation.findMany({
+        where: { active: true },
+    });
     const client = new Client({
         intents: configuredIntents(),
         partials: [
@@ -75,9 +80,6 @@ export async function startBot(): Promise<Client> {
         client.once('clientReady', () => {
             void (async () => {
                 const guildIds = client.guilds.cache.map((guild) => guild.id);
-                const known = await db.guildInstallation.findMany({
-                    where: { active: true },
-                });
                 for (const missing of known.filter(
                     (row) => !guildIds.includes(row.guildId)
                 ))

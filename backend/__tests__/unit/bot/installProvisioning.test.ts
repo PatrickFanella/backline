@@ -8,6 +8,7 @@ import { moduleRegistry } from '../../../src/modules/registry';
 import { env } from '../../../src/utils/env';
 
 const guild = { id: '123456789', name: 'fixture', icon: null };
+const mockLogin = jest.fn();
 jest.mock('discord.js', () => {
     const actual = jest.requireActual('discord.js');
     return {
@@ -17,6 +18,7 @@ jest.mock('discord.js', () => {
             isReady = () => false;
             destroy = jest.fn().mockResolvedValue(undefined);
             login() {
+                mockLogin();
                 queueMicrotask(() => this.emit('clientReady'));
                 return Promise.resolve('unused');
             }
@@ -73,5 +75,15 @@ describe('automatic installation provisioning', () => {
             false
         );
         await client.destroy();
+    });
+    it('does not consume a Gateway login when the installation database is unavailable', async () => {
+        (db.guildInstallation.findMany as jest.Mock).mockRejectedValueOnce(
+            new Error('database unavailable')
+        );
+
+        await expect(startBot()).rejects.toThrow('database unavailable');
+
+        expect(mockLogin).not.toHaveBeenCalled();
+        expect(recordInstallation).not.toHaveBeenCalled();
     });
 });
