@@ -4,10 +4,14 @@ on:
     push:
         paths:
             - 'backend/**'
+            - 'scripts/check-postgresql-baseline.mjs'
+            - 'scripts/adopt-postgresql-baseline.mjs'
             - '.github/workflows/**'
     pull_request:
         paths:
             - 'backend/**'
+            - 'scripts/check-postgresql-baseline.mjs'
+            - 'scripts/adopt-postgresql-baseline.mjs'
             - '.github/workflows/**'
 
 jobs:
@@ -143,21 +147,34 @@ jobs:
 
             - name: Start an isolated PostgreSQL container
               run: |
-                  docker run -d --name "$PG_CONTAINER" \
+                  if docker inspect --type container "$HOSTNAME" >/dev/null 2>&1; then
+                    # Gitea jobs may use a different bridge from Docker's default.
+                    # Sharing this job's namespace keeps the database on loopback.
+                    network_args=(--network "container:$HOSTNAME")
+                    pg_port=5432
+                  else
+                    # A host-based runner uses an ephemeral loopback-only port.
+                    network_args=(-p 127.0.0.1::5432)
+                    pg_port=""
+                  fi
+                  docker run -d --name "$PG_CONTAINER" "${network_args[@]}" \
                     -e POSTGRES_USER=spywatcher -e POSTGRES_PASSWORD=test_password \
                     -e POSTGRES_DB=spywatcher_test postgres:16
                   for attempt in $(seq 1 30); do
-                    if docker exec "$PG_CONTAINER" pg_isready -U spywatcher; then
+                    if docker exec "$PG_CONTAINER" pg_isready -h 127.0.0.1 -U spywatcher; then
                       break
                     fi
                     sleep 1
                   done
-                  docker exec "$PG_CONTAINER" pg_isready -U spywatcher
-                  pg_host="$(docker inspect --format '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' "$PG_CONTAINER")"
-                  test -n "$pg_host"
-                  echo "BASELINE_FRESH_DATABASE_URL=postgresql://spywatcher:test_password@$pg_host:5432/spywatcher_test" >> "$GITHUB_ENV"
-                  echo "BASELINE_EXISTING_DATABASE_URL=postgresql://spywatcher:test_password@$pg_host:5432/spywatcher_existing" >> "$GITHUB_ENV"
-                  echo "DATABASE_URL=postgresql://spywatcher:test_password@$pg_host:5432/spywatcher_integration" >> "$GITHUB_ENV"
+                  docker exec "$PG_CONTAINER" pg_isready -h 127.0.0.1 -U spywatcher
+                  if [ -z "$pg_port" ]; then
+                    binding="$(docker port "$PG_CONTAINER" 5432/tcp)"
+                    pg_port="${binding##*:}"
+                  fi
+                  [[ "$pg_port" =~ ^[0-9]+$ ]]
+                  echo "BASELINE_FRESH_DATABASE_URL=postgresql://spywatcher:test_password@127.0.0.1:$pg_port/spywatcher_test" >> "$GITHUB_ENV"
+                  echo "BASELINE_EXISTING_DATABASE_URL=postgresql://spywatcher:test_password@127.0.0.1:$pg_port/spywatcher_existing" >> "$GITHUB_ENV"
+                  echo "DATABASE_URL=postgresql://spywatcher:test_password@127.0.0.1:$pg_port/spywatcher_integration" >> "$GITHUB_ENV"
 
             - name: Check fresh and existing PostgreSQL baselines
               run: |
