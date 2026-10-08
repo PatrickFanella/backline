@@ -32,6 +32,12 @@ test.describe('authentication boundaries', () => {
     test('redirects an anonymous server route to login after navigation and reload', async ({
         page,
     }) => {
+        await page.route('**/api/auth/me', (route) =>
+            route.fulfill({ status: 401, json: { error: 'Unauthorized' } })
+        );
+        await page.route('**/api/auth/refresh', (route) =>
+            route.fulfill({ status: 401, json: { error: 'Unauthorized' } })
+        );
         await page.goto('/servers');
 
         await expect(page).toHaveURL(/\/login$/);
@@ -45,6 +51,29 @@ test.describe('authentication boundaries', () => {
         await expect(
             page.getByRole('heading', { name: 'Backline' })
         ).toBeVisible();
+    });
+
+    test('offers retry during an outage and redirects after an anonymous response', async ({
+        page,
+    }) => {
+        let recovered = false;
+        await page.route('**/api/auth/me', (route) =>
+            route.fulfill({
+                status: recovered ? 401 : 503,
+                json: { error: recovered ? 'Unauthorized' : 'Unavailable' },
+            })
+        );
+        await page.route('**/api/auth/refresh', (route) =>
+            route.fulfill({ status: 401, json: { error: 'Unauthorized' } })
+        );
+        await page.goto('/servers');
+        await expect(page.getByRole('alert')).toHaveText(
+            'We could not check your session. Try again when the connection recovers.'
+        );
+        await expect(page).toHaveURL(/\/servers$/);
+        recovered = true;
+        await page.getByRole('banner').getByRole('button', { name: 'Retry session check' }).click();
+        await expect(page).toHaveURL(/\/login$/);
     });
 });
 

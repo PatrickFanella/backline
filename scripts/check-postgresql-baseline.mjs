@@ -19,6 +19,19 @@ function run(command, args, database) {
         env: { ...process.env, DATABASE_URL: database },
         encoding: 'utf8',
     });
+    if (result.status !== 0) {
+        const dir = mkdtempSync(`${tmpdir()}/backline-baseline-failure-`);
+        writeFileSync(
+            `${dir}/command.log`,
+            `${result.stdout ?? ''}\n${result.stderr ?? ''}`,
+            { mode: 0o600 }
+        );
+        // Report only bounded diagnostic codes; Prisma output can contain URLs.
+        const codes = [...new Set(
+            `${result.stdout ?? ''}\n${result.stderr ?? ''}`.match(/\bP\d{4}\b/g) ?? []
+        )];
+        console.error(`Baseline command failed: exit=${result.status}; signal=${result.signal ?? 'none'}; Prisma codes=${codes.join(',') || 'none'}; private log=${dir}/command.log`);
+    }
     assert.equal(
         result.status,
         0,
