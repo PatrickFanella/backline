@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 
@@ -25,11 +26,20 @@ import Moderation from './pages/Moderation';
 import RuleEditor from './pages/RuleEditor';
 import Rules from './pages/Rules';
 import Servers from './pages/Servers';
+import { useAuth } from './store/auth';
 
 function AppContent() {
     const { t } = useTranslation();
     usePageTracking();
     useRTL();
+    useEffect(() => {
+        if (typeof BroadcastChannel === 'undefined') return;
+        const channel = new BroadcastChannel('backline-session');
+        channel.onmessage = (event) => {
+            if (event.data === 'signed-out') useAuth.getState().logout();
+        };
+        return () => channel.close();
+    }, []);
 
     return (
         <>

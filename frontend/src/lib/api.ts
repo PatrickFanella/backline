@@ -32,27 +32,48 @@ let refreshInFlight: Promise<string> | null = null;
 
 function refreshSession(): Promise<string> {
     if (!refreshInFlight) {
-        refreshInFlight = axios
-            .post(
-                `${config.apiUrl}/auth/refresh`,
-                {},
-                { withCredentials: true }
-            )
-            .then((response) => {
-                const token: unknown = response.data?.accessToken;
-                if (typeof token !== 'string' || !token.trim()) {
-                    throw new Error('Invalid refresh response');
-                }
-                useAuth.getState().setToken(token);
-                return token;
-            })
-            .catch((error: unknown) => {
-                useAuth.getState().logout();
-                throw error;
-            })
-            .finally(() => {
-                refreshInFlight = null;
-            });
+        const revision = useAuth.getState().revision;
+        const refresh = () => {
+            if (useAuth.getState().revision !== revision)
+                return Promise.reject(new Error('Session changed'));
+            return axios
+                .post(
+                    `${config.apiUrl}/auth/refresh`,
+                    {},
+                    { withCredentials: true }
+                )
+                .then((response) => {
+                    if (useAuth.getState().revision !== revision)
+                        throw new Error('Session changed');
+                    const token: unknown = response.data?.accessToken;
+                    if (typeof token !== 'string' || !token.trim()) {
+                        useAuth.getState().logout();
+                        throw new Error('Invalid refresh response');
+                    }
+                    useAuth.getState().setToken(token);
+                    return token;
+                })
+                .catch((error: unknown) => {
+                    if (
+                        axios.isAxiosError(error) &&
+                        [400, 401].includes(error.response?.status ?? 0) &&
+                        useAuth.getState().revision === revision
+                    )
+                        useAuth.getState().logout();
+                    throw error;
+                });
+        };
+        const serializedRefresh = async (): Promise<string> => {
+            if (typeof navigator !== 'undefined' && navigator.locks)
+                return await navigator.locks.request(
+                    'backline-session-refresh',
+                    refresh
+                );
+            return await refresh();
+        };
+        refreshInFlight = serializedRefresh().finally(() => {
+            refreshInFlight = null;
+        });
     }
     return refreshInFlight;
 }
