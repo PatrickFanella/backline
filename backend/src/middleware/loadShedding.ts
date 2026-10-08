@@ -7,6 +7,9 @@ import { env } from '../utils/env';
 
 import { isHealthProbe } from './healthProbe';
 
+// Deliberate admission control is not an application/dependency failure.
+const shedResponses = new WeakSet<Response>();
+
 /**
  * Load shedding middleware
  * Rejects non-critical requests when system is under heavy load
@@ -40,6 +43,7 @@ export const loadSheddingMiddleware = (
         }
 
         // Reject other requests with 503 Service Unavailable
+        shedResponses.add(res);
         res.status(503).json({
             error: 'Service temporarily unavailable',
             message: 'Server under high load, please try again later',
@@ -185,6 +189,7 @@ export const circuitBreakerMiddleware = (
 
     // Track response status to update circuit breaker
     res.on('finish', () => {
+        if (shedResponses.delete(res)) return;
         if (res.statusCode >= 500) {
             circuitBreaker.recordFailure();
         } else {
