@@ -34,6 +34,7 @@ import {
 } from '../community/memberUtilities';
 import { acknowledgeRules } from '../community/onboarding';
 import { pollCommand, routePolls } from '../community/polls';
+import { RoleAssignmentError } from '../community/roles';
 import {
     routeScheduledUtilities,
     scheduledUtilityCommands,
@@ -192,7 +193,10 @@ export async function routeInteraction(
         if (await routeSuggestions(interaction)) return;
         if (await routeMemberUtilities(interaction)) return;
         if (await routeSelfRoles(interaction)) return;
-        if (interaction.isChatInputCommand() && (await routeHeldActionRecovery(interaction)))
+        if (
+            interaction.isChatInputCommand() &&
+            (await routeHeldActionRecovery(interaction))
+        )
             return;
         if (!interaction.isChatInputCommand()) {
             await interaction.editReply(
@@ -413,16 +417,18 @@ export async function routeInteraction(
             default:
                 await interaction.editReply('Unknown command. Use /help.');
         }
-    } catch {
+    } catch (error) {
         console.warn('Interaction failed');
+        const message =
+            error instanceof RoleAssignmentError
+                ? error.message
+                : 'The action failed. Check /status and try again.';
         try {
             if (interaction.deferred || interaction.replied)
-                await interaction.editReply(
-                    'The action failed. Check /status and try again.'
-                );
+                await interaction.editReply(message);
             else
                 await interaction.reply({
-                    content: 'The action failed. Please try again.',
+                    content: message,
                     flags: MessageFlags.Ephemeral,
                 });
         } catch {

@@ -1,5 +1,7 @@
 import { Guild, GuildMember, PermissionFlagsBits, Role } from 'discord.js';
 
+export class RoleAssignmentError extends Error {}
+
 export function assertAssignableRole(
     guild: Guild,
     bot: GuildMember,
@@ -25,9 +27,17 @@ export function assertAssignableRole(
         role.guild.id !== guild.id ||
         role.id === guild.id ||
         role.managed ||
-        (role.permissions.bitfield & ~allowed) !== BigInt(0) ||
-        bot.roles.highest.comparePositionTo(role) <= 0 ||
-        !bot.permissions.has(PermissionFlagsBits.ManageRoles)
+        (role.permissions.bitfield & ~allowed) !== BigInt(0)
     )
-        throw new Error('Role is privileged, managed or above the bot');
+        throw new RoleAssignmentError(
+            'This role is privileged or managed and cannot be offered for self-service. Choose a basic interest role.'
+        );
+    if (!bot.permissions.has(PermissionFlagsBits.ManageRoles))
+        throw new RoleAssignmentError(
+            'Backline needs Manage Roles permission to offer self-service roles.'
+        );
+    if (bot.roles.highest.comparePositionTo(role) <= 0)
+        throw new RoleAssignmentError(
+            'Move the Backline role above the offered roles in Server Settings → Roles, then try again. Administrator permission does not bypass Discord’s role hierarchy.'
+        );
 }

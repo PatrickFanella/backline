@@ -1,8 +1,10 @@
 import { renderHook, waitFor } from '@testing-library/react';
+import { AxiosError } from 'axios';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 import { useSession } from '../../hooks/useSession';
 import api from '../../lib/api';
+import { useAuth } from '../../store/auth';
 
 // Mock the API module
 vi.mock('../../lib/api', () => ({
@@ -14,6 +16,8 @@ vi.mock('../../lib/api', () => ({
 describe('useSession hook', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        useAuth.getState().logout();
+        useAuth.setState({ sessionStatus: 'unknown' });
     });
 
     it('should fetch session successfully', async () => {
@@ -45,13 +49,8 @@ describe('useSession hook', () => {
     });
 
     it('should handle fetch error', async () => {
-        const mockError = {
-            response: {
-                data: {
-                    error: 'Unauthorized',
-                },
-            },
-        };
+        const mockError = new AxiosError('Unauthorized');
+        mockError.response = { status: 401 } as typeof mockError.response;
 
         vi.mocked(api.get).mockRejectedValue(mockError);
 
@@ -64,7 +63,8 @@ describe('useSession hook', () => {
         });
 
         expect(result.current.session).toBeNull();
-        expect(result.current.error).toBe('Unauthorized');
+        expect(result.current.error).toBeNull();
+        expect(useAuth.getState().sessionStatus).toBe('anonymous');
     });
 
     it('should handle fetch error without response', async () => {
@@ -77,7 +77,9 @@ describe('useSession hook', () => {
         });
 
         expect(result.current.session).toBeNull();
-        expect(result.current.error).toBe('Failed to fetch session');
+        expect(result.current.error).toContain(
+            'Try again when the connection recovers'
+        );
     });
 
     it('should set loading to false after fetch completes', async () => {

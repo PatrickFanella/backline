@@ -28,6 +28,7 @@ describe('Utils - Cookies', () => {
                     httpOnly: true,
                     sameSite: 'lax',
                     path: '/',
+                    maxAge: 7 * 24 * 60 * 60 * 1000,
                 })
             );
         });
@@ -41,26 +42,6 @@ describe('Utils - Cookies', () => {
                 'refreshToken',
                 expect.any(Object)
             );
-        });
-    });
-
-    describe('cookie security', () => {
-        it('should set httpOnly flag for security', () => {
-            // This is a placeholder test
-            // Real implementation would verify cookie options
-            expect(true).toBe(true);
-        });
-
-        it('should set secure flag in production', () => {
-            // This is a placeholder test
-            // Real implementation would verify secure flag based on environment
-            expect(true).toBe(true);
-        });
-
-        it('should set sameSite attribute', () => {
-            // This is a placeholder test
-            // Real implementation would verify sameSite option
-            expect(true).toBe(true);
         });
     });
 });

@@ -1,17 +1,17 @@
 import { NavLink, Link, useLocation } from 'react-router-dom';
 
 import { useTheme } from '../contexts/ThemeContext';
+import { useSession } from '../hooks/useSession';
 
+import SessionStatus from './SessionStatus';
 import { LanguageSwitcher } from './ui/LanguageSwitcher';
 import { ThemeToggle } from './ui/ThemeToggle';
 
 export default function BrandHeader() {
     const { pathname } = useLocation();
     const { effectiveTheme } = useTheme();
-    if (pathname === '/') return null;
-    const publicPage = ['/login', '/auth/callback', '/status'].includes(
-        pathname
-    );
+    const { session } = useSession(pathname !== '/auth/callback');
+    if (pathname === '/' && !session) return null;
 
     return (
         <header className="bl-app-header">
@@ -27,11 +27,8 @@ export default function BrandHeader() {
                     className="bl-app-nav order-3 basis-full sm:order-none sm:basis-auto"
                     aria-label="Backline navigation"
                 >
-                    {publicPage ? (
-                        <>
-                            <NavLink to="/login">Sign in</NavLink>
-                            <NavLink to="/status">Status</NavLink>
-                        </>
+                    {!session ? (
+                        <NavLink to="/status">Status</NavLink>
                     ) : (
                         <>
                             <NavLink to="/servers">Server setup</NavLink>
@@ -42,6 +39,7 @@ export default function BrandHeader() {
                     )}
                 </nav>
                 <div className="flex items-center gap-2">
+                    <SessionStatus enabled={pathname !== '/auth/callback'} />
                     <LanguageSwitcher />
                     <ThemeToggle />
                 </div>

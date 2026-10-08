@@ -114,7 +114,9 @@ describe('API session recovery', () => {
 
     it('ends the session when refresh fails', async () => {
         useAuth.setState({ accessToken: 'expired' });
-        vi.spyOn(axios, 'post').mockRejectedValue(new Error('Revoked cookie'));
+        const rejected = new AxiosError('Revoked cookie');
+        rejected.response = { status: 401 } as typeof rejected.response;
+        vi.spyOn(axios, 'post').mockRejectedValue(rejected);
         api.defaults.adapter = async (request) => denied(request);
         await expect(api.get('/guilds')).rejects.toThrow('Revoked cookie');
         expect(useAuth.getState().accessToken).toBeNull();
@@ -145,6 +147,29 @@ describe('API session recovery', () => {
             response: { status: 503 },
         });
         expect(useAuth.getState().accessToken).toBe('fresh');
+    });
+
+    it('preserves a valid account when refresh temporarily fails', async () => {
+        useAuth.setState({ accessToken: 'expired' });
+        vi.spyOn(axios, 'post').mockRejectedValue(
+            new AxiosError('Network unavailable')
+        );
+        api.defaults.adapter = async (request) => denied(request);
+        await expect(api.get('/guilds')).rejects.toThrow('Network unavailable');
+        expect(useAuth.getState().accessToken).toBe('expired');
+    });
+
+    it('cannot restore a session when refresh finishes after logout', async () => {
+        const gate = deferred<{ data: { accessToken: string } }>();
+        const refresh = vi.spyOn(axios, 'post').mockReturnValue(gate.promise);
+        api.defaults.adapter = async (request) => denied(request);
+        const request = api.get('/guilds');
+        const result = expect(request).rejects.toThrow('Session changed');
+        await vi.waitFor(() => expect(refresh).toHaveBeenCalledOnce());
+        useAuth.getState().logout();
+        gate.resolve({ data: { accessToken: 'old-account-token' } });
+        await result;
+        expect(useAuth.getState().accessToken).toBeNull();
     });
 
     it('rejects a malformed refresh response', async () => {

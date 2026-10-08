@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 
+import { loadSession } from '../hooks/useSession';
 import api from '../lib/api';
 import { useAuth } from '../store/auth';
 
@@ -20,8 +21,11 @@ export default function AuthCallback() {
         window.history.replaceState(null, '', window.location.pathname);
 
         api.get('/auth/discord', { params: { code, state } })
-            .then((res) => {
+            .then(async (res) => {
+                useAuth.getState().logout();
                 setToken(res.data.accessToken);
+                useAuth.setState({ sessionStatus: 'unknown' });
+                await loadSession(true);
                 navigate('/servers', { replace: true });
             })
             .catch((err) => {
