@@ -76,18 +76,18 @@ export default function ServerModuleConfig({
             className="space-y-3 mt-4"
         >
             <fieldset disabled={busy} className="space-y-3">
-                <legend className="font-medium">Audit log settings</legend>
-                <label className="block">
+                <legend className="bl-legend">Audit log settings</legend>
+                <label className="bl-label">
                     Log channel ID
                     <input
                         required
                         pattern="[0-9]{17,20}"
                         value={channelId}
                         onChange={(event) => setChannelId(event.target.value)}
-                        className="block bg-bl-panel p-2 rounded w-full"
+                        className="bl-input"
                     />
                 </label>
-                <label className="block">
+                <label className="bl-label">
                     Keep records for (days)
                     <input
                         type="number"
@@ -98,10 +98,10 @@ export default function ServerModuleConfig({
                         onChange={(event) =>
                             setRetention(Number(event.target.value))
                         }
-                        className="block bg-bl-panel p-2 rounded"
+                        className="bl-input-compact"
                     />
                 </label>
-                <label className="flex gap-2">
+                <label className="bl-check">
                     <input
                         type="checkbox"
                         checked={retainContent}
@@ -139,12 +139,16 @@ export default function ServerModuleConfig({
                 </div>
                 <button
                     type="submit"
-                    className="border border-bl-border rounded p-2"
+                    className="bl-button bl-button-secondary bl-button-sm"
                 >
                     {busy ? 'Saving…' : 'Save log settings'}
                 </button>
             </fieldset>
-            {notice && <p role="status">{notice}</p>}
+            {notice && (
+                <p role="status" className="bl-form-notice">
+                    {notice}
+                </p>
+            )}
         </form>
     );
 }

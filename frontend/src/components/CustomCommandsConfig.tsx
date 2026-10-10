@@ -61,7 +61,7 @@ export default function CustomCommandsConfig({
             className="space-y-3 mt-4"
         >
             <fieldset disabled={busy} className="space-y-3">
-                <legend className="font-medium">Custom command replies</legend>
+                <legend className="bl-legend">Custom command replies</legend>
                 <p className="text-sm text-bl-muted">
                     Members use /custom name in Discord. Replies are visible
                     only to the member who ran the command. Use {'{user}'},{' '}
@@ -74,7 +74,7 @@ export default function CustomCommandsConfig({
                         className="space-y-2 border border-bl-border rounded p-3"
                     >
                         <legend>Command {index + 1}</legend>
-                        <label className="block">
+                        <label className="bl-label">
                             Command name
                             <input
                                 required
@@ -84,10 +84,10 @@ export default function CustomCommandsConfig({
                                 onChange={(event) =>
                                     update(index, { name: event.target.value })
                                 }
-                                className="block w-full p-2 bg-bl-panel rounded"
+                                className="bl-input"
                             />
                         </label>
-                        <label className="block">
+                        <label className="bl-label">
                             Text reply
                             <textarea
                                 maxLength={1800}
@@ -100,10 +100,10 @@ export default function CustomCommandsConfig({
                                         },
                                     })
                                 }
-                                className="block w-full p-2 bg-bl-panel rounded"
+                                className="bl-input"
                             />
                         </label>
-                        <label className="block">
+                        <label className="bl-label">
                             Embed title
                             <input
                                 maxLength={200}
@@ -116,10 +116,10 @@ export default function CustomCommandsConfig({
                                         },
                                     })
                                 }
-                                className="block w-full p-2 bg-bl-panel rounded"
+                                className="bl-input"
                             />
                         </label>
-                        <label className="block">
+                        <label className="bl-label">
                             Embed description
                             <textarea
                                 maxLength={3500}
@@ -132,10 +132,10 @@ export default function CustomCommandsConfig({
                                         },
                                     })
                                 }
-                                className="block w-full p-2 bg-bl-panel rounded"
+                                className="bl-input"
                             />
                         </label>
-                        <label className="block">
+                        <label className="bl-label">
                             Required role IDs, separated by commas
                             <input
                                 value={command.requiredRoles.join(', ')}
@@ -147,7 +147,7 @@ export default function CustomCommandsConfig({
                                             .filter(Boolean),
                                     })
                                 }
-                                className="block w-full p-2 bg-bl-panel rounded"
+                                className="bl-input"
                             />
                         </label>
                         <p className="text-sm text-bl-muted">
@@ -162,7 +162,7 @@ export default function CustomCommandsConfig({
                                     rows.filter((_, i) => i !== index)
                                 )
                             }
-                            className="border rounded p-2"
+                            className="bl-button bl-button-secondary bl-button-sm"
                         >
                             Remove command {index + 1}
                         </button>
@@ -185,15 +185,22 @@ export default function CustomCommandsConfig({
                             },
                         ])
                     }
-                    className="border rounded p-2"
+                    className="bl-button bl-button-secondary bl-button-sm"
                 >
                     Add custom command
                 </button>
-                <button type="submit" className="border rounded p-2 ml-2">
+                <button
+                    type="submit"
+                    className="bl-button bl-button-secondary bl-button-sm ml-2"
+                >
                     {busy ? 'Saving…' : 'Save custom commands'}
                 </button>
             </fieldset>
-            {notice && <p role="status">{notice}</p>}
+            {notice && (
+                <p role="status" className="bl-form-notice">
+                    {notice}
+                </p>
+            )}
         </form>
     );
 }

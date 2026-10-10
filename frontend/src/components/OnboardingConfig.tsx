@@ -77,20 +77,20 @@ export default function OnboardingConfig({
             className="space-y-3 mt-4"
         >
             <fieldset disabled={busy} className="space-y-3">
-                <legend className="font-medium">Onboarding settings</legend>
-                <label className="block">
+                <legend className="bl-legend">Onboarding settings</legend>
+                <label className="bl-label">
                     Welcome channel ID
                     <input
-                        className="block w-full p-2 bg-bl-panel rounded"
+                        className="bl-input"
                         value={channel}
                         onChange={(event) => setChannel(event.target.value)}
                         pattern="[0-9]{17,20}"
                     />
                 </label>
-                <label className="block">
+                <label className="bl-label">
                     Welcome message
                     <textarea
-                        className="block w-full p-2 bg-bl-panel rounded"
+                        className="bl-input"
                         value={welcome}
                         onChange={(event) => setWelcome(event.target.value)}
                         maxLength={1800}
@@ -100,10 +100,10 @@ export default function OnboardingConfig({
                     Use {'{user}'} and {'{server}'} for the member name and
                     server name. Mentions are disabled.
                 </p>
-                <label className="block">
+                <label className="bl-label">
                     Departure channel ID
                     <input
-                        className="block w-full p-2 bg-bl-panel rounded"
+                        className="bl-input"
                         value={departureChannel}
                         onChange={(event) =>
                             setDepartureChannel(event.target.value)
@@ -111,19 +111,19 @@ export default function OnboardingConfig({
                         pattern="[0-9]{17,20}"
                     />
                 </label>
-                <label className="block">
+                <label className="bl-label">
                     Departure message
                     <textarea
-                        className="block w-full p-2 bg-bl-panel rounded"
+                        className="bl-input"
                         value={departure}
                         onChange={(event) => setDeparture(event.target.value)}
                         maxLength={1800}
                     />
                 </label>
-                <label className="block">
+                <label className="bl-label">
                     Join role IDs, separated by commas
                     <input
-                        className="block w-full p-2 bg-bl-panel rounded"
+                        className="bl-input"
                         value={roles}
                         onChange={(event) => setRoles(event.target.value)}
                     />
@@ -133,7 +133,7 @@ export default function OnboardingConfig({
                     assigned. Managed roles and roles at or above the bot are
                     excluded.
                 </p>
-                <label className="flex gap-2">
+                <label className="bl-check">
                     <input
                         type="checkbox"
                         checked={requireRules}
@@ -143,10 +143,10 @@ export default function OnboardingConfig({
                     />
                     Require rules acknowledgment before assigning roles
                 </label>
-                <label className="block">
+                <label className="bl-label">
                     Rules
                     <textarea
-                        className="block w-full p-2 bg-bl-panel rounded"
+                        className="bl-input"
                         value={rules}
                         onChange={(event) => setRules(event.target.value)}
                         maxLength={1024}
@@ -155,12 +155,16 @@ export default function OnboardingConfig({
                 </label>
                 <button
                     type="submit"
-                    className="border border-bl-border rounded p-2"
+                    className="bl-button bl-button-secondary bl-button-sm"
                 >
                     {busy ? 'Saving…' : 'Save onboarding settings'}
                 </button>
             </fieldset>
-            {notice && <p role="status">{notice}</p>}
+            {notice && (
+                <p role="status" className="bl-form-notice">
+                    {notice}
+                </p>
+            )}
         </form>
     );
 }

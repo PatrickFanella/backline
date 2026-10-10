@@ -49,7 +49,7 @@ export default function BirthdaysConfig({
         'block w-full bg-bl-panel border border-bl-border rounded p-2';
     return (
         <form onSubmit={save} className="space-y-3">
-            <label className="block">
+            <label className="bl-label">
                 Birthday channel ID
                 <input
                     aria-label="Birthday channel ID"
@@ -59,7 +59,7 @@ export default function BirthdaysConfig({
                     className={style}
                 />
             </label>
-            <label className="block">
+            <label className="bl-label">
                 Birthday time zone
                 <input
                     aria-label="Birthday time zone"
@@ -69,7 +69,7 @@ export default function BirthdaysConfig({
                     className={style}
                 />
             </label>
-            <label className="block">
+            <label className="bl-label">
                 Greeting hour
                 <input
                     aria-label="Greeting hour"
@@ -82,7 +82,7 @@ export default function BirthdaysConfig({
                     className={style}
                 />
             </label>
-            <label className="block">
+            <label className="bl-label">
                 February 29 in nonleap years
                 <select
                     aria-label="February 29 in nonleap years"
@@ -100,10 +100,17 @@ export default function BirthdaysConfig({
                 deletes their sharing data and cancels pending greetings.
                 Greetings use display names without notification mentions.
             </p>
-            <button disabled={busy} className="border rounded px-3 py-2">
+            <button
+                disabled={busy}
+                className="bl-button bl-button-secondary bl-button-sm"
+            >
                 {busy ? 'Saving…' : 'Save birthday settings'}
             </button>
-            {notice && <p role="status">{notice}</p>}
+            {notice && (
+                <p role="status" className="bl-form-notice">
+                    {notice}
+                </p>
+            )}
         </form>
     );
 }

@@ -39,14 +39,14 @@ export default function SuggestionsConfig({
     }
     return (
         <form onSubmit={save} className="space-y-3">
-            <label className="block">
+            <label className="bl-label">
                 Suggestion channel ID
                 <input
                     aria-label="Suggestion channel ID"
                     value={channel}
                     onChange={(e) => setChannel(e.target.value)}
                     pattern="[0-9]{17,20}"
-                    className="block w-full bg-bl-panel border border-bl-border rounded p-2"
+                    className="bl-input"
                 />
             </label>
             <p>
@@ -61,10 +61,17 @@ export default function SuggestionsConfig({
                 per server. Completed records expire after thirty days.
                 Uncertain delivery stays held for investigation.
             </p>
-            <button disabled={busy} className="border rounded px-3 py-2">
+            <button
+                disabled={busy}
+                className="bl-button bl-button-secondary bl-button-sm"
+            >
                 {busy ? 'Saving…' : 'Save suggestion settings'}
             </button>
-            {notice && <p role="status">{notice}</p>}
+            {notice && (
+                <p role="status" className="bl-form-notice">
+                    {notice}
+                </p>
+            )}
         </form>
     );
 }

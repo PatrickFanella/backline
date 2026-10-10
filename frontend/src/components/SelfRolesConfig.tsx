@@ -69,33 +69,33 @@ export default function SelfRolesConfig({
             className="space-y-3 mt-4"
         >
             <fieldset disabled={busy} className="space-y-3">
-                <legend className="font-medium">
+                <legend className="bl-legend">
                     Self-service role settings
                 </legend>
-                <label className="block">
+                <label className="bl-label">
                     Role panel channel ID
                     <input
-                        className="block w-full p-2 bg-bl-panel rounded"
+                        className="bl-input"
                         value={channel}
                         onChange={(event) => setChannel(event.target.value)}
                         required
                         pattern="[0-9]{17,20}"
                     />
                 </label>
-                <label className="block">
+                <label className="bl-label">
                     Panel title
                     <input
-                        className="block w-full p-2 bg-bl-panel rounded"
+                        className="bl-input"
                         value={title}
                         onChange={(event) => setTitle(event.target.value)}
                         required
                         maxLength={100}
                     />
                 </label>
-                <label className="block">
+                <label className="bl-label">
                     Control style
                     <select
-                        className="block p-2 bg-bl-panel rounded"
+                        className="bl-input-compact"
                         value={style}
                         onChange={(event) => setStyle(event.target.value)}
                     >
@@ -110,10 +110,10 @@ export default function SelfRolesConfig({
                         className="border border-bl-border rounded p-3 space-y-2"
                     >
                         <legend>Role {index + 1}</legend>
-                        <label className="block">
+                        <label className="bl-label">
                             Role ID
                             <input
-                                className="block w-full p-2 bg-bl-panel rounded"
+                                className="bl-input"
                                 value={role.roleId}
                                 onChange={(event) =>
                                     edit(index, { roleId: event.target.value })
@@ -122,10 +122,10 @@ export default function SelfRolesConfig({
                                 pattern="[0-9]{17,20}"
                             />
                         </label>
-                        <label className="block">
+                        <label className="bl-label">
                             Label
                             <input
-                                className="block w-full p-2 bg-bl-panel rounded"
+                                className="bl-input"
                                 value={role.label}
                                 onChange={(event) =>
                                     edit(index, { label: event.target.value })
@@ -135,10 +135,10 @@ export default function SelfRolesConfig({
                             />
                         </label>
                         {style === 'reactions' && (
-                            <label className="block">
+                            <label className="bl-label">
                                 Unicode emoji
                                 <input
-                                    className="block w-full p-2 bg-bl-panel rounded"
+                                    className="bl-input"
                                     value={role.emoji ?? ''}
                                     onChange={(event) =>
                                         edit(index, {
@@ -150,10 +150,10 @@ export default function SelfRolesConfig({
                                 />
                             </label>
                         )}
-                        <label className="block">
+                        <label className="bl-label">
                             Exclusive group (optional)
                             <input
-                                className="block w-full p-2 bg-bl-panel rounded"
+                                className="bl-input"
                                 value={role.group ?? ''}
                                 onChange={(event) =>
                                     edit(index, { group: event.target.value })
@@ -161,10 +161,10 @@ export default function SelfRolesConfig({
                                 maxLength={40}
                             />
                         </label>
-                        <label className="block">
+                        <label className="bl-label">
                             Required role IDs, separated by commas
                             <input
-                                className="block w-full p-2 bg-bl-panel rounded"
+                                className="bl-input"
                                 value={role.requires.join(', ')}
                                 onChange={(event) =>
                                     edit(index, {
@@ -178,7 +178,7 @@ export default function SelfRolesConfig({
                         </label>
                         <button
                             type="button"
-                            className="border border-bl-border rounded p-2"
+                            className="bl-button bl-button-secondary bl-button-sm"
                             onClick={() =>
                                 setRoles((current) =>
                                     current.filter(
@@ -194,7 +194,7 @@ export default function SelfRolesConfig({
                 <button
                     type="button"
                     disabled={roles.length >= 20}
-                    className="border border-bl-border rounded p-2"
+                    className="bl-button bl-button-secondary bl-button-sm"
                     onClick={() =>
                         setRoles((current) => [
                             ...current,
@@ -206,7 +206,7 @@ export default function SelfRolesConfig({
                 </button>
                 <button
                     type="submit"
-                    className="border border-bl-border rounded p-2 ml-2"
+                    className="bl-button bl-button-secondary bl-button-sm ml-2"
                 >
                     {busy ? 'Saving…' : 'Save role settings'}
                 </button>
@@ -219,7 +219,11 @@ export default function SelfRolesConfig({
                     be offered.
                 </p>
             </fieldset>
-            {notice && <p role="status">{notice}</p>}
+            {notice && (
+                <p role="status" className="bl-form-notice">
+                    {notice}
+                </p>
+            )}
         </form>
     );
 }

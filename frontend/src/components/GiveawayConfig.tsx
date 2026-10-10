@@ -154,8 +154,8 @@ export default function GiveawayConfig({
                 }}
             >
                 <fieldset disabled={busy} className="space-y-3">
-                    <legend className="font-medium">Giveaway limits</legend>
-                    <label className="block">
+                    <legend className="bl-legend">Giveaway limits</legend>
+                    <label className="bl-label">
                         Active giveaways per server
                         <input
                             className={inputClass}
@@ -169,7 +169,7 @@ export default function GiveawayConfig({
                             required
                         />
                     </label>
-                    <label className="block">
+                    <label className="bl-label">
                         Entries per giveaway
                         <input
                             className={inputClass}
@@ -183,7 +183,7 @@ export default function GiveawayConfig({
                             required
                         />
                     </label>
-                    <label className="block">
+                    <label className="bl-label">
                         Keep history after the deadline (days)
                         <input
                             className={inputClass}
@@ -197,7 +197,10 @@ export default function GiveawayConfig({
                             required
                         />
                     </label>
-                    <button type="submit" className="border rounded p-2">
+                    <button
+                        type="submit"
+                        className="bl-button bl-button-secondary bl-button-sm"
+                    >
                         Save limits
                     </button>
                 </fieldset>
@@ -211,8 +214,8 @@ export default function GiveawayConfig({
                     disabled={busy || !enabled || jobId !== null}
                     className="space-y-3"
                 >
-                    <legend className="font-medium">Create a giveaway</legend>
-                    <label className="block">
+                    <legend className="bl-legend">Create a giveaway</legend>
+                    <label className="bl-label">
                         Announcement channel ID
                         <input
                             className={inputClass}
@@ -222,7 +225,7 @@ export default function GiveawayConfig({
                             required
                         />
                     </label>
-                    <label className="block">
+                    <label className="bl-label">
                         Prize
                         <input
                             className={inputClass}
@@ -232,7 +235,7 @@ export default function GiveawayConfig({
                             required
                         />
                     </label>
-                    <label className="block">
+                    <label className="bl-label">
                         Draw in (minutes)
                         <input
                             className={inputClass}
@@ -246,7 +249,7 @@ export default function GiveawayConfig({
                             required
                         />
                     </label>
-                    <label className="block">
+                    <label className="bl-label">
                         Winners
                         <input
                             className={inputClass}
@@ -260,7 +263,7 @@ export default function GiveawayConfig({
                             required
                         />
                     </label>
-                    <label className="block">
+                    <label className="bl-label">
                         Required role IDs (optional, comma-separated)
                         <input
                             className={inputClass}
@@ -268,7 +271,7 @@ export default function GiveawayConfig({
                             onChange={(event) => setRoles(event.target.value)}
                         />
                     </label>
-                    <label className="block">
+                    <label className="bl-label">
                         Minimum days in this server
                         <input
                             className={inputClass}
@@ -288,7 +291,10 @@ export default function GiveawayConfig({
                         at each draw. Winners are displayed without sending
                         mention notifications.
                     </p>
-                    <button type="submit" className="border rounded p-2">
+                    <button
+                        type="submit"
+                        className="bl-button bl-button-secondary bl-button-sm"
+                    >
                         Queue giveaway
                     </button>
                 </fieldset>
@@ -296,14 +302,18 @@ export default function GiveawayConfig({
             <button
                 type="button"
                 disabled={busy}
-                className="border rounded p-2"
+                className="bl-button bl-button-secondary bl-button-sm"
                 onClick={() => {
                     void check();
                 }}
             >
                 {jobId ? 'Check action result' : 'Refresh history'}
             </button>
-            {notice && <p role="status">{notice}</p>}
+            {notice && (
+                <p role="status" className="bl-form-notice">
+                    {notice}
+                </p>
+            )}
             <ul className="space-y-3">
                 {history.map((giveaway) => (
                     <li
@@ -330,7 +340,7 @@ export default function GiveawayConfig({
                                     Date.now())) && (
                             <button
                                 type="button"
-                                className="border rounded p-2"
+                                className="bl-button bl-button-secondary bl-button-sm"
                                 disabled={
                                     busy ||
                                     !enabled ||

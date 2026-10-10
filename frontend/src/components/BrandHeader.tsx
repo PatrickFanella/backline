@@ -31,6 +31,7 @@ export default function BrandHeader() {
                         <NavLink to="/status">Status</NavLink>
                     ) : (
                         <>
+                            <NavLink to="/overview">Overview</NavLink>
                             <NavLink to="/servers">Server setup</NavLink>
                             <NavLink to="/moderation">Moderation</NavLink>
                             <NavLink to="/observed-activity">Activity</NavLink>

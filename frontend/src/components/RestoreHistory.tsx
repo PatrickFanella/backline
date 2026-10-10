@@ -196,7 +196,7 @@ export default function RestoreHistory({ guildId }: { guildId: string }) {
             >
                 <fieldset className="space-y-2">
                     <legend>Create restore preview</legend>
-                    <label className="block">
+                    <label className="bl-label">
                         Snapshot
                         <select
                             required
@@ -204,7 +204,7 @@ export default function RestoreHistory({ guildId }: { guildId: string }) {
                             onChange={(event) =>
                                 setSnapshotId(event.target.value)
                             }
-                            className="block w-full"
+                            className="bl-input"
                         >
                             <option value="">Select snapshot</option>
                             {snapshots.map((snapshot) => (
@@ -271,9 +271,11 @@ export default function RestoreHistory({ guildId }: { guildId: string }) {
                         </fieldset>
                     )}
                     {snapshotExportError && (
-                        <p role="status">{snapshotExportError}</p>
+                        <p role="status" className="bl-form-notice">
+                            {snapshotExportError}
+                        </p>
                     )}
-                    <label className="block">
+                    <label className="bl-label">
                         Advanced resource IDs (optional; up to 20 total, comma
                         or space separated)
                         <textarea
@@ -281,7 +283,7 @@ export default function RestoreHistory({ guildId }: { guildId: string }) {
                             onChange={(event) =>
                                 setSelected(event.target.value)
                             }
-                            className="block w-full"
+                            className="bl-input"
                         />
                     </label>
                     <button
@@ -300,18 +302,18 @@ export default function RestoreHistory({ guildId }: { guildId: string }) {
             >
                 <fieldset className="space-y-2">
                     <legend>Map verified resource</legend>
-                    <label className="block">
+                    <label className="bl-label">
                         Kind
                         <select
                             value={mapKind}
                             onChange={(event) => setMapKind(event.target.value)}
-                            className="block w-full"
+                            className="bl-input"
                         >
                             <option value="role">Role</option>
                             <option value="channel">Channel</option>
                         </select>
                     </label>
-                    <label className="block">
+                    <label className="bl-label">
                         Original resource ID
                         <input
                             required
@@ -320,10 +322,10 @@ export default function RestoreHistory({ guildId }: { guildId: string }) {
                             onChange={(event) =>
                                 setSourceId(event.target.value)
                             }
-                            className="block w-full"
+                            className="bl-input"
                         />
                     </label>
-                    <label className="block">
+                    <label className="bl-label">
                         Verified current resource ID
                         <input
                             required
@@ -332,7 +334,7 @@ export default function RestoreHistory({ guildId }: { guildId: string }) {
                             onChange={(event) =>
                                 setTargetId(event.target.value)
                             }
-                            className="block w-full"
+                            className="bl-input"
                         />
                     </label>
                     <button disabled={busy} type="submit">
@@ -340,7 +342,11 @@ export default function RestoreHistory({ guildId }: { guildId: string }) {
                     </button>
                 </fieldset>
             </form>
-            {notice && <p role="status">{notice}</p>}
+            {notice && (
+                <p role="status" className="bl-form-notice">
+                    {notice}
+                </p>
+            )}
             <p>
                 Review the result, then the current server owner enters the
                 exact confirmation in the plan form to queue an apply. Everyone,
@@ -356,8 +362,16 @@ export default function RestoreHistory({ guildId }: { guildId: string }) {
                 confirmed rejection pauses the plan until another owner
                 confirmation is submitted.
             </p>
-            {error && <p role="alert">{error}</p>}
-            {!error && !plans && <p role="status">Loading restore previews…</p>}
+            {error && (
+                <p role="alert" className="bl-form-alert">
+                    {error}
+                </p>
+            )}
+            {!error && !plans && (
+                <p role="status" className="bl-form-notice">
+                    Loading restore previews…
+                </p>
+            )}
             {plans && !plans.length && <p>No restore previews are recorded.</p>}
             <ul className="space-y-3">
                 {plans?.map((plan) => (
@@ -406,7 +420,7 @@ export default function RestoreHistory({ guildId }: { guildId: string }) {
                         >
                             <fieldset className="space-y-2">
                                 <legend>Owner confirmation</legend>
-                                <label className="block">
+                                <label className="bl-label">
                                     Owner confirmation
                                     <input
                                         required
@@ -417,7 +431,7 @@ export default function RestoreHistory({ guildId }: { guildId: string }) {
                                                 [plan.id]: event.target.value,
                                             })
                                         }
-                                        className="block w-full"
+                                        className="bl-input"
                                         placeholder={`RESTORE ${guildId} ${plan.id}`}
                                     />
                                 </label>

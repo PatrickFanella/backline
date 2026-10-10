@@ -122,7 +122,7 @@ export default function LevelingConfig({
                 }}
             >
                 <fieldset disabled={busy} className="space-y-3">
-                    <legend className="font-medium">Leveling settings</legend>
+                    <legend className="bl-legend">Leveling settings</legend>
                     <p className="text-sm text-bl-muted">
                         Repeated messages earn no XP for 24 hours. Message
                         content is discarded after checking. AFK channels and
@@ -144,7 +144,7 @@ export default function LevelingConfig({
                                         [key]: Number(event.target.value),
                                     }))
                                 }
-                                className="block p-2 rounded bg-bl-panel"
+                                className="bl-input-compact"
                             />
                         </label>
                     ))}
@@ -169,22 +169,22 @@ export default function LevelingConfig({
                             {label}
                         </label>
                     ))}
-                    <label className="block">
+                    <label className="bl-label">
                         Excluded channel IDs, separated by commas
                         <input
                             value={channels}
                             onChange={(event) =>
                                 setChannels(event.target.value)
                             }
-                            className="block w-full p-2 rounded bg-bl-panel"
+                            className="bl-input"
                         />
                     </label>
-                    <label className="block">
+                    <label className="bl-label">
                         Excluded role IDs, separated by commas
                         <input
                             value={roles}
                             onChange={(event) => setRoles(event.target.value)}
-                            className="block w-full p-2 rounded bg-bl-panel"
+                            className="bl-input"
                         />
                     </label>
                     <p className="text-sm text-bl-muted">
@@ -213,7 +213,7 @@ export default function LevelingConfig({
                                             )
                                         )
                                     }
-                                    className="block p-2 rounded bg-bl-panel"
+                                    className="bl-input-compact"
                                 />
                             </label>
                             <label>
@@ -238,7 +238,7 @@ export default function LevelingConfig({
                                             )
                                         )
                                     }
-                                    className="block p-2 rounded bg-bl-panel"
+                                    className="bl-input-compact"
                                 />
                             </label>
                             <button
@@ -262,11 +262,14 @@ export default function LevelingConfig({
                                 { roleId: '', level: 1 },
                             ])
                         }
-                        className="border rounded p-2"
+                        className="bl-button bl-button-secondary bl-button-sm"
                     >
                         Add role reward
                     </button>
-                    <button type="submit" className="border rounded p-2 ml-2">
+                    <button
+                        type="submit"
+                        className="bl-button bl-button-secondary bl-button-sm ml-2"
+                    >
                         {busy ? 'Saving…' : 'Save leveling settings'}
                     </button>
                 </fieldset>
@@ -277,11 +280,15 @@ export default function LevelingConfig({
                 onClick={() => {
                     void load();
                 }}
-                className="border rounded p-2"
+                className="bl-button bl-button-secondary bl-button-sm"
             >
                 View server leaderboard
             </button>
-            {notice && <p role="status">{notice}</p>}
+            {notice && (
+                <p role="status" className="bl-form-notice">
+                    {notice}
+                </p>
+            )}
             <ol>
                 {rows.map((row) => (
                     <li key={row.memberId}>

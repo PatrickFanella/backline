@@ -1,72 +1,146 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 
-import AntiSpamConfig from '../components/AntiSpamConfig';
-import AudioClips from '../components/AudioClips';
-import AudioConfig from '../components/AudioConfig';
-import AudioQueue from '../components/AudioQueue';
-import BirthdaysConfig from '../components/BirthdaysConfig';
-import CommunityReportsConfig from '../components/CommunityReportsConfig';
-import CustomCommandsConfig from '../components/CustomCommandsConfig';
-import EconomyConfig from '../components/EconomyConfig';
-import EntertainmentConfig from '../components/EntertainmentConfig';
-import GiveawayConfig from '../components/GiveawayConfig';
-import LevelingConfig from '../components/LevelingConfig';
-import OnboardingConfig from '../components/OnboardingConfig';
-import ProviderHistory from '../components/ProviderHistory';
-import RecoveryConfig from '../components/RecoveryConfig';
-import RecurringAnnouncementsHistory from '../components/RecurringAnnouncementsHistory';
-import RestoreHistory from '../components/RestoreHistory';
-import ScheduledUtilitiesHistory from '../components/ScheduledUtilitiesHistory';
-import SelfRolesConfig from '../components/SelfRolesConfig';
-import ServerModuleConfig from '../components/ServerModuleConfig';
-import SuggestionsConfig from '../components/SuggestionsConfig';
-import TicketConfig from '../components/TicketConfig';
-import WorkflowsConfig from '../components/WorkflowsConfig';
+import ModuleSettings from '../components/ModuleSettings';
+import type { ModuleRecord } from '../components/ModuleSettings';
+import ServerSwitcher from '../components/ServerSwitcher';
+import { Alert } from '../components/ui/Alert';
+import { Badge } from '../components/ui/Badge';
+import { EmptyState } from '../components/ui/EmptyState';
+import { Input } from '../components/ui/Field';
+import { Page, PageHeader } from '../components/ui/Page';
+import { useServers } from '../hooks/useServers';
 import api from '../lib/api';
+import {
+    hasModuleSettings,
+    moduleCategories,
+    moduleCategory,
+    moduleName,
+    moduleState,
+    type ModuleState,
+} from '../lib/modules';
 import { useGuild } from '../store/guild';
 
-type Server = { id: string; name: string; icon: string | null };
-type Module = {
-    id: string;
-    description: string;
-    operatorReady: boolean;
-    permissions: string[];
-    intents: number[];
-    settings: { enabled: boolean; config: Record<string, unknown> };
+type Filter = 'all' | ModuleState;
+
+const filters: { id: Filter; label: string }[] = [
+    { id: 'all', label: 'All' },
+    { id: 'enabled', label: 'Enabled' },
+    { id: 'disabled', label: 'Disabled' },
+    { id: 'blocked', label: 'Needs operator' },
+];
+
+const stateBadge: Record<
+    ModuleState,
+    { tone: 'success' | 'neutral' | 'warning'; label: string }
+> = {
+    enabled: { tone: 'success', label: 'Enabled' },
+    disabled: { tone: 'neutral', label: 'Off' },
+    blocked: { tone: 'warning', label: 'Needs operator' },
 };
+
+function ModuleCard({
+    guildId,
+    module,
+    busy,
+    onToggle,
+    onSaved,
+    onBusy,
+}: {
+    guildId: string;
+    module: ModuleRecord;
+    busy: string | null;
+    onToggle: (module: ModuleRecord) => void;
+    onSaved: (notice?: string) => Promise<void>;
+    onBusy: (value: boolean) => void;
+}) {
+    const state = moduleState(module.settings, module.operatorReady);
+    const [open, setOpen] = useState(false);
+    const badge = stateBadge[state];
+    const settingsId = `module-${module.id}-settings`;
+    return (
+        <article
+            className="bl-module-card"
+            data-state={state}
+            aria-labelledby={`module-${module.id}`}
+        >
+            <div className="flex items-start justify-between gap-3">
+                <h3 id={`module-${module.id}`}>{moduleName(module.id)}</h3>
+                <Badge tone={badge.tone}>{badge.label}</Badge>
+            </div>
+            <p className="text-bl-muted text-sm">{module.description}</p>
+            {state === 'blocked' && (
+                <p className="text-sm text-bl-warning">
+                    This module needs the operator to enable its Discord intents
+                    and restart the bot.
+                </p>
+            )}
+            {hasModuleSettings(module.id) && (
+                <details
+                    className="bl-details"
+                    open={open}
+                    onToggle={(event) =>
+                        setOpen((event.target as HTMLDetailsElement).open)
+                    }
+                >
+                    <summary aria-controls={settingsId}>
+                        Settings and history
+                    </summary>
+                    <div id={settingsId} className="space-y-4">
+                        <ModuleSettings
+                            guildId={guildId}
+                            module={module}
+                            onSaved={onSaved}
+                            onBusy={onBusy}
+                        />
+                    </div>
+                </details>
+            )}
+            <div className="mt-auto pt-2 flex flex-wrap items-center justify-between gap-3 border-t border-bl-border/40">
+                <p className="text-xs text-bl-muted">
+                    Use /setup in Discord to check the bot’s required
+                    permissions.
+                </p>
+                <button
+                    type="button"
+                    aria-pressed={module.settings.enabled}
+                    disabled={
+                        busy !== null ||
+                        (!module.operatorReady && !module.settings.enabled)
+                    }
+                    onClick={() => onToggle(module)}
+                    className={
+                        module.settings.enabled
+                            ? 'bl-button bl-button-secondary bl-button-sm'
+                            : 'bl-button bl-button-primary bl-button-sm'
+                    }
+                >
+                    {busy === module.id
+                        ? 'Saving…'
+                        : module.settings.enabled
+                          ? 'Disable'
+                          : 'Enable'}
+                </button>
+            </div>
+        </article>
+    );
+}
+
 export default function Servers() {
-    const [servers, setServers] = useState<Server[]>([]);
-    const [modules, setModules] = useState<Module[]>([]);
-    const [loading, setLoading] = useState(true);
+    const {
+        servers,
+        loading: serversLoading,
+        error: serversError,
+    } = useServers('sync');
+    const [modules, setModules] = useState<ModuleRecord[]>([]);
+    const [loading, setLoading] = useState(false);
     const [busy, setBusy] = useState<string | null>(null);
     const [error, setError] = useState('');
     const [notice, setNotice] = useState('');
-    const { guildId, selectGuild } = useGuild();
+    const [query, setQuery] = useState('');
+    const [filter, setFilter] = useState<Filter>('all');
+    const guildId = useGuild((state) => state.guildId);
     const generation = useRef(0);
-    useEffect(() => {
-        let active = true;
-        api.get<Server[]>('/guilds')
-            .then((response) => {
-                if (!active) return;
-                setServers(response.data);
-                const current = useGuild.getState().guildId;
-                if (!response.data.some((server) => server.id === current))
-                    selectGuild(response.data[0]?.id ?? null);
-            })
-            .catch(() => {
-                if (active)
-                    setError(
-                        'Could not verify your server permissions. Sign in again or retry.'
-                    );
-            })
-            .finally(() => {
-                if (active) setLoading(false);
-            });
-        return () => {
-            active = false;
-        };
-    }, [selectGuild]);
     useEffect(() => {
         const current = ++generation.current;
         setModules([]);
@@ -74,7 +148,7 @@ export default function Servers() {
         if (!guildId) return;
         setLoading(true);
         setError('');
-        api.get<Module[]>(`/guilds/${guildId}/modules`)
+        api.get<ModuleRecord[]>(`/guilds/${guildId}/modules`)
             .then((response) => {
                 if (current === generation.current) setModules(response.data);
             })
@@ -91,8 +165,17 @@ export default function Servers() {
             generation.current = current + 1;
         };
     }, [guildId]);
-    async function toggle(module: Module) {
+    async function reload(message?: string) {
         const current = generation.current;
+        const response = await api.get<ModuleRecord[]>(
+            `/guilds/${guildId}/modules`
+        );
+        if (current === generation.current) {
+            setModules(response.data);
+            if (message) setNotice(message);
+        }
+    }
+    async function toggle(module: ModuleRecord) {
         setBusy(module.id);
         setError('');
         setNotice('');
@@ -101,655 +184,192 @@ export default function Servers() {
                 enabled: !module.settings.enabled,
                 config: module.settings.config,
             });
-            const response = await api.get<Module[]>(
-                `/guilds/${guildId}/modules`
-            );
-            if (current === generation.current) {
-                setModules(response.data);
-                setNotice('Settings saved for this server.');
-            }
+            await reload('Settings saved for this server.');
         } catch {
-            if (current === generation.current)
-                setError(
-                    'Settings were not saved. Check your server permissions and try again.'
-                );
+            setError(
+                'Settings were not saved. Check your server permissions and try again.'
+            );
         } finally {
             setBusy(null);
         }
     }
+    const enabledCount = modules.filter(
+        (module) => module.settings.enabled
+    ).length;
+    const blockedCount = modules.filter(
+        (module) => !module.operatorReady && !module.settings.enabled
+    ).length;
+    const visible = useMemo(() => {
+        const needle = query.trim().toLowerCase();
+        return modules.filter((module) => {
+            const state = moduleState(module.settings, module.operatorReady);
+            if (filter !== 'all' && state !== filter) return false;
+            if (!needle) return true;
+            return (
+                moduleName(module.id).toLowerCase().includes(needle) ||
+                module.id.includes(needle) ||
+                module.description.toLowerCase().includes(needle)
+            );
+        });
+    }, [modules, query, filter]);
+    const combinedError = error || serversError;
     return (
-        <main
-            id="main-content"
-            className="min-h-screen bg-bl-canvas text-bl-ink p-4 sm:p-8 pb-64 sm:pb-32"
-        >
-            <div className="max-w-5xl mx-auto space-y-8">
-                <header className="flex justify-between gap-4 items-start">
-                    <div>
-                        <p className="text-sm text-bl-muted mb-2">
-                            Backline · Server setup
-                        </p>
-                        <h1 className="text-3xl font-semibold">
-                            Set up your server
-                        </h1>
-                        <p className="text-bl-muted mt-3">
-                            Choose a server and enable the modules your
-                            community needs.
-                        </p>
-                    </div>
-                </header>
-                {error && (
-                    <div
-                        role="alert"
-                        className="border border-bl-danger rounded-lg p-4"
-                    >
-                        {error}
-                    </div>
-                )}
-                {notice && (
-                    <p role="status" className="text-bl-success">
-                        {notice}
-                    </p>
-                )}
-                {loading && <p role="status">Loading server settings…</p>}
-                {!loading && !servers.length && !error && (
-                    <section className="border border-bl-surface rounded-lg p-6">
-                        <h2 className="text-xl font-medium">
-                            No manageable servers found
-                        </h2>
-                        <p className="mt-3 text-bl-muted">
-                            The bot must be installed, and your Discord account
-                            must have Manage Server permission. Use /setup
-                            inside your server to check its installation.
-                        </p>
-                    </section>
-                )}
-                {servers.length > 0 && (
-                    <section className="space-y-3">
-                        <label
-                            htmlFor="server-picker"
-                            className="block font-medium"
-                        >
-                            Server
-                        </label>
-                        <select
-                            id="server-picker"
-                            value={guildId ?? ''}
-                            onChange={(event) =>
-                                selectGuild(event.target.value)
-                            }
-                            disabled={busy !== null}
-                            className="w-full sm:max-w-md bg-bl-panel border border-bl-border rounded-lg p-3 focus:ring-2 focus:ring-bl-accent"
-                        >
-                            {servers.map((server) => (
-                                <option key={server.id} value={server.id}>
-                                    {server.name}
-                                </option>
-                            ))}
-                        </select>
-                    </section>
-                )}
-                {guildId && (
-                    <section
-                        aria-labelledby="module-heading"
-                        className="space-y-4"
-                    >
-                        <h2
-                            id="module-heading"
-                            className="text-xl font-semibold"
-                        >
-                            Server modules
-                        </h2>
-                        <p className="text-bl-muted">
-                            Modules start disabled. Settings apply to the
-                            selected server and are shared with /settings in
-                            Discord.
-                        </p>
-                        {modules.map((module) => (
-                            <article
-                                key={module.id}
-                                className="bl-card p-5 flex flex-col sm:flex-row gap-5 justify-between"
+        <Page>
+            <PageHeader
+                eyebrow="Backline · Server setup"
+                title="Set up your server"
+                description="Choose a server and enable the modules your community needs. Modules start disabled, and settings are shared with /settings in Discord."
+                actions={
+                    guildId ? (
+                        <>
+                            <Link
+                                to="/overview"
+                                className="bl-button bl-button-secondary bl-button-sm"
                             >
-                                <div className="space-y-2">
-                                    <h3 className="font-semibold">
-                                        {module.id === 'activity'
-                                            ? 'Activity reports'
-                                            : module.id === 'operator-plugins'
-                                              ? 'Extensions'
-                                              : module.id.replace(/-/g, ' ')}
+                                Overview
+                            </Link>
+                            <Link
+                                to="/moderation"
+                                className="bl-button bl-button-secondary bl-button-sm"
+                            >
+                                Moderation cases
+                            </Link>
+                        </>
+                    ) : undefined
+                }
+            />
+            {combinedError && (
+                <Alert tone="danger" role="alert">
+                    {combinedError}
+                </Alert>
+            )}
+            {notice && <Alert tone="success">{notice}</Alert>}
+            {serversLoading && <p role="status">Loading server settings…</p>}
+            {!serversLoading && !servers.length && !serversError && (
+                <EmptyState title="No manageable servers found">
+                    <p>
+                        The bot must be installed, and your Discord account must
+                        have Manage Server permission. Use /setup inside your
+                        server to check its installation.
+                    </p>
+                </EmptyState>
+            )}
+            <ServerSwitcher servers={servers} disabled={busy !== null} />
+            {guildId && (
+                <section aria-labelledby="module-heading" className="space-y-6">
+                    <div className="flex flex-wrap items-end justify-between gap-4">
+                        <div>
+                            <h2
+                                id="module-heading"
+                                className="bl-section-title"
+                            >
+                                Server modules
+                            </h2>
+                            <p
+                                className="text-bl-muted mt-1"
+                                aria-live="polite"
+                            >
+                                {loading
+                                    ? 'Loading modules…'
+                                    : `${enabledCount} of ${modules.length} modules enabled` +
+                                      (blockedCount
+                                          ? `, ${blockedCount} waiting on the operator`
+                                          : '')}
+                            </p>
+                        </div>
+                        <div className="flex flex-wrap items-end gap-3">
+                            <Input
+                                label="Find a module"
+                                type="search"
+                                compact
+                                value={query}
+                                onChange={(event) =>
+                                    setQuery(event.target.value)
+                                }
+                                placeholder="Name or keyword"
+                            />
+                            <div
+                                role="group"
+                                aria-label="Filter modules by state"
+                                className="flex flex-wrap gap-2 pb-0.5"
+                            >
+                                {filters.map((item) => (
+                                    <button
+                                        key={item.id}
+                                        type="button"
+                                        className="bl-chip"
+                                        aria-pressed={filter === item.id}
+                                        onClick={() => setFilter(item.id)}
+                                    >
+                                        {item.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                    {!loading && modules.length > 0 && visible.length === 0 && (
+                        <EmptyState as="h3" title="No modules match">
+                            <p>
+                                Clear the search or choose a different filter.
+                            </p>
+                        </EmptyState>
+                    )}
+                    {moduleCategories.map((category) => {
+                        const items = visible.filter(
+                            (module) =>
+                                moduleCategory(module.id) === category.id
+                        );
+                        if (!items.length) return null;
+                        return (
+                            <section
+                                key={category.id}
+                                aria-labelledby={`category-${category.id}`}
+                                className="space-y-3"
+                            >
+                                <div>
+                                    <h3
+                                        id={`category-${category.id}`}
+                                        className="bl-eyebrow-app"
+                                    >
+                                        {category.title}
                                     </h3>
-                                    <p className="text-bl-muted">
-                                        {module.description}
-                                    </p>
-                                    {!module.operatorReady && (
-                                        <p className="text-bl-warning">
-                                            This module needs the operator to
-                                            enable its Discord intents and
-                                            restart the bot.
-                                        </p>
-                                    )}
-                                    {module.id === 'polls' && (
-                                        <p>
-                                            Use /poll create in a server text
-                                            channel with a question and two to
-                                            ten answers separated by |. Managers
-                                            can create or close Backline polls;
-                                            members can use /poll results.
-                                            Voting happens in Discord. Backline
-                                            needs Send Polls and Read Message
-                                            History in the destination. Queued
-                                            actions require delivery
-                                            confirmation in the channel.
-                                        </p>
-                                    )}
-                                    {module.id === 'scheduled-utilities' && (
-                                        <>
-                                            <ScheduledUtilitiesHistory
-                                                key={`${guildId}:scheduled-utilities`}
-                                                guildId={guildId}
-                                            />
-                                            <RecurringAnnouncementsHistory
-                                                key={`${guildId}:recurring-announcements`}
-                                                guildId={guildId}
-                                            />
-                                        </>
-                                    )}
-                                    {module.id === 'integrations' && (
-                                        <ProviderHistory
-                                            key={`${guildId}:integrations`}
-                                            guildId={guildId}
-                                        />
-                                    )}
-                                    {module.id === 'workflows' && (
-                                        <WorkflowsConfig
-                                            key={`${guildId}:workflows:${JSON.stringify(module.settings.config)}`}
-                                            guildId={guildId}
-                                            enabled={module.settings.enabled}
-                                            config={module.settings.config}
-                                            onSaved={async () => {
-                                                const current =
-                                                    generation.current;
-                                                const response = await api.get<
-                                                    Module[]
-                                                >(`/guilds/${guildId}/modules`);
-                                                if (
-                                                    current ===
-                                                    generation.current
-                                                )
-                                                    setModules(response.data);
-                                            }}
-                                            onBusy={(value) =>
-                                                setBusy(
-                                                    value ? module.id : null
-                                                )
-                                            }
-                                        />
-                                    )}
-                                    {module.id === 'entertainment' && (
-                                        <EntertainmentConfig
-                                            key={`${guildId}:entertainment:${JSON.stringify(module.settings.config)}`}
-                                            guildId={guildId}
-                                            enabled={module.settings.enabled}
-                                            config={module.settings.config}
-                                            onSaved={async () => {
-                                                const current =
-                                                    generation.current;
-                                                const response = await api.get<
-                                                    Module[]
-                                                >(`/guilds/${guildId}/modules`);
-                                                if (
-                                                    current ===
-                                                    generation.current
-                                                )
-                                                    setModules(response.data);
-                                            }}
-                                            onBusy={(value) =>
-                                                setBusy(
-                                                    value ? module.id : null
-                                                )
-                                            }
-                                        />
-                                    )}
-                                    {module.id === 'economy' && (
-                                        <EconomyConfig
-                                            key={`${guildId}:economy:${JSON.stringify(module.settings.config)}`}
-                                            guildId={guildId}
-                                            enabled={module.settings.enabled}
-                                            config={module.settings.config}
-                                            onSaved={async () => {
-                                                const current =
-                                                    generation.current;
-                                                const response = await api.get<
-                                                    Module[]
-                                                >(`/guilds/${guildId}/modules`);
-                                                if (
-                                                    current ===
-                                                    generation.current
-                                                )
-                                                    setModules(response.data);
-                                            }}
-                                            onBusy={(value) =>
-                                                setBusy(
-                                                    value ? module.id : null
-                                                )
-                                            }
-                                        />
-                                    )}
-                                    {module.id === 'recovery' && (
-                                        <RecoveryConfig
-                                            key={`${guildId}:recovery:${JSON.stringify(module.settings.config)}`}
-                                            guildId={guildId}
-                                            enabled={module.settings.enabled}
-                                            config={module.settings.config}
-                                            onSaved={async () => {
-                                                const current =
-                                                    generation.current;
-                                                const response = await api.get<
-                                                    Module[]
-                                                >(`/guilds/${guildId}/modules`);
-                                                if (
-                                                    current ===
-                                                    generation.current
-                                                )
-                                                    setModules(response.data);
-                                            }}
-                                            onBusy={(value) =>
-                                                setBusy(
-                                                    value ? module.id : null
-                                                )
-                                            }
-                                        />
-                                    )}
-                                    {module.id === 'recovery' && (
-                                        <RestoreHistory
-                                            key={`${guildId}:restore-history`}
-                                            guildId={guildId}
-                                        />
-                                    )}
-                                    {module.id === 'audio' && (
-                                        <AudioConfig
-                                            key={`${guildId}:audio:${JSON.stringify(module.settings.config)}`}
-                                            guildId={guildId}
-                                            enabled={module.settings.enabled}
-                                            config={module.settings.config}
-                                            onBusy={(value) =>
-                                                setBusy(
-                                                    value ? module.id : null
-                                                )
-                                            }
-                                            onSaved={async () => {
-                                                const current =
-                                                    generation.current;
-                                                const response = await api.get<
-                                                    Module[]
-                                                >(`/guilds/${guildId}/modules`);
-                                                if (
-                                                    current ===
-                                                    generation.current
-                                                )
-                                                    setModules(response.data);
-                                            }}
-                                        />
-                                    )}
-                                    {module.id === 'audio' && (
-                                        <AudioQueue
-                                            key={`${guildId}:audio-queue`}
-                                            guildId={guildId}
-                                            onBusy={(value) =>
-                                                setBusy(
-                                                    value ? module.id : null
-                                                )
-                                            }
-                                        />
-                                    )}
-                                    {module.id === 'audio' && (
-                                        <AudioClips
-                                            key={`${guildId}:audio-clips`}
-                                            guildId={guildId}
-                                            onBusy={(value) =>
-                                                setBusy(
-                                                    value ? module.id : null
-                                                )
-                                            }
-                                        />
-                                    )}
-                                    {module.id === 'afk' && (
-                                        <p>
-                                            Use /afk set to share a temporary
-                                            away reason, /afk clear to remove
-                                            it, or /afk status to read a
-                                            member’s current status. Reasons
-                                            expire within twenty-four hours and
-                                            clear when the member speaks.
-                                            Mention notices are limited to five
-                                            members per message and throttled;
-                                            they do not send notification
-                                            mentions.
-                                        </p>
-                                    )}
-                                    {module.id === 'birthdays' && (
-                                        <BirthdaysConfig
-                                            key={`${guildId}:birthdays:${JSON.stringify(module.settings.config)}`}
-                                            guildId={guildId}
-                                            enabled={module.settings.enabled}
-                                            config={module.settings.config}
-                                            onBusy={(value) =>
-                                                setBusy(
-                                                    value ? module.id : null
-                                                )
-                                            }
-                                            onSaved={async () => {
-                                                const current =
-                                                    generation.current;
-                                                const response = await api.get<
-                                                    Module[]
-                                                >(`/guilds/${guildId}/modules`);
-                                                if (
-                                                    current ===
-                                                    generation.current
-                                                )
-                                                    setModules(response.data);
-                                            }}
-                                        />
-                                    )}
-                                    {module.id === 'suggestions' && (
-                                        <SuggestionsConfig
-                                            key={`${guildId}:suggestions:${JSON.stringify(module.settings.config)}`}
-                                            guildId={guildId}
-                                            enabled={module.settings.enabled}
-                                            config={module.settings.config}
-                                            onBusy={(value) =>
-                                                setBusy(
-                                                    value ? module.id : null
-                                                )
-                                            }
-                                            onSaved={async () => {
-                                                const current =
-                                                    generation.current;
-                                                const response = await api.get<
-                                                    Module[]
-                                                >(`/guilds/${guildId}/modules`);
-                                                if (
-                                                    current ===
-                                                    generation.current
-                                                )
-                                                    setModules(response.data);
-                                            }}
-                                        />
-                                    )}
-                                    {module.id === 'custom-commands' && (
-                                        <CustomCommandsConfig
-                                            key={`${guildId}:custom-commands:${JSON.stringify(module.settings.config)}`}
-                                            guildId={guildId}
-                                            enabled={module.settings.enabled}
-                                            config={module.settings.config}
-                                            onBusy={(value) =>
-                                                setBusy(
-                                                    value ? module.id : null
-                                                )
-                                            }
-                                            onSaved={async () => {
-                                                const current =
-                                                    generation.current;
-                                                const response = await api.get<
-                                                    Module[]
-                                                >(`/guilds/${guildId}/modules`);
-                                                if (
-                                                    current ===
-                                                    generation.current
-                                                )
-                                                    setModules(response.data);
-                                            }}
-                                        />
-                                    )}
-                                    {module.id === 'community-reports' && (
-                                        <CommunityReportsConfig
-                                            key={`${guildId}:community-reports:${JSON.stringify(module.settings.config)}`}
-                                            guildId={guildId}
-                                            enabled={module.settings.enabled}
-                                            config={module.settings.config}
-                                            onBusy={(value) =>
-                                                setBusy(
-                                                    value ? module.id : null
-                                                )
-                                            }
-                                            onSaved={async () => {
-                                                const current =
-                                                    generation.current;
-                                                const response = await api.get<
-                                                    Module[]
-                                                >(`/guilds/${guildId}/modules`);
-                                                if (
-                                                    current ===
-                                                    generation.current
-                                                )
-                                                    setModules(response.data);
-                                            }}
-                                        />
-                                    )}
-                                    {module.id === 'leveling' && (
-                                        <LevelingConfig
-                                            key={`${guildId}:leveling:${JSON.stringify(module.settings.config)}`}
-                                            guildId={guildId}
-                                            enabled={module.settings.enabled}
-                                            config={module.settings.config}
-                                            onBusy={(value) =>
-                                                setBusy(
-                                                    value ? module.id : null
-                                                )
-                                            }
-                                            onSaved={async () => {
-                                                const current =
-                                                    generation.current;
-                                                const response = await api.get<
-                                                    Module[]
-                                                >(`/guilds/${guildId}/modules`);
-                                                if (
-                                                    current ===
-                                                    generation.current
-                                                )
-                                                    setModules(response.data);
-                                            }}
-                                        />
-                                    )}
-                                    {module.id === 'giveaways' && (
-                                        <GiveawayConfig
-                                            key={`${guildId}:giveaways:${JSON.stringify(module.settings.config)}`}
-                                            guildId={guildId}
-                                            enabled={module.settings.enabled}
-                                            config={module.settings.config}
-                                            onBusy={(value) =>
-                                                setBusy(
-                                                    value ? module.id : null
-                                                )
-                                            }
-                                            onSaved={async () => {
-                                                const current =
-                                                    generation.current;
-                                                const response = await api.get<
-                                                    Module[]
-                                                >(`/guilds/${guildId}/modules`);
-                                                if (
-                                                    current ===
-                                                    generation.current
-                                                )
-                                                    setModules(response.data);
-                                            }}
-                                        />
-                                    )}
-                                    {module.id === 'tickets' && (
-                                        <TicketConfig
-                                            key={`${guildId}:tickets:${JSON.stringify(module.settings.config)}`}
-                                            guildId={guildId}
-                                            enabled={module.settings.enabled}
-                                            config={module.settings.config}
-                                            onBusy={(value) =>
-                                                setBusy(
-                                                    value ? module.id : null
-                                                )
-                                            }
-                                            onSaved={async () => {
-                                                const current =
-                                                    generation.current;
-                                                const response = await api.get<
-                                                    Module[]
-                                                >(`/guilds/${guildId}/modules`);
-                                                if (
-                                                    current ===
-                                                    generation.current
-                                                )
-                                                    setModules(response.data);
-                                            }}
-                                        />
-                                    )}
-                                    {module.id === 'onboarding' && (
-                                        <OnboardingConfig
-                                            key={`${guildId}:onboarding:${JSON.stringify(module.settings.config)}`}
-                                            guildId={guildId}
-                                            enabled={module.settings.enabled}
-                                            config={module.settings.config}
-                                            onBusy={(value) =>
-                                                setBusy(
-                                                    value ? module.id : null
-                                                )
-                                            }
-                                            onSaved={async () => {
-                                                const current =
-                                                    generation.current;
-                                                const response = await api.get<
-                                                    Module[]
-                                                >(`/guilds/${guildId}/modules`);
-                                                if (
-                                                    current ===
-                                                    generation.current
-                                                ) {
-                                                    setModules(response.data);
-                                                    setNotice(
-                                                        'Onboarding settings saved for this server.'
-                                                    );
-                                                }
-                                            }}
-                                        />
-                                    )}
-                                    {module.id === 'self-roles' && (
-                                        <SelfRolesConfig
-                                            key={`${guildId}:self-roles:${JSON.stringify(module.settings.config)}`}
-                                            guildId={guildId}
-                                            enabled={module.settings.enabled}
-                                            config={module.settings.config}
-                                            onBusy={(value) =>
-                                                setBusy(
-                                                    value ? module.id : null
-                                                )
-                                            }
-                                            onSaved={async () => {
-                                                const current =
-                                                    generation.current;
-                                                const response = await api.get<
-                                                    Module[]
-                                                >(`/guilds/${guildId}/modules`);
-                                                if (
-                                                    current ===
-                                                    generation.current
-                                                ) {
-                                                    setModules(response.data);
-                                                    setNotice(
-                                                        'Role settings saved for this server.'
-                                                    );
-                                                }
-                                            }}
-                                        />
-                                    )}
-                                    {module.id === 'anti-spam' && (
-                                        <AntiSpamConfig
-                                            key={`${guildId}:anti-spam:${JSON.stringify(module.settings.config)}`}
-                                            guildId={guildId}
-                                            enabled={module.settings.enabled}
-                                            config={module.settings.config}
-                                            onBusy={(value) =>
-                                                setBusy(
-                                                    value ? module.id : null
-                                                )
-                                            }
-                                            onSaved={async () => {
-                                                const current =
-                                                    generation.current;
-                                                const response = await api.get<
-                                                    Module[]
-                                                >(`/guilds/${guildId}/modules`);
-                                                if (
-                                                    current ===
-                                                    generation.current
-                                                ) {
-                                                    setModules(response.data);
-                                                    setNotice(
-                                                        'Anti-spam policy saved for this server.'
-                                                    );
-                                                }
-                                            }}
-                                        />
-                                    )}
-                                    <ServerModuleConfig
-                                        key={`audit-config:${guildId}:${module.id}:${JSON.stringify(module.settings.config)}`}
-                                        guildId={guildId}
-                                        moduleId={module.id}
-                                        enabled={module.settings.enabled}
-                                        config={module.settings.config}
-                                        onBusy={(value) =>
-                                            setBusy(value ? module.id : null)
-                                        }
-                                        onSaved={async () => {
-                                            const current = generation.current;
-                                            const response = await api.get<
-                                                Module[]
-                                            >(`/guilds/${guildId}/modules`);
-                                            if (
-                                                current === generation.current
-                                            ) {
-                                                setModules(response.data);
-                                                setNotice(
-                                                    'Log settings saved for this server.'
-                                                );
-                                            }
-                                        }}
-                                    />
-                                    <p className="text-sm text-bl-muted">
-                                        Use /setup in Discord to check the bot’s
-                                        required permissions.
+                                    <p className="text-sm text-bl-muted mt-1">
+                                        {category.description}
                                     </p>
                                 </div>
-                                <button
-                                    type="button"
-                                    aria-pressed={module.settings.enabled}
-                                    disabled={
-                                        busy !== null ||
-                                        (!module.operatorReady &&
-                                            !module.settings.enabled)
-                                    }
-                                    onClick={() => {
-                                        void toggle(module);
-                                    }}
-                                    className="self-start shrink-0 border border-bl-border rounded-lg px-4 py-2 focus:ring-2 focus:ring-bl-accent disabled:opacity-50"
-                                >
-                                    {busy === module.id
-                                        ? 'Saving…'
-                                        : module.settings.enabled
-                                          ? 'Disable'
-                                          : 'Enable'}
-                                </button>
-                            </article>
-                        ))}
-                    </section>
+                                <div className="bl-module-grid">
+                                    {items.map((module) => (
+                                        <ModuleCard
+                                            key={`${guildId}:${module.id}`}
+                                            guildId={guildId}
+                                            module={module}
+                                            busy={busy}
+                                            onToggle={(item) => {
+                                                void toggle(item);
+                                            }}
+                                            onSaved={reload}
+                                            onBusy={(value) =>
+                                                setBusy(
+                                                    value ? module.id : null
+                                                )
+                                            }
+                                        />
+                                    ))}
+                                </div>
+                            </section>
+                        );
+                    })}
+                </section>
+            )}
+            <footer className="flex flex-wrap gap-5 text-bl-accent text-sm">
+                {guildId && <Link to="/moderation">Moderation cases</Link>}
+                {guildId && (
+                    <Link to="/observed-activity">
+                        Observed activity reports
+                    </Link>
                 )}
-                <footer className="flex flex-wrap gap-5 text-bl-accent">
-                    {guildId && <Link to="/moderation">Moderation cases</Link>}
-                    {guildId && (
-                        <Link to="/observed-activity">
-                            Observed activity reports
-                        </Link>
-                    )}
-                    <Link to="/status">Service status</Link>
-                </footer>
-            </div>
-        </main>
+                <Link to="/status">Service status</Link>
+            </footer>
+        </Page>
     );
 }

@@ -133,7 +133,7 @@ export default function RecoveryConfig({
                         retention period. Scheduled captures record current
                         structure without replaying missed intervals.
                     </p>
-                    <label className="block">
+                    <label className="bl-label">
                         <input
                             type="checkbox"
                             checked={scheduled}
@@ -143,7 +143,7 @@ export default function RecoveryConfig({
                         />{' '}
                         Capture on a schedule when this module is enabled
                     </label>
-                    <label className="block">
+                    <label className="bl-label">
                         Capture interval (hours)
                         <input
                             type="number"
@@ -154,10 +154,10 @@ export default function RecoveryConfig({
                             onChange={(event) =>
                                 setInterval(Number(event.target.value))
                             }
-                            className="block w-full p-2 bg-bl-panel rounded"
+                            className="bl-input"
                         />
                     </label>
-                    <label className="block">
+                    <label className="bl-label">
                         Retention (days)
                         <input
                             type="number"
@@ -168,35 +168,47 @@ export default function RecoveryConfig({
                             onChange={(event) =>
                                 setRetainDays(Number(event.target.value))
                             }
-                            className="block w-full p-2 bg-bl-panel rounded"
+                            className="bl-input"
                         />
                     </label>
-                    <label className="block">
+                    <label className="bl-label">
                         Protected channel IDs (comma-separated)
                         <textarea
                             value={protectedChannels}
                             onChange={(event) =>
                                 setProtectedChannels(event.target.value)
                             }
-                            className="block w-full p-2 bg-bl-panel rounded"
+                            className="bl-input"
                         />
                     </label>
-                    <label className="block">
+                    <label className="bl-label">
                         Protected role IDs (comma-separated)
                         <textarea
                             value={protectedRoles}
                             onChange={(event) =>
                                 setProtectedRoles(event.target.value)
                             }
-                            className="block w-full p-2 bg-bl-panel rounded"
+                            className="bl-input"
                         />
                     </label>
                     <button type="submit">Save snapshot settings</button>
                 </fieldset>
             </form>
-            {notice && <p role="status">{notice}</p>}
-            {error && <p role="alert">{error}</p>}
-            {!error && !snapshots && <p role="status">Loading snapshots…</p>}
+            {notice && (
+                <p role="status" className="bl-form-notice">
+                    {notice}
+                </p>
+            )}
+            {error && (
+                <p role="alert" className="bl-form-alert">
+                    {error}
+                </p>
+            )}
+            {!error && !snapshots && (
+                <p role="status" className="bl-form-notice">
+                    Loading snapshots…
+                </p>
+            )}
             {snapshots && !snapshots.length && (
                 <p>No retained server snapshots.</p>
             )}

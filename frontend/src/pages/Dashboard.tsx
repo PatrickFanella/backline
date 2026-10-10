@@ -10,6 +10,7 @@ import {
     CardContent,
 } from '../components/ui/Card';
 import { CardSkeleton, TableSkeleton } from '../components/ui/LoadingSkeleton';
+import { Page, PageHeader } from '../components/ui/Page';
 import { StatCard } from '../components/ui/StatCard';
 import api from '../lib/api';
 
@@ -66,26 +67,21 @@ function Dashboard() {
     const bannedCount = bannedUsers.size;
 
     return (
-        <div className="min-h-screen bg-bl-canvas p-6">
-            <div className="max-w-7xl mx-auto space-y-6">
-                <Link to="/servers" className="text-bl-accent underline">
-                    Server settings
-                </Link>
-                {/* Header */}
-                <header className="flex items-center justify-between">
-                    <div>
-                        <h1
-                            id="main-content"
-                            className="text-3xl font-bold text-bl-ink"
-                        >
-                            {t('dashboard.title')}
-                        </h1>
-                        <p className="text-bl-muted mt-1">
-                            {t('dashboard.subtitle')}
-                        </p>
-                    </div>
-                </header>
-
+        <Page>
+            <PageHeader
+                eyebrow="Backline · Activity"
+                title={t('dashboard.title')}
+                description={t('dashboard.subtitle')}
+                actions={
+                    <Link
+                        to="/servers"
+                        className="bl-button bl-button-secondary bl-button-sm"
+                    >
+                        Server settings
+                    </Link>
+                }
+            />
+            <div className="space-y-6">
                 {/* Stats Grid */}
                 <section aria-labelledby="stats-heading">
                     <h2 id="stats-heading" className="sr-only">
@@ -161,7 +157,7 @@ function Dashboard() {
                                                         e.target.checked
                                                     )
                                                 }
-                                                className="rounded border-bl-surface"
+                                                className="w-4 h-4"
                                                 aria-describedby="filter-help"
                                             />
                                             {t('dashboard.filters.hideBanned')}
@@ -190,7 +186,7 @@ function Dashboard() {
                                         <caption className="sr-only">
                                             User suspicion scores and actions
                                         </caption>
-                                        <thead className="bg-bl-panel border-b border-bl-surface">
+                                        <thead className="bg-bl-recessed border-b-2 border-bl-border">
                                             <tr>
                                                 <th
                                                     scope="col"
@@ -266,7 +262,7 @@ function Dashboard() {
                                                 </th>
                                             </tr>
                                         </thead>
-                                        <tbody className="divide-y divide-bl-surface">
+                                        <tbody className="divide-y divide-bl-border/40">
                                             {filtered.map((user) => {
                                                 const isBanned =
                                                     bannedUsers.has(
@@ -393,7 +389,7 @@ function Dashboard() {
                     </Card>
                 </section>
             </div>
-        </div>
+        </Page>
     );
 }
 

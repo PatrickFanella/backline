@@ -128,7 +128,7 @@ export default function CommunityReportsConfig({
                 }}
             >
                 <fieldset disabled={busy} className="space-y-3">
-                    <legend className="font-medium">
+                    <legend className="bl-legend">
                         Community report settings
                     </legend>
                     <p className="text-sm text-bl-muted">
@@ -137,7 +137,7 @@ export default function CommunityReportsConfig({
                         show gaps in collection; permission limits can also
                         affect observations.
                     </p>
-                    <label className="block">
+                    <label className="bl-label">
                         Report retention (days)
                         <input
                             type="number"
@@ -148,17 +148,17 @@ export default function CommunityReportsConfig({
                             onChange={(event) =>
                                 setRetention(Number(event.target.value))
                             }
-                            className="block p-2 bg-bl-panel rounded"
+                            className="bl-input-compact"
                         />
                     </label>
-                    <label className="block">
+                    <label className="bl-label">
                         Excluded channel IDs, separated by commas
                         <input
                             value={excluded}
                             onChange={(event) =>
                                 setExcluded(event.target.value)
                             }
-                            className="block w-full p-2 bg-bl-panel rounded"
+                            className="bl-input"
                         />
                     </label>
                     <p className="text-sm text-bl-muted">
@@ -180,7 +180,7 @@ export default function CommunityReportsConfig({
                                             channelId: event.target.value,
                                         })
                                     }
-                                    className="block p-2 bg-bl-panel rounded"
+                                    className="bl-input-compact"
                                 />
                             </label>
                             <label>
@@ -193,7 +193,7 @@ export default function CommunityReportsConfig({
                                                 .value as Counter['metric'],
                                         })
                                     }
-                                    className="block p-2 bg-bl-panel rounded"
+                                    className="bl-input-compact"
                                 >
                                     <option value="messages">Messages</option>
                                     <option value="joins">Joins</option>
@@ -215,7 +215,7 @@ export default function CommunityReportsConfig({
                                             days: Number(event.target.value),
                                         })
                                     }
-                                    className="block p-2 bg-bl-panel rounded"
+                                    className="bl-input-compact"
                                 />
                             </label>
                             <label>
@@ -233,7 +233,7 @@ export default function CommunityReportsConfig({
                                             ),
                                         })
                                     }
-                                    className="block p-2 bg-bl-panel rounded"
+                                    className="bl-input-compact"
                                 />
                             </label>
                             <button
@@ -262,16 +262,19 @@ export default function CommunityReportsConfig({
                                 },
                             ])
                         }
-                        className="border rounded p-2"
+                        className="bl-button bl-button-secondary bl-button-sm"
                     >
                         Add channel counter
                     </button>
-                    <button type="submit" className="border rounded p-2 ml-2">
+                    <button
+                        type="submit"
+                        className="bl-button bl-button-secondary bl-button-sm ml-2"
+                    >
                         {busy ? 'Saving…' : 'Save community report settings'}
                     </button>
                 </fieldset>
             </form>
-            <label className="block">
+            <label className="bl-label">
                 Report range (days)
                 <input
                     type="number"
@@ -280,7 +283,7 @@ export default function CommunityReportsConfig({
                     required
                     value={days}
                     onChange={(event) => setDays(Number(event.target.value))}
-                    className="block p-2 bg-bl-panel rounded"
+                    className="bl-input-compact"
                 />
             </label>
             <button
@@ -291,14 +294,18 @@ export default function CommunityReportsConfig({
                 onClick={() => {
                     void load();
                 }}
-                className="border rounded p-2"
+                className="bl-button bl-button-secondary bl-button-sm"
             >
                 Load community report
             </button>
-            {notice && <p role="status">{notice}</p>}
+            {notice && (
+                <p role="status" className="bl-form-notice">
+                    {notice}
+                </p>
+            )}
             {report && (
                 <section aria-label="Community report" className="space-y-3">
-                    <p role="status">
+                    <p role="status" className="bl-form-notice">
                         {report.coverage.status === 'UNAVAILABLE'
                             ? 'History unavailable for this range. Zero activity cannot be inferred.'
                             : report.coverage.status === 'PARTIAL'

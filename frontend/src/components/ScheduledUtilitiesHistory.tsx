@@ -53,8 +53,16 @@ export default function ScheduledUtilitiesHistory({
                 requester; announcements suppress notification mentions. Use the
                 command’s list and cancel actions to manage pending messages.
             </p>
-            {loading && <p role="status">Loading scheduled messages…</p>}
-            {error && <p role="alert">{error}</p>}
+            {loading && (
+                <p role="status" className="bl-form-notice">
+                    Loading scheduled messages…
+                </p>
+            )}
+            {error && (
+                <p role="alert" className="bl-form-alert">
+                    {error}
+                </p>
+            )}
             {!loading && !error && !events.length && (
                 <p>
                     No scheduled announcements or personal reminders are

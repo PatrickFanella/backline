@@ -103,17 +103,17 @@ export default function EconomyConfig({
                         fictional objects. /economy adjust requires current
                         Manage Server permission and a recorded reason.
                     </p>
-                    <label className="block">
+                    <label className="bl-label">
                         Currency name
                         <input
                             required
                             maxLength={20}
                             value={currencyName}
                             onChange={(e) => setCurrencyName(e.target.value)}
-                            className="block w-full p-2 bg-bl-panel rounded"
+                            className="bl-input"
                         />
                     </label>
-                    <label className="block">
+                    <label className="bl-label">
                         Daily reward
                         <input
                             required
@@ -124,10 +124,10 @@ export default function EconomyConfig({
                             onChange={(e) =>
                                 setDailyReward(Number(e.target.value))
                             }
-                            className="block w-full p-2 bg-bl-panel rounded"
+                            className="bl-input"
                         />
                     </label>
-                    <label className="block">
+                    <label className="bl-label">
                         <input
                             type="checkbox"
                             checked={gamesEnabled}
@@ -135,7 +135,7 @@ export default function EconomyConfig({
                         />{' '}
                         Enable coin games
                     </label>
-                    <label className="block">
+                    <label className="bl-label">
                         <input
                             type="checkbox"
                             checked={shopEnabled}
@@ -146,9 +146,21 @@ export default function EconomyConfig({
                     <button type="submit">Save economy settings</button>
                 </fieldset>
             </form>
-            {notice && <p role="status">{notice}</p>}
-            {error && <p role="alert">{error}</p>}
-            {!entries && !error && <p role="status">Loading ledger…</p>}
+            {notice && (
+                <p role="status" className="bl-form-notice">
+                    {notice}
+                </p>
+            )}
+            {error && (
+                <p role="alert" className="bl-form-alert">
+                    {error}
+                </p>
+            )}
+            {!entries && !error && (
+                <p role="status" className="bl-form-notice">
+                    Loading ledger…
+                </p>
+            )}
             {entries?.length === 0 && <p>No economy entries are recorded.</p>}
             <p>
                 Latest one hundred entries. Receipts expire after ninety days;

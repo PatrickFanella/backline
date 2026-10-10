@@ -126,8 +126,8 @@ export default function AntiSpamConfig({
                 }}
             >
                 <fieldset disabled={busy} className="space-y-3">
-                    <legend className="font-medium">Anti-spam policy</legend>
-                    <label className="flex gap-2">
+                    <legend className="bl-legend">Anti-spam policy</legend>
+                    <label className="bl-check">
                         <input
                             type="checkbox"
                             checked={observeOnly}
@@ -157,7 +157,7 @@ export default function AntiSpamConfig({
                             {label}
                             <input
                                 type="number"
-                                className="block p-2 bg-bl-panel rounded"
+                                className="bl-input-compact"
                                 value={numbers[key as keyof typeof numbers]}
                                 onChange={(event) =>
                                     setNumbers((current) => ({
@@ -210,7 +210,7 @@ export default function AntiSpamConfig({
                         <label key={label as string} className="block">
                             {label as string}
                             <input
-                                className="block w-full p-2 bg-bl-panel rounded"
+                                className="bl-input"
                                 value={value as string}
                                 onChange={(event) =>
                                     (setValue as (value: string) => void)(
@@ -222,7 +222,7 @@ export default function AntiSpamConfig({
                     ))}
                     <button
                         type="submit"
-                        className="border border-bl-border rounded p-2"
+                        className="bl-button bl-button-secondary bl-button-sm"
                     >
                         {busy ? 'Saving…' : 'Save anti-spam policy'}
                     </button>
@@ -233,7 +233,7 @@ export default function AntiSpamConfig({
                 onClick={() => {
                     void history();
                 }}
-                className="border border-bl-border rounded p-2"
+                className="bl-button bl-button-secondary bl-button-sm"
             >
                 Review spam decisions
             </button>
@@ -247,11 +247,15 @@ export default function AntiSpamConfig({
                             setNotice('Raid mode could not be stopped.')
                         );
                 }}
-                className="border border-bl-border rounded p-2 ml-2"
+                className="bl-button bl-button-secondary bl-button-sm ml-2"
             >
                 Stop raid mode
             </button>
-            {notice && <p role="status">{notice}</p>}
+            {notice && (
+                <p role="status" className="bl-form-notice">
+                    {notice}
+                </p>
+            )}
             {decisions.slice(0, 20).map((decision) => (
                 <p key={decision.id}>
                     {decision.userId} · {decision.reasons.join(', ')} ·{' '}

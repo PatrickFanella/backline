@@ -137,36 +137,36 @@ export default function RecurringAnnouncementsHistory({
                 className="space-y-2 border border-bl-surface rounded p-3"
             >
                 <h3>New recurring announcement</h3>
-                <label className="block">
+                <label className="bl-label">
                     Destination channel ID
                     <input
                         required
                         pattern="[0-9]{17,20}"
                         value={channelId}
                         onChange={(e) => setChannelId(e.target.value)}
-                        className="block w-full"
+                        className="bl-input"
                     />
                 </label>
-                <label className="block">
+                <label className="bl-label">
                     First local time
                     <input
                         required
                         type="datetime-local"
                         value={local}
                         onChange={(e) => setLocal(e.target.value)}
-                        className="block w-full"
+                        className="bl-input"
                     />
                 </label>
-                <label className="block">
+                <label className="bl-label">
                     Time zone
                     <input
                         required
                         value={timeZone}
                         onChange={(e) => setTimeZone(e.target.value)}
-                        className="block w-full"
+                        className="bl-input"
                     />
                 </label>
-                <label className="block">
+                <label className="bl-label">
                     Repeated local time
                     <select
                         value={ambiguity}
@@ -175,24 +175,24 @@ export default function RecurringAnnouncementsHistory({
                                 e.target.value === 'later' ? 'later' : 'earlier'
                             )
                         }
-                        className="block w-full"
+                        className="bl-input"
                     >
                         <option value="earlier">Earlier occurrence</option>
                         <option value="later">Later occurrence</option>
                     </select>
                 </label>
-                <label className="block">
+                <label className="bl-label">
                     Cadence
                     <select
                         value={cadence}
                         onChange={(e) => setCadence(e.target.value)}
-                        className="block w-full"
+                        className="bl-input"
                     >
                         <option value="daily">Daily</option>
                         <option value="weekly">Weekly</option>
                     </select>
                 </label>
-                <label className="block">
+                <label className="bl-label">
                     Run for days
                     <input
                         required
@@ -201,32 +201,44 @@ export default function RecurringAnnouncementsHistory({
                         max={365}
                         value={days}
                         onChange={(e) => setDays(Number(e.target.value))}
-                        className="block w-full"
+                        className="bl-input"
                     />
                 </label>
-                <label className="block">
+                <label className="bl-label">
                     Message
                     <textarea
                         required
                         maxLength={1800}
                         value={content}
                         onChange={(e) => setContent(e.target.value)}
-                        className="block w-full"
+                        className="bl-input"
                     />
                 </label>
                 <button disabled={busy} type="submit">
                     Save recurring announcement
                 </button>
             </form>
-            {notice && <p role="status">{notice}</p>}
+            {notice && (
+                <p role="status" className="bl-form-notice">
+                    {notice}
+                </p>
+            )}
             <p>
                 Missing local times are skipped. Old occurrences are skipped
                 after a day. An uncertain delivery holds the series. Use
                 /announce series-list and /announce series-cancel to inspect or
                 cancel it.
             </p>
-            {loading && <p role="status">Loading recurring announcements…</p>}
-            {error && <p role="alert">{error}</p>}
+            {loading && (
+                <p role="status" className="bl-form-notice">
+                    Loading recurring announcements…
+                </p>
+            )}
+            {error && (
+                <p role="alert" className="bl-form-alert">
+                    {error}
+                </p>
+            )}
             {!loading && !error && !series.length && (
                 <p>No recurring announcements are recorded.</p>
             )}

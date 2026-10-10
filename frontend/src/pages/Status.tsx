@@ -1,5 +1,8 @@
 import { useEffect, useState } from 'react';
 
+import { Alert } from '../components/ui/Alert';
+import { Page, PageHeader } from '../components/ui/Page';
+
 interface ServiceStatus {
     status: string;
     latency?: number;
@@ -117,19 +120,19 @@ function ServiceCard({
 function UptimeStats({ uptime }: { uptime: StatusData['uptime'] }) {
     return (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-bl-panel p-6 rounded-lg shadow">
+            <div className="bl-stat">
                 <h4 className="text-sm text-bl-muted mb-2">Last 24 Hours</h4>
                 <p className="text-3xl font-bold text-bl-success">
                     {uptime['24h'].toFixed(2)}%
                 </p>
             </div>
-            <div className="bg-bl-panel p-6 rounded-lg shadow">
+            <div className="bl-stat">
                 <h4 className="text-sm text-bl-muted mb-2">Last 7 Days</h4>
                 <p className="text-3xl font-bold text-bl-success">
                     {uptime['7d'].toFixed(2)}%
                 </p>
             </div>
-            <div className="bg-bl-panel p-6 rounded-lg shadow">
+            <div className="bl-stat">
                 <h4 className="text-sm text-bl-muted mb-2">Last 30 Days</h4>
                 <p className="text-3xl font-bold text-bl-success">
                     {uptime['30d'].toFixed(2)}%
@@ -154,7 +157,7 @@ function IncidentCard({ incident }: { incident: Incident }) {
     };
 
     return (
-        <div className="bg-bl-panel border border-bl-border rounded-lg p-6 mb-4">
+        <div className="bl-card p-6 mb-4">
             <div className="flex justify-between items-start mb-3">
                 <div>
                     <h3 className="text-xl font-semibold mb-2">
@@ -207,7 +210,7 @@ function IncidentCard({ incident }: { incident: Incident }) {
             )}
 
             {incident.updates && incident.updates.length > 0 && (
-                <div className="border-t pt-4">
+                <div className="border-t border-bl-border/40 pt-4">
                     <h4 className="text-sm font-semibold text-bl-ink mb-3">
                         Updates
                     </h4>
@@ -280,24 +283,33 @@ export default function Status() {
         return () => clearInterval(interval);
     }, [apiUrl]);
 
+    const header = (
+        <PageHeader
+            eyebrow="Backline · Status"
+            title="API service status"
+            description="Database, cache and Discord API availability. These checks do not verify the bot connection or command delivery."
+        />
+    );
+
     if (loading) {
         return (
-            <div className="min-h-screen bg-bl-panel flex items-center justify-center">
-                <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-bl-accent mx-auto"></div>
-                    <p className="mt-4 text-bl-muted">Loading status...</p>
-                </div>
-            </div>
+            <Page narrow>
+                {header}
+                <p role="status" className="text-bl-muted">
+                    Loading status…
+                </p>
+            </Page>
         );
     }
 
     if (error) {
         return (
-            <div className="min-h-screen bg-bl-panel flex items-center justify-center">
-                <div className="text-center">
-                    <p className="text-bl-danger text-xl">{error}</p>
-                </div>
-            </div>
+            <Page narrow>
+                {header}
+                <Alert tone="danger" role="alert" title="Status is unavailable">
+                    {error}
+                </Alert>
+            </Page>
         );
     }
 
@@ -306,22 +318,11 @@ export default function Status() {
     }
 
     return (
-        <div className="min-h-screen bg-bl-panel py-8">
-            <div className="container mx-auto px-4 max-w-5xl">
-                {/* Header */}
-                <div className="text-center mb-8">
-                    <h1 className="text-4xl font-bold text-bl-ink mb-2">
-                        API Service Status
-                    </h1>
-                    <p className="text-bl-muted">
-                        Database, cache and Discord API availability. These
-                        checks do not verify the bot connection or command
-                        delivery.
-                    </p>
-                </div>
-
+        <Page narrow>
+            {header}
+            <div>
                 {/* Overall Status */}
-                <div className="bg-bl-panel rounded-lg shadow-lg p-8 mb-8">
+                <div className="bl-card p-8 mb-8">
                     <StatusBadge status={status.status} />
                     <p className="text-center text-sm text-bl-muted mt-2">
                         Last updated:{' '}
@@ -330,10 +331,8 @@ export default function Status() {
                 </div>
 
                 {/* Services Status */}
-                <div className="bg-bl-panel rounded-lg shadow-lg p-8 mb-8">
-                    <h2 className="text-2xl font-bold text-bl-ink mb-4">
-                        Services
-                    </h2>
+                <div className="bl-card p-8 mb-8">
+                    <h2 className="bl-section-title mb-4">Services</h2>
                     <div className="space-y-3">
                         <ServiceCard
                             name="Database"
@@ -355,7 +354,7 @@ export default function Status() {
 
                 {/* Uptime Statistics */}
                 <div className="mb-8">
-                    <h2 className="text-2xl font-bold text-bl-ink mb-4">
+                    <h2 className="bl-section-title mb-4">
                         API service uptime
                     </h2>
                     <UptimeStats uptime={status.uptime} />
@@ -364,7 +363,7 @@ export default function Status() {
                 {/* Active Incidents */}
                 {incidents.length > 0 && (
                     <div className="mb-8">
-                        <h2 className="text-2xl font-bold text-bl-ink mb-4">
+                        <h2 className="bl-section-title mb-4">
                             Active Incidents ({incidents.length})
                         </h2>
                         {incidents.map((incident) => (
@@ -378,13 +377,11 @@ export default function Status() {
 
                 {/* No Incidents Message */}
                 {incidents.length === 0 && status.status === 'healthy' && (
-                    <div className="bg-bl-success/10 border border-bl-success rounded-lg p-6 text-center">
-                        <p className="text-bl-success font-medium">
-                            ✓ No active incidents reported
-                        </p>
-                    </div>
+                    <Alert tone="success" role="none">
+                        No active incidents reported.
+                    </Alert>
                 )}
             </div>
-        </div>
+        </Page>
     );
 }
