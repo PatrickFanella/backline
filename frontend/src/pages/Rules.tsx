@@ -121,7 +121,7 @@ function Rules() {
                     </p>
                 </div>
                 <Button onClick={() => navigate('/rules/new')}>
-                    <Plus className="w-4 h-4 mr-2" />
+                    <Plus className="w-4 h-4" />
                     Create Rule
                 </Button>
             </div>
@@ -178,7 +178,7 @@ function Rules() {
                                 No rules created yet
                             </p>
                             <Button onClick={() => navigate('/rules/new')}>
-                                <Plus className="w-4 h-4 mr-2" />
+                                <Plus className="w-4 h-4" />
                                 Create Your First Rule
                             </Button>
                         </div>

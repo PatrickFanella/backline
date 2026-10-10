@@ -69,7 +69,7 @@ function VolumeChart({ data, onUserClick }: VolumeChartProps) {
 
     if (chartData.length === 0) {
         return (
-            <div className="flex items-center justify-center h-64 text-bl-muted">
+            <div className="bl-empty flex items-center justify-center h-64">
                 No data available
             </div>
         );
@@ -113,7 +113,15 @@ function VolumeChart({ data, onUserClick }: VolumeChartProps) {
                             height={100}
                         />
                         <YAxis />
-                        <Tooltip />
+                        <Tooltip
+                            contentStyle={{
+                                backgroundColor: chartColors.panel,
+                                border: `1px solid ${chartColors.border}`,
+                                borderRadius: '4px',
+                                color: chartColors.ink,
+                            }}
+                            labelStyle={{ color: chartColors.ink }}
+                        />
                         <Area
                             type="monotone"
                             dataKey="typing"
@@ -138,44 +146,34 @@ function VolumeChart({ data, onUserClick }: VolumeChartProps) {
                 </ResponsiveContainer>
             </div>
             {/* Screen reader accessible data table */}
-            <details className="mt-4">
-                <summary className="cursor-pointer text-sm text-bl-muted dark:text-bl-muted hover:text-bl-ink dark:hover:text-bl-muted">
+            <details className="bl-details mt-4">
+                <summary className="cursor-pointer text-sm font-semibold text-bl-accent">
                     View volume data as table
                 </summary>
-                <div className="mt-2 overflow-x-auto">
-                    <table className="min-w-full text-sm border border-bl-border dark:border-bl-border">
+                <div className="mt-2 bl-table-wrap">
+                    <table className="bl-table">
                         <caption className="sr-only">
                             User Activity Volume Data
                         </caption>
-                        <thead className="bg-bl-surface dark:bg-bl-recessed">
+                        <thead>
                             <tr>
-                                <th scope="col" className="px-4 py-2 text-left">
-                                    Username
-                                </th>
-                                <th
-                                    scope="col"
-                                    className="px-4 py-2 text-right"
-                                >
+                                <th scope="col">Username</th>
+                                <th scope="col" className="bl-cell-numeric">
                                     Typing Events
                                 </th>
-                                <th
-                                    scope="col"
-                                    className="px-4 py-2 text-right"
-                                >
+                                <th scope="col" className="bl-cell-numeric">
                                     Messages
                                 </th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-bl-border dark:divide-bl-border">
+                        <tbody>
                             {topUsers.map((user) => (
                                 <tr key={user.userId}>
-                                    <td className="px-4 py-2">
-                                        {user.username}
-                                    </td>
-                                    <td className="px-4 py-2 text-right">
+                                    <td>{user.username}</td>
+                                    <td className="bl-cell-numeric">
                                         {user.typingCount}
                                     </td>
-                                    <td className="px-4 py-2 text-right">
+                                    <td className="bl-cell-numeric">
                                         {user.messageCount}
                                     </td>
                                 </tr>

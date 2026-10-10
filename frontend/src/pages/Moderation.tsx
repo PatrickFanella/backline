@@ -2,6 +2,14 @@ import { useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 
+import ServerSwitcher from '../components/ServerSwitcher';
+import { Alert } from '../components/ui/Alert';
+import { Badge } from '../components/ui/Badge';
+import { EmptyState } from '../components/ui/EmptyState';
+import { Input, Select, Textarea } from '../components/ui/Field';
+import { Page, PageHeader, Section } from '../components/ui/Page';
+import { Table } from '../components/ui/Table';
+import { useServers } from '../hooks/useServers';
 import api from '../lib/api';
 import { useGuild } from '../store/guild';
 
@@ -16,8 +24,21 @@ type Case = {
     detail: string | null;
     createdAt: string;
 };
+
+const actions = ['warn', 'timeout', 'kick', 'ban', 'unban', 'purge'];
+
+function stateTone(
+    state: string
+): 'success' | 'warning' | 'danger' | 'neutral' {
+    if (state === 'DELIVERED') return 'success';
+    if (state === 'FAILED' || state === 'CANCELLED') return 'danger';
+    if (state === 'RECONCILE') return 'warning';
+    return 'neutral';
+}
+
 export default function Moderation() {
     const guildId = useGuild((state) => state.guildId);
+    const { servers } = useServers('passive');
     const [cases, setCases] = useState<Case[]>([]);
     const [action, setAction] = useState('warn');
     const [target, setTarget] = useState('');
@@ -27,6 +48,7 @@ export default function Moderation() {
     const [busy, setBusy] = useState(false);
     const [job, setJob] = useState<string | null>(null);
     const request = useRef<string | null>(null);
+    const serverName = servers.find((server) => server.id === guildId)?.name;
     useEffect(() => {
         let active = true;
         setCases([]);
@@ -111,157 +133,216 @@ export default function Moderation() {
             setBusy(false);
         }
     }
+    const locked = busy || job !== null || request.current !== null;
     return (
-        <main
-            id="main-content"
-            className="min-h-screen bg-bl-canvas text-bl-ink p-6 pb-64"
-        >
-            <div className="max-w-4xl mx-auto space-y-6">
-                <Link to="/servers" className="text-bl-accent">
-                    Server setup
-                </Link>
-                <h1 className="text-3xl font-semibold">Moderation cases</h1>
-                {!guildId ? (
-                    <p>Select a server in setup first.</p>
-                ) : (
-                    <>
-                        <p>
-                            Server {guildId}. Enable Moderation in setup before
-                            submitting an action. Warnings are recorded here
-                            without sending a DM. Purge skips pinned messages
-                            and messages older than 14 days.
-                        </p>
+        <Page narrow>
+            <PageHeader
+                eyebrow="Backline · Moderation"
+                title="Moderation cases"
+                description="Queue an action for the selected server and follow its delivery. Warnings are recorded here without sending a DM. Purge skips pinned messages and messages older than 14 days."
+                actions={
+                    <Link
+                        to="/servers"
+                        className="bl-button bl-button-secondary bl-button-sm"
+                    >
+                        Server setup
+                    </Link>
+                }
+            />
+            <ServerSwitcher servers={servers} disabled={locked} />
+            {!guildId ? (
+                <EmptyState title="Select a server first">
+                    <p>
+                        Choose a server in setup, then enable Moderation before
+                        queuing actions.
+                    </p>
+                </EmptyState>
+            ) : (
+                <>
+                    <Section
+                        id="queue"
+                        title="Queue an action"
+                        description={`Actions apply to ${serverName ?? `server ${guildId}`}. Enable Moderation in setup before submitting.`}
+                    >
                         <form
                             onSubmit={(event) => {
                                 void submit(event);
                             }}
-                            className="space-y-4"
+                            className="bl-card p-5 space-y-4"
                         >
                             <fieldset
-                                disabled={
-                                    busy ||
-                                    job !== null ||
-                                    request.current !== null
-                                }
-                                className="space-y-4 disabled:opacity-60"
+                                disabled={locked}
+                                className="grid gap-4 sm:grid-cols-2"
                             >
-                                <label className="block">
-                                    Action
-                                    <select
-                                        className="block bg-bl-panel p-2"
-                                        value={action}
-                                        onChange={(event) =>
-                                            setAction(event.target.value)
-                                        }
-                                    >
-                                        {[
-                                            'warn',
-                                            'timeout',
-                                            'kick',
-                                            'ban',
-                                            'unban',
-                                            'purge',
-                                        ].map((value) => (
-                                            <option key={value}>{value}</option>
-                                        ))}
-                                    </select>
-                                </label>
-                                <label className="block">
-                                    {action === 'purge'
-                                        ? 'Channel ID'
-                                        : 'Discord user ID'}
-                                    <input
-                                        className="block bg-bl-panel p-2 w-full"
-                                        value={target}
-                                        onChange={(event) =>
-                                            setTarget(event.target.value)
-                                        }
-                                        required
-                                        pattern="[0-9]{17,20}"
-                                    />
-                                </label>
+                                <Select
+                                    label="Action"
+                                    value={action}
+                                    onChange={(event) =>
+                                        setAction(event.target.value)
+                                    }
+                                >
+                                    {actions.map((value) => (
+                                        <option key={value}>{value}</option>
+                                    ))}
+                                </Select>
+                                <Input
+                                    label={
+                                        action === 'purge'
+                                            ? 'Channel ID'
+                                            : 'Discord user ID'
+                                    }
+                                    value={target}
+                                    onChange={(event) =>
+                                        setTarget(event.target.value)
+                                    }
+                                    required
+                                    inputMode="numeric"
+                                    pattern="[0-9]{17,20}"
+                                    hint="17 to 20 digits, from Discord’s Copy ID action."
+                                />
                                 {['timeout', 'purge'].includes(action) && (
-                                    <label className="block">
-                                        {action === 'timeout'
-                                            ? 'Minutes'
-                                            : 'Messages to consider'}
-                                        <input
-                                            className="block bg-bl-panel p-2"
-                                            type="number"
-                                            min={1}
-                                            max={
-                                                action === 'timeout'
-                                                    ? 40320
-                                                    : 100
-                                            }
-                                            value={amount}
-                                            onChange={(event) =>
-                                                setAmount(
-                                                    Number(event.target.value)
-                                                )
-                                            }
-                                            required
-                                        />
-                                    </label>
-                                )}
-                                <label className="block">
-                                    Reason
-                                    <textarea
-                                        className="block bg-bl-panel p-2 w-full"
-                                        value={reason}
-                                        onChange={(event) =>
-                                            setReason(event.target.value)
+                                    <Input
+                                        label={
+                                            action === 'timeout'
+                                                ? 'Minutes'
+                                                : 'Messages to consider'
                                         }
-                                        maxLength={400}
+                                        type="number"
+                                        min={1}
+                                        max={action === 'timeout' ? 40320 : 100}
+                                        value={amount}
+                                        onChange={(event) =>
+                                            setAmount(
+                                                Number(event.target.value)
+                                            )
+                                        }
                                         required
                                     />
-                                </label>
+                                )}
+                                <Textarea
+                                    label="Reason"
+                                    className="sm:col-span-2"
+                                    value={reason}
+                                    onChange={(event) =>
+                                        setReason(event.target.value)
+                                    }
+                                    maxLength={400}
+                                    required
+                                    hint="Stored with the case. Up to 400 characters."
+                                />
                             </fieldset>
-                            <button
-                                disabled={busy || job !== null}
-                                type="submit"
-                                className="border border-bl-border p-2 rounded disabled:opacity-50"
-                            >
-                                {request.current
-                                    ? 'Retry same request'
-                                    : 'Queue moderation action'}
-                            </button>
+                            <div className="flex flex-wrap gap-2">
+                                <button
+                                    disabled={busy || job !== null}
+                                    type="submit"
+                                    className="bl-button bl-button-primary"
+                                >
+                                    {request.current
+                                        ? 'Retry same request'
+                                        : 'Queue moderation action'}
+                                </button>
+                                <button
+                                    type="button"
+                                    disabled={busy}
+                                    onClick={() => {
+                                        void refresh();
+                                    }}
+                                    className="bl-button bl-button-secondary"
+                                >
+                                    Refresh outcomes
+                                </button>
+                            </div>
                         </form>
-                        {notice && <p role="status">{notice}</p>}
-                        <button
-                            type="button"
-                            disabled={busy}
-                            onClick={() => {
-                                void refresh();
-                            }}
-                            className="border border-bl-border p-2 rounded"
-                        >
-                            Refresh outcomes
-                        </button>
-                        <h2 className="text-xl font-semibold">Recent cases</h2>
-                        {cases.map((record) => (
-                            <article
-                                key={record.id}
-                                className="border border-bl-surface p-4 rounded space-y-2"
+                        {notice && (
+                            <Alert
+                                tone={
+                                    notice.startsWith('Queued')
+                                        ? 'success'
+                                        : notice.includes('unavailable')
+                                          ? 'warning'
+                                          : 'info'
+                                }
+                                role="status"
                             >
+                                {notice}
+                            </Alert>
+                        )}
+                    </Section>
+                    <Section
+                        id="cases"
+                        title="Recent cases"
+                        description="Newest first. Delivery states come from the queue, not from Discord."
+                    >
+                        {cases.length === 0 ? (
+                            <EmptyState as="h3" title="No cases yet">
                                 <p>
-                                    {record.action} · {record.state} ·{' '}
-                                    {new Date(
-                                        record.createdAt
-                                    ).toLocaleString()}
+                                    Queued actions and their outcomes appear
+                                    here.
                                 </p>
-                                <p>Case {record.id}</p>
-                                <p>
-                                    Actor {record.actorId} · Target{' '}
-                                    {record.targetId ?? record.channelId}
-                                </p>
-                                <p>{record.reason}</p>
-                                {record.detail && <p>{record.detail}</p>}
-                            </article>
-                        ))}
-                    </>
-                )}
-            </div>
-        </main>
+                            </EmptyState>
+                        ) : (
+                            <Table caption="Recent moderation cases">
+                                <thead>
+                                    <tr>
+                                        <th scope="col">Action</th>
+                                        <th scope="col">State</th>
+                                        <th scope="col">Target</th>
+                                        <th scope="col">Reason</th>
+                                        <th scope="col">When</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {cases.map((record) => (
+                                        <tr key={record.id}>
+                                            <td>
+                                                <span className="font-semibold">
+                                                    {record.action}
+                                                </span>
+                                                <span className="block text-xs text-bl-muted font-mono">
+                                                    Case {record.id}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <Badge
+                                                    tone={stateTone(
+                                                        record.state
+                                                    )}
+                                                >
+                                                    {record.state}
+                                                </Badge>
+                                            </td>
+                                            <td className="font-mono text-xs">
+                                                <span className="block">
+                                                    {record.targetId ??
+                                                        record.channelId}
+                                                </span>
+                                                <span className="block text-bl-muted">
+                                                    by {record.actorId}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <span className="block">
+                                                    {record.reason}
+                                                </span>
+                                                {record.detail && (
+                                                    <span className="block text-xs text-bl-muted">
+                                                        {record.detail}
+                                                    </span>
+                                                )}
+                                            </td>
+                                            <td className="whitespace-nowrap">
+                                                {new Date(
+                                                    record.createdAt
+                                                ).toLocaleString()}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </Table>
+                        )}
+                    </Section>
+                </>
+            )}
+        </Page>
     );
 }

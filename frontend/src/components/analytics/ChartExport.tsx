@@ -58,7 +58,7 @@ function ChartExport({
 
     return (
         <Button onClick={handleExport} variant="secondary" size="sm">
-            <Download className="w-4 h-4 mr-2" />
+            <Download className="w-4 h-4" />
             {buttonText}
         </Button>
     );

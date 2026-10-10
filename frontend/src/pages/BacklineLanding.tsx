@@ -2,10 +2,11 @@ import { ArrowDown, ArrowUpRight, Check, Menu, X } from 'lucide-react';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 
+import { useTheme } from '../contexts/ThemeContext';
+
 import './backline-landing.css';
 
-const source =
-    'https://git.subcult.tv/subculture-collective/backline';
+const source = 'https://git.subcult.tv/subculture-collective/backline';
 const tools = [
     {
         number: '01',
@@ -39,11 +40,14 @@ const tools = [
 
 export default function BacklineLanding() {
     const [menuOpen, setMenuOpen] = useState(false);
+    const { effectiveTheme } = useTheme();
+    const mark = effectiveTheme === 'dark' ? 'mark-light' : 'mark';
+    const inverseMark = effectiveTheme === 'dark' ? 'mark' : 'mark-light';
 
     return (
         <div className="backline">
-            <header className="bl-header">
-                <Link to="/" className="bl-brand" aria-label="Backline home">
+            <header className="lp-header">
+                <Link to="/" className="lp-brand" aria-label="Backline home">
                     <img
                         src="/brand/backline/lockup.svg"
                         alt="Backline"
@@ -52,7 +56,7 @@ export default function BacklineLanding() {
                     />
                 </Link>
                 <button
-                    className="bl-menu-button"
+                    className="lp-menu-button"
                     type="button"
                     aria-expanded={menuOpen}
                     aria-controls="bl-navigation"
@@ -69,7 +73,7 @@ export default function BacklineLanding() {
                 </button>
                 <nav
                     id="bl-navigation"
-                    className={menuOpen ? 'bl-nav is-open' : 'bl-nav'}
+                    className={menuOpen ? 'lp-nav is-open' : 'lp-nav'}
                     aria-label="Main navigation"
                 >
                     <a href="#tools" onClick={() => setMenuOpen(false)}>
@@ -78,7 +82,7 @@ export default function BacklineLanding() {
                     <a href="#how" onClick={() => setMenuOpen(false)}>
                         How it works
                     </a>
-                    <Link className="bl-nav-login" to="/login">
+                    <Link className="lp-nav-login" to="/login">
                         Pilot sign in{' '}
                         <ArrowUpRight size={18} aria-hidden="true" />
                     </Link>
@@ -86,10 +90,10 @@ export default function BacklineLanding() {
             </header>
 
             <main id="main-content">
-                <section className="bl-hero" aria-labelledby="bl-title">
-                    <div className="bl-hero-copy">
-                        <p className="bl-eyebrow">
-                            <span className="bl-square" /> A SUBCULT TOOL /
+                <section className="lp-hero" aria-labelledby="bl-title">
+                    <div className="lp-hero-copy">
+                        <p className="lp-eyebrow">
+                            <span className="lp-square" /> A SUBCULT TOOL /
                             DISCORD COMMUNITIES
                         </p>
                         <h1 id="bl-title">
@@ -99,32 +103,32 @@ export default function BacklineLanding() {
                             <br />
                             <span>TOGETHER.</span>
                         </h1>
-                        <p className="bl-hero-description">
+                        <p className="lp-hero-description">
                             The tools behind your community. Welcome people,
                             support your members, and give your moderation team
                             the context to do its work.
                         </p>
-                        <div className="bl-hero-actions">
-                            <a className="bl-button" href="#tools">
+                        <div className="lp-hero-actions">
+                            <a className="lp-cta" href="#tools">
                                 Explore the tools{' '}
                                 <ArrowDown size={20} aria-hidden="true" />
                             </a>
-                            <a className="bl-text-link" href="#pilot">
+                            <a className="lp-text-link" href="#pilot">
                                 Meet the private pilot{' '}
                                 <ArrowUpRight size={18} aria-hidden="true" />
                             </a>
                         </div>
                     </div>
                     <div
-                        className="bl-workflow"
+                        className="lp-workflow"
                         aria-label="Illustrative Backline workflows with fictional members and records"
                     >
-                        <div className="bl-workflow-label">
+                        <div className="lp-workflow-label">
                             <span>BEHIND THE SCENES</span>
                             <span>ILLUSTRATIVE WORKFLOWS</span>
                         </div>
-                        <div className="bl-workflow-board">
-                            <div className="bl-board-top">
+                        <div className="lp-workflow-board">
+                            <div className="lp-board-top">
                                 <img
                                     src="/brand/backline/mark.svg"
                                     alt=""
@@ -132,14 +136,14 @@ export default function BacklineLanding() {
                                     height="32"
                                 />
                                 <span>YOUR COMMUNITY</span>
-                                <span className="bl-board-number">001</span>
+                                <span className="lp-board-number">001</span>
                             </div>
-                            <div className="bl-example bl-example-welcome">
-                                <div className="bl-example-heading">
-                                    <span className="bl-step-label">
+                            <div className="lp-example bl-example-welcome">
+                                <div className="lp-example-heading">
+                                    <span className="lp-step-label">
                                         01 / WELCOME
                                     </span>
-                                    <span className="bl-example-symbol">↳</span>
+                                    <span className="lp-example-symbol">↳</span>
                                 </div>
                                 <h2>
                                     YOU’RE IN.
@@ -150,62 +154,62 @@ export default function BacklineLanding() {
                                     A welcome message. A clear set of rules. A
                                     place to start.
                                 </p>
-                                <span className="bl-example-chip">
+                                <span className="lp-example-chip">
                                     <Check size={14} aria-hidden="true" /> Rules
                                     acknowledged
                                 </span>
                             </div>
-                            <div className="bl-example bl-example-case">
-                                <div className="bl-example-heading">
-                                    <span className="bl-step-label">
+                            <div className="lp-example bl-example-case">
+                                <div className="lp-example-heading">
+                                    <span className="lp-step-label">
                                         02 / MODERATION
                                     </span>
-                                    <span className="bl-small-label">
+                                    <span className="lp-small-label">
                                         CASE #014
                                     </span>
                                 </div>
-                                <div className="bl-case-line">
+                                <div className="lp-case-line">
                                     <strong>ACTION</strong>
                                     <span>Warning</span>
                                 </div>
-                                <div className="bl-case-line">
+                                <div className="lp-case-line">
                                     <strong>REASON</strong>
                                     <span>Repeated off-topic posts</span>
                                 </div>
-                                <div className="bl-case-line">
+                                <div className="lp-case-line">
                                     <strong>STAFF</strong>
                                     <span>Sam / moderator</span>
                                 </div>
                             </div>
-                            <div className="bl-example bl-example-ticket">
-                                <div className="bl-example-heading">
-                                    <span className="bl-step-label">
+                            <div className="lp-example bl-example-ticket">
+                                <div className="lp-example-heading">
+                                    <span className="lp-step-label">
                                         03 / SUPPORT
                                     </span>
-                                    <span className="bl-small-label">
+                                    <span className="lp-small-label">
                                         TICKET #008
                                     </span>
                                 </div>
                                 <h2>“A LITTLE HELP?”</h2>
-                                <div className="bl-ticket-bottom">
+                                <div className="lp-ticket-bottom">
                                     <span>Alex / member</span>
-                                    <span className="bl-example-chip">
+                                    <span className="lp-example-chip">
                                         Claimed by staff
                                     </span>
                                 </div>
                             </div>
-                            <div className="bl-board-bottom">
+                            <div className="lp-board-bottom">
                                 ONE SERVER. THE MODULES YOU CHOOSE.
                             </div>
                         </div>
-                        <p className="bl-sample-note">
+                        <p className="lp-sample-note">
                             Sample content, not a live server or dashboard
                             capture.
                         </p>
                     </div>
                 </section>
 
-                <div className="bl-strip" aria-label="Core modules">
+                <div className="lp-strip" aria-label="Core modules">
                     <span>WELCOME</span>
                     <span aria-hidden="true">✳</span>
                     <span>MODERATE</span>
@@ -217,11 +221,11 @@ export default function BacklineLanding() {
 
                 <section
                     id="tools"
-                    className="bl-tools bl-section"
+                    className="lp-tools bl-section"
                     aria-labelledby="bl-tools-title"
                 >
-                    <div className="bl-section-heading">
-                        <p className="bl-eyebrow">THE TOOLKIT / 01—03</p>
+                    <div className="lp-section-heading">
+                        <p className="lp-eyebrow">THE TOOLKIT / 01—03</p>
                         <h2 id="bl-tools-title">
                             A community takes work.
                             <br />
@@ -233,23 +237,23 @@ export default function BacklineLanding() {
                             until you choose to enable it.
                         </p>
                     </div>
-                    <div className="bl-tool-list">
+                    <div className="lp-tool-list">
                         {tools.map((tool) => (
-                            <article className="bl-tool" key={tool.number}>
+                            <article className="lp-tool" key={tool.number}>
                                 <span
-                                    className="bl-tool-number"
+                                    className="lp-tool-number"
                                     aria-hidden="true"
                                 >
                                     {tool.number}
                                 </span>
                                 <div>
-                                    <p className="bl-eyebrow">{tool.label}</p>
+                                    <p className="lp-eyebrow">{tool.label}</p>
                                     <h3>{tool.name}</h3>
-                                    <p className="bl-tool-description">
+                                    <p className="lp-tool-description">
                                         {tool.text}
                                     </p>
                                     <ul
-                                        className="bl-tags"
+                                        className="lp-tags"
                                         aria-label={`${tool.label} capabilities`}
                                     >
                                         {tool.tags.map((tag) => (
@@ -258,7 +262,7 @@ export default function BacklineLanding() {
                                     </ul>
                                 </div>
                                 <a
-                                    className="bl-doc-link"
+                                    className="lp-doc-link"
                                     href={`${source}/src/branch/main/docs/developer/${tool.doc}.md`}
                                     target="_blank"
                                     rel="noreferrer"
@@ -277,20 +281,20 @@ export default function BacklineLanding() {
 
                 <section
                     id="how"
-                    className="bl-how bl-section"
+                    className="lp-how bl-section"
                     aria-labelledby="bl-how-title"
                 >
-                    <div className="bl-section-heading">
-                        <p className="bl-eyebrow">YOUR SERVER / YOUR SETUP</p>
+                    <div className="lp-section-heading">
+                        <p className="lp-eyebrow">YOUR SERVER / YOUR SETUP</p>
                         <h2 id="bl-how-title">
                             Choose the job.
                             <br />
                             Set the boundaries.
                         </h2>
                     </div>
-                    <ol className="bl-steps">
+                    <ol className="lp-steps">
                         <li>
-                            <span className="bl-step-index">01</span>
+                            <span className="lp-step-index">01</span>
                             <h3>Pick your server.</h3>
                             <p>
                                 Sign in with Discord. The dashboard checks your
@@ -298,7 +302,7 @@ export default function BacklineLanding() {
                             </p>
                         </li>
                         <li>
-                            <span className="bl-step-index">02</span>
+                            <span className="lp-step-index">02</span>
                             <h3>Set up the module.</h3>
                             <p>
                                 Choose channels, staff roles, and the settings
@@ -307,7 +311,7 @@ export default function BacklineLanding() {
                             </p>
                         </li>
                         <li>
-                            <span className="bl-step-index">03</span>
+                            <span className="lp-step-index">03</span>
                             <h3>Bring it into Discord.</h3>
                             <p>
                                 Use commands and member-facing panels in the
@@ -316,9 +320,9 @@ export default function BacklineLanding() {
                             </p>
                         </li>
                     </ol>
-                    <div className="bl-principle">
+                    <div className="lp-principle">
                         <img
-                            src="/brand/backline/mark.svg"
+                            src={`/brand/backline/${mark}.svg`}
                             alt=""
                             width="72"
                             height="72"
@@ -336,11 +340,11 @@ export default function BacklineLanding() {
 
                 <section
                     id="pilot"
-                    className="bl-pilot bl-section"
+                    className="lp-pilot bl-section"
                     aria-labelledby="bl-pilot-title"
                 >
-                    <div className="bl-pilot-copy">
-                        <p className="bl-eyebrow">CURRENTLY / PRIVATE PILOT</p>
+                    <div className="lp-pilot-copy">
+                        <p className="lp-eyebrow">CURRENTLY / PRIVATE PILOT</p>
                         <h2 id="bl-pilot-title">
                             BUILT WITH
                             <br />A REAL COMMUNITY.
@@ -356,14 +360,14 @@ export default function BacklineLanding() {
                             have pilot access, your dashboard is ready to sign
                             in.
                         </p>
-                        <Link className="bl-button" to="/login">
+                        <Link className="lp-cta" to="/login">
                             Pilot sign in{' '}
                             <ArrowUpRight size={20} aria-hidden="true" />
                         </Link>
                     </div>
-                    <div className="bl-pilot-stamp" aria-hidden="true">
+                    <div className="lp-pilot-stamp" aria-hidden="true">
                         <img
-                            src="/brand/backline/mark-light.svg"
+                            src={`/brand/backline/${inverseMark}.svg`}
                             alt=""
                             width="240"
                             height="240"
@@ -377,14 +381,14 @@ export default function BacklineLanding() {
                 </section>
 
                 <section
-                    className="bl-faq bl-section"
+                    className="lp-faq bl-section"
                     aria-labelledby="bl-faq-title"
                 >
                     <div>
-                        <p className="bl-eyebrow">BEFORE YOU ASK</p>
+                        <p className="lp-eyebrow">BEFORE YOU ASK</p>
                         <h2 id="bl-faq-title">A few practical things.</h2>
                     </div>
-                    <div className="bl-faq-list">
+                    <div className="lp-faq-list">
                         <details>
                             <summary>Can I add Backline to my server?</summary>
                             <p>
@@ -433,7 +437,7 @@ export default function BacklineLanding() {
                     </div>
                 </section>
             </main>
-            <footer className="bl-footer">
+            <footer className="lp-footer">
                 <img
                     src="/brand/backline/wordmark.svg"
                     alt="Backline"

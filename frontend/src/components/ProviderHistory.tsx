@@ -99,19 +99,19 @@ export default function ProviderHistory({ guildId }: { guildId: string }) {
                 className="space-y-2 border border-bl-surface rounded p-3"
             >
                 <h3>Add provider feed</h3>
-                <label className="block">
+                <label className="bl-label">
                     Provider
                     <select
                         value={provider}
                         onChange={(e) => setProvider(e.target.value)}
-                        className="block w-full"
+                        className="bl-input"
                     >
                         <option value="rss">RSS/Atom</option>
                         <option value="youtube">YouTube</option>
                         <option value="twitch">Twitch</option>
                     </select>
                 </label>
-                <label className="block">
+                <label className="bl-label">
                     {provider === 'rss'
                         ? 'Public HTTPS feed URL'
                         : provider === 'youtube'
@@ -121,27 +121,37 @@ export default function ProviderHistory({ guildId }: { guildId: string }) {
                         required
                         value={source}
                         onChange={(e) => setSource(e.target.value)}
-                        className="block w-full"
+                        className="bl-input"
                     />
                 </label>
-                <label className="block">
+                <label className="bl-label">
                     Destination channel ID
                     <input
                         required
                         pattern="[0-9]{17,20}"
                         value={channelId}
                         onChange={(e) => setChannelId(e.target.value)}
-                        className="block w-full"
+                        className="bl-input"
                     />
                 </label>
                 <button disabled={busy} type="submit">
                     Add feed
                 </button>
             </form>
-            {notice && <p role="status">{notice}</p>}
-            {error && <p role="alert">{error}</p>}
+            {notice && (
+                <p role="status" className="bl-form-notice">
+                    {notice}
+                </p>
+            )}
+            {error && (
+                <p role="alert" className="bl-form-alert">
+                    {error}
+                </p>
+            )}
             {!error && !history && (
-                <p role="status">Loading provider history…</p>
+                <p role="status" className="bl-form-notice">
+                    Loading provider history…
+                </p>
             )}
             {history && !history.feeds.length && (
                 <p>No provider feeds are configured.</p>

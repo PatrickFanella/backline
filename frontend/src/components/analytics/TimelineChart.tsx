@@ -59,7 +59,7 @@ function TimelineChart({ data, onUserClick }: TimelineChartProps) {
 
     if (chartData.length === 0) {
         return (
-            <div className="flex items-center justify-center h-64 text-bl-muted">
+            <div className="bl-empty flex items-center justify-center h-64">
                 No data available
             </div>
         );
@@ -78,7 +78,15 @@ function TimelineChart({ data, onUserClick }: TimelineChartProps) {
                             height={100}
                         />
                         <YAxis />
-                        <Tooltip />
+                        <Tooltip
+                            contentStyle={{
+                                backgroundColor: chartColors.panel,
+                                border: `1px solid ${chartColors.border}`,
+                                borderRadius: '4px',
+                                color: chartColors.ink,
+                            }}
+                            labelStyle={{ color: chartColors.ink }}
+                        />
                         <Legend />
                         <Line
                             type="monotone"
@@ -102,48 +110,36 @@ function TimelineChart({ data, onUserClick }: TimelineChartProps) {
                 </ResponsiveContainer>
             </div>
             {/* Screen reader accessible data table */}
-            <details className="mt-4">
-                <summary className="cursor-pointer text-sm text-bl-muted dark:text-bl-muted hover:text-bl-ink dark:hover:text-bl-muted">
+            <details className="bl-details mt-4">
+                <summary className="cursor-pointer text-sm font-semibold text-bl-accent">
                     View suspicion data as table
                 </summary>
-                <div className="mt-2 overflow-x-auto">
-                    <table className="min-w-full text-sm border border-bl-border dark:border-bl-border">
+                <div className="mt-2 bl-table-wrap">
+                    <table className="bl-table">
                         <caption className="sr-only">
                             User Suspicion and Ghost Score Data
                         </caption>
-                        <thead className="bg-bl-surface dark:bg-bl-recessed">
+                        <thead>
                             <tr>
-                                <th scope="col" className="px-4 py-2 text-left">
-                                    Rank
-                                </th>
-                                <th scope="col" className="px-4 py-2 text-left">
-                                    Username
-                                </th>
-                                <th
-                                    scope="col"
-                                    className="px-4 py-2 text-right"
-                                >
+                                <th scope="col">Rank</th>
+                                <th scope="col">Username</th>
+                                <th scope="col" className="bl-cell-numeric">
                                     Suspicion Score
                                 </th>
-                                <th
-                                    scope="col"
-                                    className="px-4 py-2 text-right"
-                                >
+                                <th scope="col" className="bl-cell-numeric">
                                     Ghost Score
                                 </th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-bl-border dark:divide-bl-border">
+                        <tbody>
                             {topUsers.map((user, index) => (
                                 <tr key={user.userId}>
-                                    <td className="px-4 py-2">{index + 1}</td>
-                                    <td className="px-4 py-2">
-                                        {user.username}
-                                    </td>
-                                    <td className="px-4 py-2 text-right">
+                                    <td>{index + 1}</td>
+                                    <td>{user.username}</td>
+                                    <td className="bl-cell-numeric">
                                         {user.suspicionScore}
                                     </td>
-                                    <td className="px-4 py-2 text-right">
+                                    <td className="bl-cell-numeric">
                                         {user.ghostScore}
                                     </td>
                                 </tr>

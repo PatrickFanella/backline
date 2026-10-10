@@ -19,6 +19,7 @@ import ExportButton from '../components/analytics/ExportButton';
 import HeatmapChart from '../components/analytics/HeatmapChart';
 import TimelineChart from '../components/analytics/TimelineChart';
 import VolumeChart from '../components/analytics/VolumeChart';
+import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
 import {
     Card,
@@ -27,6 +28,7 @@ import {
     CardContent,
 } from '../components/ui/Card';
 import { CardSkeleton, ChartSkeleton } from '../components/ui/LoadingSkeleton';
+import { Page, PageHeader } from '../components/ui/Page';
 import { StatCard } from '../components/ui/StatCard';
 import { useAnalytics } from '../hooks/useAnalytics';
 import api from '../lib/api';
@@ -276,58 +278,58 @@ function Analytics() {
     );
 
     return (
-        <div className="min-h-screen bg-bl-canvas p-6">
-            <div className="max-w-7xl mx-auto space-y-6">
-                <div className="mb-6">
-                    <div className="flex items-center justify-between mb-4">
-                        <div>
-                            <h1 className="text-3xl font-bold text-bl-ink">
-                                Analytics Dashboard
-                            </h1>
-                            <div className="flex items-center gap-2 mt-1">
-                                <p className="text-sm text-bl-muted">
-                                    Last updated:{' '}
-                                    {lastUpdated.toLocaleTimeString()}
-                                </p>
-                                {isLiveConnected ? (
-                                    <span className="flex items-center gap-1 text-xs text-bl-success">
-                                        <Wifi className="w-3 h-3" />
-                                        Live
-                                    </span>
-                                ) : (
-                                    <span className="flex items-center gap-1 text-xs text-bl-muted">
-                                        <WifiOff className="w-3 h-3" />
-                                        Polling
-                                    </span>
-                                )}
-                            </div>
-                        </div>
-                        <div className="flex gap-2 items-center">
-                            <Link to="/advanced-analytics">
-                                <Button variant="secondary" size="md">
-                                    <Network className="w-4 h-4 mr-2" />
-                                    Advanced Charts
-                                </Button>
-                            </Link>
-                            <Button
-                                onClick={fetchData}
-                                disabled={loading}
-                                isLoading={loading}
-                                variant="primary"
-                                size="md"
-                            >
-                                {loading ? 'Refreshing...' : 'Refresh'}
-                            </Button>
-                            <ExportButton
-                                data={suspicionData}
-                                filename="analytics_suspicion"
-                            />
-                        </div>
-                    </div>
-
-                    <DateRangeSelector onRangeChange={setDateRange} />
-                </div>
-
+        <Page>
+            <PageHeader
+                eyebrow="Backline · Analytics"
+                title="Analytics Dashboard"
+                description={
+                    <span className="flex flex-wrap items-center gap-2">
+                        <span>
+                            Last updated: {lastUpdated.toLocaleTimeString()}
+                        </span>
+                        {isLiveConnected ? (
+                            <Badge tone="success">
+                                <Wifi className="w-3 h-3" aria-hidden="true" />
+                                Live
+                            </Badge>
+                        ) : (
+                            <Badge>
+                                <WifiOff
+                                    className="w-3 h-3"
+                                    aria-hidden="true"
+                                />
+                                Polling
+                            </Badge>
+                        )}
+                    </span>
+                }
+                actions={
+                    <>
+                        <Link
+                            to="/advanced-analytics"
+                            className="bl-button bl-button-secondary bl-button-sm"
+                        >
+                            <Network className="w-4 h-4" aria-hidden="true" />
+                            Advanced Charts
+                        </Link>
+                        <Button
+                            onClick={fetchData}
+                            disabled={loading}
+                            isLoading={loading}
+                            variant="primary"
+                            size="sm"
+                        >
+                            {loading ? 'Refreshing...' : 'Refresh'}
+                        </Button>
+                        <ExportButton
+                            data={suspicionData}
+                            filename="analytics_suspicion"
+                        />
+                    </>
+                }
+            />
+            <DateRangeSelector onRangeChange={setDateRange} />
+            <div className="space-y-6">
                 {loading && !heatmapData.length ? (
                     <>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
@@ -490,7 +492,7 @@ function Analytics() {
                     onClose={() => setDrillDownData(null)}
                 />
             </div>
-        </div>
+        </Page>
     );
 }
 

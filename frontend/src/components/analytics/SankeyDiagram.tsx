@@ -196,7 +196,7 @@ function SankeyDiagram({
     if (data.length === 0) {
         return (
             <div
-                className="flex items-center justify-center bg-bl-panel rounded-lg"
+                className="bl-empty flex items-center justify-center"
                 style={{ width: `${width}px`, height: `${height}px` }}
             >
                 <p className="text-bl-muted">No flow data available</p>
@@ -205,7 +205,7 @@ function SankeyDiagram({
     }
 
     return (
-        <div className="overflow-auto bg-bl-panel rounded-lg p-4">
+        <div className="overflow-auto bg-bl-recessed rounded p-4">
             <svg ref={svgRef} />
         </div>
     );

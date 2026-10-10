@@ -121,7 +121,7 @@ export default function WorkflowsConfig({
                             className="space-y-2 border border-bl-border p-3 rounded"
                         >
                             <legend>Workflow {index + 1}</legend>
-                            <label className="block">
+                            <label className="bl-label">
                                 Workflow ID
                                 <input
                                     required
@@ -132,10 +132,10 @@ export default function WorkflowsConfig({
                                             id: event.target.value,
                                         })
                                     }
-                                    className="block w-full p-2 bg-bl-panel rounded"
+                                    className="bl-input"
                                 />
                             </label>
-                            <label className="block">
+                            <label className="bl-label">
                                 Trigger
                                 <select
                                     value={rule.trigger}
@@ -148,7 +148,7 @@ export default function WorkflowsConfig({
                                             requiredRole: null,
                                         })
                                     }
-                                    className="block w-full p-2 bg-bl-panel rounded"
+                                    className="bl-input"
                                 >
                                     <option value="member_join">
                                         Member joins
@@ -161,7 +161,7 @@ export default function WorkflowsConfig({
                                     </option>
                                 </select>
                             </label>
-                            <label className="block">
+                            <label className="bl-label">
                                 Destination channel ID
                                 <input
                                     required
@@ -172,10 +172,10 @@ export default function WorkflowsConfig({
                                             channelId: event.target.value,
                                         })
                                     }
-                                    className="block w-full p-2 bg-bl-panel rounded"
+                                    className="bl-input"
                                 />
                             </label>
-                            <label className="block">
+                            <label className="bl-label">
                                 Message
                                 <textarea
                                     required
@@ -186,12 +186,12 @@ export default function WorkflowsConfig({
                                             message: event.target.value,
                                         })
                                     }
-                                    className="block w-full p-2 bg-bl-panel rounded"
+                                    className="bl-input"
                                 />
                             </label>
                             {rule.trigger === 'provider_event' && (
                                 <>
-                                    <label className="block">
+                                    <label className="bl-label">
                                         Provider filter
                                         <select
                                             value={rule.provider}
@@ -201,7 +201,7 @@ export default function WorkflowsConfig({
                                                         event.target.value,
                                                 })
                                             }
-                                            className="block w-full p-2 bg-bl-panel rounded"
+                                            className="bl-input"
                                         >
                                             <option value="any">
                                                 Any provider
@@ -217,7 +217,7 @@ export default function WorkflowsConfig({
                                             </option>
                                         </select>
                                     </label>
-                                    <label className="block">
+                                    <label className="bl-label">
                                         Title contains
                                         <input
                                             maxLength={100}
@@ -228,13 +228,13 @@ export default function WorkflowsConfig({
                                                         event.target.value,
                                                 })
                                             }
-                                            className="block w-full p-2 bg-bl-panel rounded"
+                                            className="bl-input"
                                         />
                                     </label>
                                 </>
                             )}
                             {rule.trigger === 'member_join' && (
-                                <label className="block">
+                                <label className="bl-label">
                                     Required member role ID (optional)
                                     <input
                                         pattern="[0-9]{17,20}"
@@ -245,11 +245,11 @@ export default function WorkflowsConfig({
                                                     event.target.value || null,
                                             })
                                         }
-                                        className="block w-full p-2 bg-bl-panel rounded"
+                                        className="bl-input"
                                     />
                                 </label>
                             )}
-                            <label className="block">
+                            <label className="bl-label">
                                 Cooldown seconds
                                 <input
                                     required
@@ -264,7 +264,7 @@ export default function WorkflowsConfig({
                                             ),
                                         })
                                     }
-                                    className="block w-full p-2 bg-bl-panel rounded"
+                                    className="bl-input"
                                 />
                             </label>
                             <button
@@ -302,10 +302,22 @@ export default function WorkflowsConfig({
                     </button>{' '}
                     <button type="submit">Save workflows</button>
                 </fieldset>
-                {notice && <p role="status">{notice}</p>}
+                {notice && (
+                    <p role="status" className="bl-form-notice">
+                        {notice}
+                    </p>
+                )}
             </form>
-            {error && <p role="alert">{error}</p>}
-            {!error && !runs && <p role="status">Loading workflow history…</p>}
+            {error && (
+                <p role="alert" className="bl-form-alert">
+                    {error}
+                </p>
+            )}
+            {!error && !runs && (
+                <p role="status" className="bl-form-notice">
+                    Loading workflow history…
+                </p>
+            )}
             {runs && !runs.length && <p>No workflow runs are recorded.</p>}
             <ul>
                 {runs?.map((run) => (

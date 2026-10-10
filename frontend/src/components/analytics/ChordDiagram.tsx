@@ -152,7 +152,7 @@ function ChordDiagram({ data, width = 600, height = 600 }: ChordDiagramProps) {
     if (data.length === 0) {
         return (
             <div
-                className="flex items-center justify-center bg-bl-panel rounded-lg"
+                className="bl-empty flex items-center justify-center"
                 style={{ width: `${width}px`, height: `${height}px` }}
             >
                 <p className="text-bl-muted">No interaction data available</p>
@@ -161,7 +161,7 @@ function ChordDiagram({ data, width = 600, height = 600 }: ChordDiagramProps) {
     }
 
     return (
-        <div className="flex justify-center bg-bl-panel rounded-lg p-4">
+        <div className="flex justify-center bg-bl-recessed rounded p-4">
             <svg ref={svgRef} />
         </div>
     );

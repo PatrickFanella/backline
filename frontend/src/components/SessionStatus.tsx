@@ -47,21 +47,27 @@ export default function SessionStatus({
         );
     if (!session)
         return error ? (
-            <button className="text-sm" onClick={() => void loadSession(true)}>
+            <button
+                className="bl-button bl-button-secondary bl-button-sm"
+                onClick={() => void loadSession(true)}
+            >
                 Retry session check
             </button>
         ) : (
-            <Link to="/login" className="text-sm">
+            <Link
+                to="/login"
+                className="bl-button bl-button-primary bl-button-sm"
+            >
                 Sign in
             </Link>
         );
     const username = session.username.replace(/#0$/, '');
     return (
         <details className="relative text-sm">
-            <summary className="max-w-48 truncate cursor-pointer rounded-lg border border-bl-border px-3 py-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-bl-accent">
+            <summary className="max-w-48 truncate cursor-pointer rounded border-2 border-bl-border bg-bl-surface px-3 py-2 text-sm font-semibold">
                 Signed in as <strong>{username}</strong>
             </summary>
-            <div className="absolute left-0 sm:left-auto sm:right-0 z-50 mt-2 w-64 rounded-lg border border-bl-border bg-bl-panel p-4 shadow-lg">
+            <div className="absolute left-0 sm:left-auto sm:right-0 z-50 mt-2 w-64 bl-card p-4">
                 <p className="text-bl-muted mb-3">
                     Discord account: {username}
                 </p>
@@ -73,14 +79,14 @@ export default function SessionStatus({
                 <button
                     disabled={busy}
                     onClick={() => void signOut(true)}
-                    className="block w-full rounded border border-bl-border p-2 mb-2"
+                    className="bl-button bl-button-secondary bl-button-sm w-full mb-2"
                 >
                     Switch account
                 </button>
                 <button
                     disabled={busy}
                     onClick={() => void signOut(false)}
-                    className="block w-full rounded border border-bl-border p-2"
+                    className="bl-button bl-button-secondary bl-button-sm w-full"
                 >
                     Sign out
                 </button>

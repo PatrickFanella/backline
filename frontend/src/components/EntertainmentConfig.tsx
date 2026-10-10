@@ -174,7 +174,7 @@ export default function EntertainmentConfig({
                                     alt={`${template.name} sample layout`}
                                 />
                             )}
-                            <label className="block">
+                            <label className="bl-label">
                                 <input
                                     type="checkbox"
                                     checked={approved.includes(template.id)}
@@ -192,7 +192,7 @@ export default function EntertainmentConfig({
                             </label>
                         </fieldset>
                     ))}
-                    <label className="block">
+                    <label className="bl-label">
                         <input
                             type="checkbox"
                             checked={collectionsEnabled}
@@ -214,10 +214,20 @@ export default function EntertainmentConfig({
                     <button type="submit">Save entertainment approvals</button>
                 </fieldset>
             </form>
-            {notice && <p role="status">{notice}</p>}
-            {error && <p role="alert">{error}</p>}
+            {notice && (
+                <p role="status" className="bl-form-notice">
+                    {notice}
+                </p>
+            )}
+            {error && (
+                <p role="alert" className="bl-form-alert">
+                    {error}
+                </p>
+            )}
             {!templates && !error && (
-                <p role="status">Loading entertainment…</p>
+                <p role="status" className="bl-form-notice">
+                    Loading entertainment…
+                </p>
             )}
             <p>
                 Five pending offers per sender or recipient, fifty offers per

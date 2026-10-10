@@ -3,7 +3,12 @@ import toast from 'react-hot-toast';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import RuleBuilder from '../components/rules/RuleBuilder';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
+import {
+    Card,
+    CardContent,
+    CardHeader,
+    CardTitle,
+} from '../components/ui/Card';
 import { CardSkeleton } from '../components/ui/LoadingSkeleton';
 import api from '../lib/api';
 import type { AnalyticsRule, CreateRuleRequest } from '../types/rules';

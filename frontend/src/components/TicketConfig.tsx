@@ -64,38 +64,38 @@ export default function TicketConfig({
             className="space-y-3 mt-4"
         >
             <fieldset disabled={busy} className="space-y-3">
-                <legend className="font-medium">Private ticket settings</legend>
-                <label className="block">
+                <legend className="bl-legend">Private ticket settings</legend>
+                <label className="bl-label">
                     Category ID (optional)
                     <input
-                        className="block bg-bl-panel p-2 rounded w-full"
+                        className="bl-input"
                         pattern="[0-9]{17,20}"
                         value={category}
                         onChange={(event) => setCategory(event.target.value)}
                     />
                 </label>
-                <label className="block">
+                <label className="bl-label">
                     Panel channel ID (optional)
                     <input
-                        className="block bg-bl-panel p-2 rounded w-full"
+                        className="bl-input"
                         pattern="[0-9]{17,20}"
                         value={panel}
                         onChange={(event) => setPanel(event.target.value)}
                     />
                 </label>
-                <label className="block">
+                <label className="bl-label">
                     Staff role IDs, separated by commas
                     <input
-                        className="block bg-bl-panel p-2 rounded w-full"
+                        className="bl-input"
                         required
                         value={staff}
                         onChange={(event) => setStaff(event.target.value)}
                     />
                 </label>
-                <label className="block">
+                <label className="bl-label">
                     Delete closed ticket channels after (days)
                     <input
-                        className="block bg-bl-panel p-2 rounded"
+                        className="bl-input-compact"
                         required
                         type="number"
                         min={1}
@@ -106,10 +106,10 @@ export default function TicketConfig({
                         }
                     />
                 </label>
-                <label className="block">
+                <label className="bl-label">
                     Maximum active and retained ticket channels
                     <input
-                        className="block bg-bl-panel p-2 rounded"
+                        className="bl-input-compact"
                         required
                         type="number"
                         min={1}
@@ -120,7 +120,7 @@ export default function TicketConfig({
                         }
                     />
                 </label>
-                <label className="flex gap-2">
+                <label className="bl-check">
                     <input
                         type="checkbox"
                         checked={content}
@@ -138,12 +138,16 @@ export default function TicketConfig({
                 </p>
                 <button
                     type="submit"
-                    className="border border-bl-border rounded p-2"
+                    className="bl-button bl-button-secondary bl-button-sm"
                 >
                     {busy ? 'Saving…' : 'Save ticket settings'}
                 </button>
             </fieldset>
-            {notice && <p role="status">{notice}</p>}
+            {notice && (
+                <p role="status" className="bl-form-notice">
+                    {notice}
+                </p>
+            )}
         </form>
     );
 }

@@ -118,7 +118,7 @@ export default function AudioClips({ guildId, onBusy }: Props) {
             <form onSubmit={upload}>
                 <fieldset disabled={busy} className="space-y-2">
                     <legend>Approve an audio clip</legend>
-                    <label className="block">
+                    <label className="bl-label">
                         Clip title
                         <input
                             required
@@ -127,7 +127,7 @@ export default function AudioClips({ guildId, onBusy }: Props) {
                             onChange={(e) => setTitle(e.target.value)}
                         />
                     </label>
-                    <label className="block">
+                    <label className="bl-label">
                         WAV file
                         <input
                             required
@@ -138,7 +138,7 @@ export default function AudioClips({ guildId, onBusy }: Props) {
                             }
                         />
                     </label>
-                    <label className="block">
+                    <label className="bl-label">
                         Source or creator
                         <input
                             required
@@ -147,7 +147,7 @@ export default function AudioClips({ guildId, onBusy }: Props) {
                             onChange={(e) => setSource(e.target.value)}
                         />
                     </label>
-                    <label className="block">
+                    <label className="bl-label">
                         License or permission record
                         <input
                             required
@@ -156,7 +156,7 @@ export default function AudioClips({ guildId, onBusy }: Props) {
                             onChange={(e) => setLicense(e.target.value)}
                         />
                     </label>
-                    <label className="block">
+                    <label className="bl-label">
                         Provenance
                         <select
                             value={rights}
@@ -168,7 +168,7 @@ export default function AudioClips({ guildId, onBusy }: Props) {
                             </option>
                         </select>
                     </label>
-                    <label className="block">
+                    <label className="bl-label">
                         <input
                             required
                             type="checkbox"
@@ -181,7 +181,7 @@ export default function AudioClips({ guildId, onBusy }: Props) {
                     <button type="submit">Approve and upload clip</button>
                 </fieldset>
             </form>
-            <label className="block">
+            <label className="bl-label">
                 Search clip titles
                 <input
                     maxLength={60}
@@ -189,9 +189,21 @@ export default function AudioClips({ guildId, onBusy }: Props) {
                     onChange={(e) => setSearch(e.target.value)}
                 />
             </label>
-            {error && <p role="alert">{error}</p>}
-            {notice && <p role="status">{notice}</p>}
-            {!clips && !error && <p role="status">Loading clips…</p>}
+            {error && (
+                <p role="alert" className="bl-form-alert">
+                    {error}
+                </p>
+            )}
+            {notice && (
+                <p role="status" className="bl-form-notice">
+                    {notice}
+                </p>
+            )}
+            {!clips && !error && (
+                <p role="status" className="bl-form-notice">
+                    Loading clips…
+                </p>
+            )}
             {clips?.length === 0 && <p>No approved clips.</p>}
             <ul>
                 {clips
@@ -235,7 +247,7 @@ export default function AudioClips({ guildId, onBusy }: Props) {
             <form onSubmit={save}>
                 <fieldset disabled={busy} className="space-y-2">
                     <legend>Save a soundboard</legend>
-                    <label className="block">
+                    <label className="bl-label">
                         Soundboard name
                         <input
                             required

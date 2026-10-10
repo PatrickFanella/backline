@@ -51,16 +51,18 @@ function DateRangeSelector({ onRangeChange }: DateRangeSelectorProps) {
     ];
 
     return (
-        <div className="flex flex-wrap gap-2">
+        <div
+            role="group"
+            aria-label="Date range"
+            className="flex flex-wrap gap-2"
+        >
             {ranges.map((range) => (
                 <button
                     key={range.value}
+                    type="button"
                     onClick={() => handleRangeChange(range.value)}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                        selectedRange === range.value
-                            ? 'bg-bl-action text-white'
-                            : 'bg-bl-surface dark:bg-bl-recessed text-bl-ink dark:text-bl-muted hover:bg-bl-recessed dark:hover:bg-bl-recessed'
-                    }`}
+                    className="bl-chip"
+                    aria-pressed={selectedRange === range.value}
                 >
                     {range.label}
                 </button>

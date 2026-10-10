@@ -70,8 +70,9 @@ function ExportButton({
 
     return (
         <button
+            type="button"
             onClick={handleExport}
-            className="px-4 py-2 bg-bl-success-solid hover:bg-bl-success-solid text-white rounded-lg text-sm font-medium transition-colors"
+            className="bl-button bl-button-secondary bl-button-sm"
         >
             {label}
         </button>

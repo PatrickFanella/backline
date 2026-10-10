@@ -164,7 +164,7 @@ function NetworkGraph({ data, height = 500 }: NetworkGraphProps) {
     if (data.length === 0) {
         return (
             <div
-                className="flex items-center justify-center bg-bl-panel rounded-lg"
+                className="bl-empty flex items-center justify-center"
                 style={{ height: `${height}px` }}
             >
                 <p className="text-bl-muted">No network data available</p>
@@ -176,11 +176,11 @@ function NetworkGraph({ data, height = 500 }: NetworkGraphProps) {
         <div className="space-y-2">
             <div
                 ref={containerRef}
-                className="bg-bl-panel rounded-lg"
+                className="bg-bl-recessed rounded"
                 style={{ height: `${height}px` }}
             />
             {selectedNode && (
-                <div className="text-sm text-bl-muted p-2 bg-bl-panel rounded">
+                <div className="bl-hint p-2 bg-bl-recessed rounded">
                     Selected: {selectedNode}
                 </div>
             )}

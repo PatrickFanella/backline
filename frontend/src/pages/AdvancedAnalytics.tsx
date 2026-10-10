@@ -9,6 +9,7 @@ import InteractiveFilter from '../components/analytics/InteractiveFilter';
 import type { FilterConfig } from '../components/analytics/InteractiveFilter';
 import NetworkGraph from '../components/analytics/NetworkGraph';
 import SankeyDiagram from '../components/analytics/SankeyDiagram';
+import { Alert } from '../components/ui/Alert';
 import { Button } from '../components/ui/Button';
 import {
     Card,
@@ -16,6 +17,8 @@ import {
     CardTitle,
     CardContent,
 } from '../components/ui/Card';
+import { Page, PageHeader } from '../components/ui/Page';
+import { Stat } from '../components/ui/Stat';
 import { useAnalytics } from '../hooks/useAnalytics';
 import api from '../lib/api';
 
@@ -178,144 +181,99 @@ function AdvancedAnalytics() {
     }, [data, filters]);
 
     return (
-        <div className="min-h-screen bg-bl-canvas p-6">
-            <div className="max-w-7xl mx-auto space-y-6">
-                {/* Header */}
-                <div className="mb-6">
-                    <div className="flex items-center justify-between mb-4">
-                        <div>
-                            <h1 className="text-3xl font-bold text-bl-ink">
-                                Advanced Analytics
-                            </h1>
-                            <p className="text-sm text-bl-muted mt-1">
-                                Interactive visualizations and deep insights
-                            </p>
-                        </div>
-                        <div className="flex gap-2 items-center">
-                            <Button
-                                onClick={fetchData}
-                                disabled={loading}
-                                isLoading={loading}
-                                variant="primary"
-                                size="md"
-                            >
-                                {loading ? 'Loading...' : 'Refresh'}
-                            </Button>
-                            <InteractiveFilter onFilterChange={setFilters} />
-                        </div>
-                    </div>
+        <Page>
+            <PageHeader
+                eyebrow="Backline · Analytics"
+                title="Advanced Analytics"
+                description="Interactive visualizations and deep insights"
+                actions={
+                    <>
+                        <Button
+                            onClick={fetchData}
+                            disabled={loading}
+                            isLoading={loading}
+                            variant="primary"
+                            size="sm"
+                        >
+                            {loading ? 'Loading...' : 'Refresh'}
+                        </Button>
+                        <InteractiveFilter onFilterChange={setFilters} />
+                    </>
+                }
+            />
+            <div className="space-y-6">
+                <DateRangeSelector onRangeChange={setDateRange} />
 
-                    <DateRangeSelector onRangeChange={setDateRange} />
-
-                    {/* View Toggle */}
-                    <div className="flex gap-2 mt-4">
-                        <Button
-                            onClick={() => setActiveView('network')}
-                            variant={
-                                activeView === 'network'
-                                    ? 'primary'
-                                    : 'secondary'
-                            }
-                            size="sm"
+                {/* View Toggle */}
+                <div
+                    role="group"
+                    aria-label="Visualization"
+                    className="flex flex-wrap gap-2"
+                >
+                    {(
+                        [
+                            {
+                                id: 'network',
+                                label: 'Network Graph',
+                                Icon: Network,
+                            },
+                            {
+                                id: 'sankey',
+                                label: 'Sankey Flow',
+                                Icon: GitBranch,
+                            },
+                            {
+                                id: 'chord',
+                                label: 'Chord Diagram',
+                                Icon: Share2,
+                            },
+                        ] as const
+                    ).map((view) => (
+                        <button
+                            key={view.id}
+                            type="button"
+                            className="bl-chip inline-flex items-center gap-2"
+                            aria-pressed={activeView === view.id}
+                            onClick={() => setActiveView(view.id)}
                         >
-                            <Network className="w-4 h-4 mr-2" />
-                            Network Graph
-                        </Button>
-                        <Button
-                            onClick={() => setActiveView('sankey')}
-                            variant={
-                                activeView === 'sankey'
-                                    ? 'primary'
-                                    : 'secondary'
-                            }
-                            size="sm"
-                        >
-                            <GitBranch className="w-4 h-4 mr-2" />
-                            Sankey Flow
-                        </Button>
-                        <Button
-                            onClick={() => setActiveView('chord')}
-                            variant={
-                                activeView === 'chord' ? 'primary' : 'secondary'
-                            }
-                            size="sm"
-                        >
-                            <Share2 className="w-4 h-4 mr-2" />
-                            Chord Diagram
-                        </Button>
-                    </div>
+                            <view.Icon className="w-4 h-4" aria-hidden="true" />
+                            {view.label}
+                        </button>
+                    ))}
                 </div>
 
                 {/* Stats */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <Card>
-                        <CardContent className="pt-6">
-                            <div className="text-center">
-                                <p className="text-sm text-bl-muted">
-                                    Total Users
-                                </p>
-                                <p className="text-3xl font-bold text-bl-ink mt-2">
-                                    {
-                                        new Set(
-                                            filteredData.map((d) => d.userId)
-                                        ).size
-                                    }
-                                </p>
-                            </div>
-                        </CardContent>
-                    </Card>
-                    <Card>
-                        <CardContent className="pt-6">
-                            <div className="text-center">
-                                <p className="text-sm text-bl-muted">
-                                    Total Channels
-                                </p>
-                                <p className="text-3xl font-bold text-bl-ink mt-2">
-                                    {
-                                        new Set(
-                                            filteredData
-                                                .map((d) => d.channelId)
-                                                .filter(Boolean)
-                                        ).size
-                                    }
-                                </p>
-                            </div>
-                        </CardContent>
-                    </Card>
-                    <Card>
-                        <CardContent className="pt-6">
-                            <div className="text-center">
-                                <p className="text-sm text-bl-muted">
-                                    Interactions
-                                </p>
-                                <p className="text-3xl font-bold text-bl-ink mt-2">
-                                    {filteredData.reduce(
-                                        (sum, item) =>
-                                            sum + (item.interactions || 0),
-                                        0
-                                    )}
-                                </p>
-                            </div>
-                        </CardContent>
-                    </Card>
-                    <Card>
-                        <CardContent className="pt-6">
-                            <div className="text-center">
-                                <p className="text-sm text-bl-muted">
-                                    Filters Active
-                                </p>
-                                <p className="text-3xl font-bold text-bl-ink mt-2">
-                                    {
-                                        Object.values(filters).filter(
-                                            (v) =>
-                                                v !== 0 && v !== 100 && v !== ''
-                                        ).length
-                                    }
-                                </p>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </div>
+                <dl className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <Stat
+                        label="Total Users"
+                        value={new Set(filteredData.map((d) => d.userId)).size}
+                    />
+                    <Stat
+                        label="Total Channels"
+                        value={
+                            new Set(
+                                filteredData
+                                    .map((d) => d.channelId)
+                                    .filter(Boolean)
+                            ).size
+                        }
+                    />
+                    <Stat
+                        label="Interactions"
+                        value={filteredData.reduce(
+                            (sum, item) => sum + (item.interactions || 0),
+                            0
+                        )}
+                    />
+                    <Stat
+                        label="Filters Active"
+                        value={
+                            Object.values(filters).filter(
+                                (v) => v !== 0 && v !== 100 && v !== ''
+                            ).length
+                        }
+                    />
+                </dl>
 
                 {/* Visualization */}
                 <Card>
@@ -337,11 +295,12 @@ function AdvancedAnalytics() {
                     </CardHeader>
                     <CardContent>
                         {loading ? (
-                            <div className="flex items-center justify-center h-96">
-                                <p className="text-bl-muted">
-                                    Loading visualization...
-                                </p>
-                            </div>
+                            <p
+                                role="status"
+                                className="bl-empty h-96 flex items-center justify-center"
+                            >
+                                Loading visualization...
+                            </p>
                         ) : (
                             <div id="visualization-container">
                                 {activeView === 'network' && (
@@ -370,35 +329,23 @@ function AdvancedAnalytics() {
                 </Card>
 
                 {/* Help Text */}
-                <Card>
-                    <CardContent className="pt-6">
-                        <div className="text-sm text-bl-muted space-y-2">
-                            <p>
-                                <strong className="text-bl-ink">
-                                    Network Graph:
-                                </strong>{' '}
-                                Shows relationships between users and channels.
-                                Node size represents activity level.
-                            </p>
-                            <p>
-                                <strong className="text-bl-ink">
-                                    Sankey Flow:
-                                </strong>{' '}
-                                Visualizes the flow of interactions from users
-                                to channels.
-                            </p>
-                            <p>
-                                <strong className="text-bl-ink">
-                                    Chord Diagram:
-                                </strong>{' '}
-                                Displays interaction patterns between all
-                                entities in a circular layout.
-                            </p>
-                        </div>
-                    </CardContent>
-                </Card>
+                <Alert tone="info" role="none" title="Reading the views">
+                    <p>
+                        <strong>Network graph</strong> shows relationships
+                        between users and channels. Node size represents
+                        activity level.
+                    </p>
+                    <p>
+                        <strong>Sankey flow</strong> visualizes the flow of
+                        interactions from users to channels.
+                    </p>
+                    <p>
+                        <strong>Chord diagram</strong> displays interaction
+                        patterns between all entities in a circular layout.
+                    </p>
+                </Alert>
             </div>
-        </div>
+        </Page>
     );
 }
 

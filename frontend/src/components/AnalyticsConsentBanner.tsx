@@ -45,7 +45,7 @@ export default function AnalyticsConsentBanner() {
                     <div className="flex-1">
                         <h3
                             id="consent-heading"
-                            className="text-lg font-semibold text-white mb-1"
+                            className="text-lg font-semibold text-bl-ink mb-1"
                         >
                             <span aria-hidden="true">🍪</span>{' '}
                             {t('consent.analyticsTitle')}
@@ -57,21 +57,21 @@ export default function AnalyticsConsentBanner() {
                     <div className="flex items-center gap-3">
                         <button
                             onClick={handleDeny}
-                            className="px-4 py-2 text-sm font-medium text-bl-muted hover:text-white border border-bl-border rounded-lg hover:bg-bl-recessed transition-colors focus:outline-none focus:ring-2 focus:ring-bl-border"
+                            className="bl-button bl-button-secondary bl-button-sm"
                             aria-label={t('consent.decline')}
                         >
                             {t('consent.decline')}
                         </button>
                         <button
                             onClick={handleAccept}
-                            className="px-4 py-2 text-sm font-medium text-white bg-bl-action hover:bg-bl-action rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-bl-accent"
+                            className="bl-button bl-button-primary bl-button-sm"
                             aria-label={t('consent.accept')}
                         >
                             {t('consent.accept')}
                         </button>
                         <button
                             onClick={handleDeny}
-                            className="p-2 text-bl-muted hover:text-white transition-colors focus:outline-none focus:ring-2 focus:ring-bl-border rounded"
+                            className="p-2 text-bl-muted hover:text-bl-ink transition-colors rounded"
                             aria-label={t('common.close')}
                         >
                             <X className="w-5 h-5" aria-hidden="true" />

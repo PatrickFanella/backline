@@ -135,11 +135,11 @@ export function LiveAnalytics({ guildId }: LiveAnalyticsProps) {
 
             {/* Live Analytics */}
             {analytics && (
-                <div className="bg-surface0 rounded-lg p-6">
+                <div className="bl-card p-6">
                     <h2 className="text-xl font-semibold mb-4">
                         Live Analytics
                     </h2>
-                    <p className="text-sm text-subtext0 mb-4">
+                    <p className="text-sm text-bl-muted mb-4">
                         Last updated:{' '}
                         {new Date(analytics.timestamp).toLocaleTimeString()}
                     </p>
@@ -147,7 +147,7 @@ export function LiveAnalytics({ guildId }: LiveAnalyticsProps) {
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {/* Top Ghost Users */}
                         <div>
-                            <h3 className="text-lg font-medium mb-3 text-mauve">
+                            <h3 className="text-lg font-medium mb-3 text-bl-accent">
                                 👻 Top Ghost Users
                             </h3>
                             <div className="space-y-2">
@@ -156,12 +156,12 @@ export function LiveAnalytics({ guildId }: LiveAnalyticsProps) {
                                     .map((ghost) => (
                                         <div
                                             key={ghost.userId}
-                                            className="flex justify-between items-center bg-surface1 rounded px-3 py-2"
+                                            className="flex justify-between items-center bg-bl-recessed rounded px-3 py-2"
                                         >
                                             <span className="text-sm truncate">
                                                 {ghost.username}
                                             </span>
-                                            <span className="text-sm font-semibold text-mauve">
+                                            <span className="text-sm font-semibold text-bl-accent">
                                                 {ghost.ghostScore.toFixed(1)}
                                             </span>
                                         </div>
@@ -171,7 +171,7 @@ export function LiveAnalytics({ guildId }: LiveAnalyticsProps) {
 
                         {/* Top Lurkers */}
                         <div>
-                            <h3 className="text-lg font-medium mb-3 text-peach">
+                            <h3 className="text-lg font-medium mb-3 text-bl-accent">
                                 👀 Top Lurkers
                             </h3>
                             <div className="space-y-2">
@@ -180,12 +180,12 @@ export function LiveAnalytics({ guildId }: LiveAnalyticsProps) {
                                     .map((lurker) => (
                                         <div
                                             key={lurker.userId}
-                                            className="flex justify-between items-center bg-surface1 rounded px-3 py-2"
+                                            className="flex justify-between items-center bg-bl-recessed rounded px-3 py-2"
                                         >
                                             <span className="text-sm truncate">
                                                 {lurker.username}
                                             </span>
-                                            <span className="text-sm font-semibold text-peach">
+                                            <span className="text-sm font-semibold text-bl-accent">
                                                 {lurker.lurkerScore.toFixed(1)}
                                             </span>
                                         </div>
@@ -195,7 +195,7 @@ export function LiveAnalytics({ guildId }: LiveAnalyticsProps) {
 
                         {/* Channel Diversity */}
                         <div>
-                            <h3 className="text-lg font-medium mb-3 text-teal">
+                            <h3 className="text-lg font-medium mb-3 text-bl-accent">
                                 🛰️ Channel Diversity
                             </h3>
                             <div className="space-y-2">
@@ -204,12 +204,12 @@ export function LiveAnalytics({ guildId }: LiveAnalyticsProps) {
                                     .map((user) => (
                                         <div
                                             key={user.userId}
-                                            className="flex justify-between items-center bg-surface1 rounded px-3 py-2"
+                                            className="flex justify-between items-center bg-bl-recessed rounded px-3 py-2"
                                         >
                                             <span className="text-sm truncate">
                                                 {user.username}
                                             </span>
-                                            <span className="text-sm font-semibold text-teal">
+                                            <span className="text-sm font-semibold text-bl-accent">
                                                 {user.channelCount} channels
                                             </span>
                                         </div>
@@ -221,12 +221,12 @@ export function LiveAnalytics({ guildId }: LiveAnalyticsProps) {
             )}
 
             {/* Recent Activity Feed */}
-            <div className="bg-surface0 rounded-lg p-6">
+            <div className="bl-card p-6">
                 <h2 className="text-xl font-semibold mb-4">
                     💬 Recent Activity
                 </h2>
                 {recentMessages.length === 0 ? (
-                    <p className="text-sm text-subtext0">
+                    <p className="text-sm text-bl-muted">
                         Waiting for new messages...
                     </p>
                 ) : (
@@ -234,18 +234,18 @@ export function LiveAnalytics({ guildId }: LiveAnalyticsProps) {
                         {recentMessages.map((msg, index) => (
                             <div
                                 key={`${msg.userId}-${msg.timestamp}-${index}`}
-                                className="flex items-start gap-3 bg-surface1 rounded px-3 py-2"
+                                className="flex items-start gap-3 bg-bl-recessed rounded px-3 py-2"
                             >
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2">
                                         <span className="font-medium text-sm truncate">
                                             {msg.username}
                                         </span>
-                                        <span className="text-xs text-subtext0">
+                                        <span className="text-xs text-bl-muted">
                                             in #{msg.channelName}
                                         </span>
                                     </div>
-                                    <span className="text-xs text-subtext1">
+                                    <span className="text-xs text-bl-muted">
                                         {new Date(
                                             msg.timestamp
                                         ).toLocaleTimeString()}

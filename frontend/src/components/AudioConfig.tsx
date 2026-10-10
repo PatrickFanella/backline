@@ -70,8 +70,8 @@ export default function AudioConfig({
             className="space-y-3 mt-4"
         >
             <fieldset disabled={busy} className="space-y-3">
-                <legend className="font-medium">SomaFM radio settings</legend>
-                <label className="block">
+                <legend className="bl-legend">SomaFM radio settings</legend>
+                <label className="bl-label">
                     <input
                         type="checkbox"
                         checked={clipsEnabled}
@@ -81,7 +81,7 @@ export default function AudioConfig({
                     />{' '}
                     Enable manager-approved short audio clips
                 </label>
-                <label className="block">
+                <label className="bl-label">
                     <input
                         type="checkbox"
                         checked={queuesEnabled}
@@ -99,60 +99,60 @@ export default function AudioConfig({
                     after interruption. Skip votes require half of current human
                     listeners; requester or DJ can skip immediately.
                 </p>
-                <label className="block">
+                <label className="bl-label">
                     Default station ID
                     <input
                         required
                         pattern="[a-z0-9-]{1,40}"
-                        className="block bg-bl-panel p-2 rounded w-full"
+                        className="bl-input"
                         value={station}
                         onChange={(event) => setStation(event.target.value)}
                     />
                 </label>
-                <label className="block">
+                <label className="bl-label">
                     DJ role IDs (optional, comma-separated)
                     <input
-                        className="block bg-bl-panel p-2 rounded w-full"
+                        className="bl-input"
                         value={roles}
                         onChange={(event) => setRoles(event.target.value)}
                     />
                 </label>
-                <label className="block">
+                <label className="bl-label">
                     Volume (%)
                     <input
                         type="number"
                         required
                         min={0}
                         max={100}
-                        className="block bg-bl-panel p-2 rounded"
+                        className="bl-input-compact"
                         value={volume}
                         onChange={(event) =>
                             setVolume(Number(event.target.value))
                         }
                     />
                 </label>
-                <label className="block">
+                <label className="bl-label">
                     Stop after (minutes)
                     <input
                         type="number"
                         required
                         min={1}
                         max={120}
-                        className="block bg-bl-panel p-2 rounded"
+                        className="bl-input-compact"
                         value={duration}
                         onChange={(event) =>
                             setDuration(Number(event.target.value))
                         }
                     />
                 </label>
-                <label className="block">
+                <label className="bl-label">
                     Stop when channel is empty for (seconds)
                     <input
                         type="number"
                         required
                         min={10}
                         max={300}
-                        className="block bg-bl-panel p-2 rounded"
+                        className="bl-input-compact"
                         value={idle}
                         onChange={(event) =>
                             setIdle(Number(event.target.value))
@@ -178,12 +178,16 @@ export default function AudioConfig({
                 </a>
                 <button
                     type="submit"
-                    className="border border-bl-border rounded p-2"
+                    className="bl-button bl-button-secondary bl-button-sm"
                 >
                     {busy ? 'Saving…' : 'Save radio settings'}
                 </button>
             </fieldset>
-            {notice && <p role="status">{notice}</p>}
+            {notice && (
+                <p role="status" className="bl-form-notice">
+                    {notice}
+                </p>
+            )}
         </form>
     );
 }

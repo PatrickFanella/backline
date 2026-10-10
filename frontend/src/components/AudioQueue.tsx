@@ -252,7 +252,11 @@ export default function AudioQueue({ guildId, onBusy }: Props) {
                     </span>
                 ))}
             </div>
-            {notice && <p role="status">{notice}</p>}
+            {notice && (
+                <p role="status" className="bl-form-notice">
+                    {notice}
+                </p>
+            )}
             <p>
                 Queue state: {data?.queue.state ?? 'loading'} ·{' '}
                 {data?.queue.items.length ?? 0} pending entries.
