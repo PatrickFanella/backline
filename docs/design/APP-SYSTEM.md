@@ -19,7 +19,7 @@ The app extends the selected Poster Crew identity in [BACKLINE.md](./BACKLINE.md
 
 Use semantic roles for new components. Do not add Catppuccin classes or fixed gray/blue palettes. Keep `accent` separate from `action`: dark mode lightens accent text, while action backgrounds stay dark enough for white labels. Status meanings also need text or icons, rather than color alone.
 
-The landing page retains its scoped paper composition and original purple and green identity colors. Dashboard variations provide readable text and action contrast for denser layouts in both themes.
+The landing page is built on the same tokens, so it follows light and dark mode. Its purple and green identity blocks keep fixed dark ink type in both themes. Its styles are scoped under `.backline` with `lp-` class names so they cannot collide with the `bl-` component classes.
 
 ## Typography and layout
 
@@ -57,6 +57,8 @@ The app honors reduced-motion preferences through Framer Motion and CSS. Focus o
 - **Server setup** (`/servers`) is a module catalog. Modules are grouped by the categories in [`lib/modules.ts`](../../frontend/src/lib/modules.ts) (community, safety, engagement, automation, operator), each card shows a state badge (`Enabled`, `Off`, `Needs operator`), and settings or history open inside a `details` disclosure that starts collapsed. A search box and state chips narrow the list. The Enable/Disable control keeps its `aria-pressed` state.
 - **Moderation** (`/moderation`) uses a two-column form with hints, a primary submit and a secondary refresh, and a table of cases with state badges. Request-key reuse and locking behavior are unchanged.
 - **Status** and **Activity** keep their data and copy, wrapped in the shared page header and cards.
+- **Analytics**, **Advanced analytics** and **Metrics** use the page header, `Stat` groups, chip toggles for date ranges and views, the shared table, and `Alert` for help and error states. The drill-down panel is a labelled dialog built on the card and stat primitives.
+- **Login** is a single card with the eyebrow, mark, capability badges and the primary Discord link. Its heading, link name and terms text are the strings the end-to-end checks rely on.
 
 Each server-scoped page reads the manageable server list through [`useServers`](../../frontend/src/hooks/useServers.ts). Server setup uses `sync` mode, which clears a selection that is no longer manageable; other pages use `passive` mode so a failed read never drops the current server.
 

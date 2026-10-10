@@ -6,7 +6,7 @@ The dashboard now shares this identity through the [app design system](./APP-SYS
 
 The product's landing page is `/`. Server setup is `/servers`, still behind RequireAuth. OAuth completion redirects to `/servers`; moderation and observed-activity links return there. `/login`, `/auth/callback` and `/status` retain their routes. The landing page does not create an invite, grant server access, change module defaults or deploy a service.
 
-The page uses purple #8b5cf6, ink #100b19, paper #f0ece4 and green #00ff88. Oswald Bold heads the display; Space Grotesk handles reading and controls; JetBrains Mono labels examples. Fonts are self-hosted with licenses. SVG logo exports use outlined type.
+The page reads the shared app tokens for its canvas, text, borders and accent, so it follows the dashboard's light and dark modes. Purple #8b5cf6 and green #00ff88 remain fixed identity colors with ink #100b19 type on them; the illustrative board stays paper #f0ece4. Oswald Bold heads the display; Space Grotesk handles reading and controls; JetBrains Mono labels examples. Fonts are self-hosted with licenses. SVG logo exports use outlined type.
 
 The hero, numbered tool descriptions, setup sequence, private-pilot section and native-details FAQ describe the current implementation scope. The hero illustration contains fictional examples and is labeled as such. Modules remain opt-in per server. Ticket access copy preserves Discord administrator/owner access. There is no public installation, price, provider-delivery claim or sign-up collection.
 

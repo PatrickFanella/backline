@@ -20,6 +20,10 @@ import {
     ResponsiveContainer,
 } from 'recharts';
 
+import { Alert } from '../components/ui/Alert';
+import { Page, PageHeader, Section } from '../components/ui/Page';
+import { Stat } from '../components/ui/Stat';
+import { Table } from '../components/ui/Table';
 import { getDashboardData } from '../lib/analytics';
 import { chartColors, chartPalette } from '../lib/design';
 
@@ -74,117 +78,115 @@ export default function MetricsDashboard() {
         }
     };
 
+    const header = (
+        <PageHeader
+            eyebrow="Backline · Metrics"
+            title="Metrics & Analytics Dashboard"
+            description="Usage insights and performance metrics for the last 7 days"
+        />
+    );
+
     if (loading) {
         return (
-            <div className="flex items-center justify-center min-h-screen">
-                <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-bl-accent mx-auto mb-4"></div>
-                    <p className="text-bl-muted">Loading analytics...</p>
-                </div>
-            </div>
+            <Page>
+                {header}
+                <p role="status" className="text-bl-muted">
+                    Loading analytics…
+                </p>
+            </Page>
         );
     }
 
     if (error || !data) {
         return (
-            <div className="flex items-center justify-center min-h-screen">
-                <div className="text-center">
-                    <AlertCircle className="w-12 h-12 text-bl-danger mx-auto mb-4" />
-                    <p className="text-bl-muted">
-                        {error || 'No data available'}
-                    </p>
-                    <button
-                        onClick={fetchDashboardData}
-                        className="mt-4 px-4 py-2 bg-bl-action hover:bg-bl-action rounded-lg transition-colors"
-                    >
-                        Retry
-                    </button>
-                </div>
-            </div>
+            <Page>
+                {header}
+                <Alert
+                    tone="danger"
+                    role="alert"
+                    title={error || 'No data available'}
+                    actions={
+                        <button
+                            type="button"
+                            onClick={fetchDashboardData}
+                            className="bl-button bl-button-secondary bl-button-sm"
+                        >
+                            Retry
+                        </button>
+                    }
+                >
+                    <AlertCircle className="sr-only" aria-hidden="true" />
+                    The metrics service did not return a dashboard. Retry, or
+                    check the service status.
+                </Alert>
+            </Page>
         );
     }
 
+    const consentRate =
+        data.activity.uniqueUsers > 0
+            ? `${((data.activity.consentedUsers / data.activity.uniqueUsers) * 100).toFixed(1)}% consent rate`
+            : 'No users yet';
+
     return (
-        <div className="min-h-screen bg-bl-recessed p-6">
-            <div className="max-w-7xl mx-auto">
-                {/* Header */}
-                <div className="mb-8">
-                    <h1 className="text-3xl font-bold text-white mb-2">
-                        Metrics & Analytics Dashboard
-                    </h1>
-                    <p className="text-bl-muted">
-                        Usage insights and performance metrics for the last 7
-                        days
-                    </p>
-                </div>
+        <Page>
+            {header}
+            <dl className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <Stat
+                    label={
+                        <span className="inline-flex items-center gap-2">
+                            <Activity
+                                className="w-4 h-4 text-bl-accent"
+                                aria-hidden="true"
+                            />
+                            Total Events
+                        </span>
+                    }
+                    value={data.activity.totalEvents.toLocaleString()}
+                />
+                <Stat
+                    label={
+                        <span className="inline-flex items-center gap-2">
+                            <Users
+                                className="w-4 h-4 text-bl-success"
+                                aria-hidden="true"
+                            />
+                            Unique Users
+                        </span>
+                    }
+                    value={data.activity.uniqueUsers.toLocaleString()}
+                />
+                <Stat
+                    label={
+                        <span className="inline-flex items-center gap-2">
+                            <TrendingUp
+                                className="w-4 h-4 text-bl-accent"
+                                aria-hidden="true"
+                            />
+                            Consented Users
+                        </span>
+                    }
+                    value={data.activity.consentedUsers.toLocaleString()}
+                    note={consentRate}
+                />
+                <Stat
+                    label={
+                        <span className="inline-flex items-center gap-2">
+                            <Clock
+                                className="w-4 h-4 text-bl-warning"
+                                aria-hidden="true"
+                            />
+                            Avg Response Time
+                        </span>
+                    }
+                    value={`${data.performance.average.toFixed(0)}ms`}
+                    note={`Min: ${data.performance.min.toFixed(0)}ms · Max: ${data.performance.max.toFixed(0)}ms`}
+                />
+            </dl>
 
-                {/* Summary Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                    <div className="bg-bl-recessed rounded-lg p-6 border border-bl-border">
-                        <div className="flex items-center justify-between mb-2">
-                            <h3 className="text-bl-muted text-sm font-medium">
-                                Total Events
-                            </h3>
-                            <Activity className="w-5 h-5 text-bl-accent" />
-                        </div>
-                        <p className="text-3xl font-bold text-white">
-                            {data.activity.totalEvents.toLocaleString()}
-                        </p>
-                    </div>
-
-                    <div className="bg-bl-recessed rounded-lg p-6 border border-bl-border">
-                        <div className="flex items-center justify-between mb-2">
-                            <h3 className="text-bl-muted text-sm font-medium">
-                                Unique Users
-                            </h3>
-                            <Users className="w-5 h-5 text-bl-success" />
-                        </div>
-                        <p className="text-3xl font-bold text-white">
-                            {data.activity.uniqueUsers.toLocaleString()}
-                        </p>
-                    </div>
-
-                    <div className="bg-bl-recessed rounded-lg p-6 border border-bl-border">
-                        <div className="flex items-center justify-between mb-2">
-                            <h3 className="text-bl-muted text-sm font-medium">
-                                Consented Users
-                            </h3>
-                            <TrendingUp className="w-5 h-5 text-bl-accent" />
-                        </div>
-                        <p className="text-3xl font-bold text-white">
-                            {data.activity.consentedUsers.toLocaleString()}
-                        </p>
-                        <p className="text-sm text-bl-muted mt-1">
-                            {data.activity.uniqueUsers > 0
-                                ? `${((data.activity.consentedUsers / data.activity.uniqueUsers) * 100).toFixed(1)}% consent rate`
-                                : 'No users yet'}
-                        </p>
-                    </div>
-
-                    <div className="bg-bl-recessed rounded-lg p-6 border border-bl-border">
-                        <div className="flex items-center justify-between mb-2">
-                            <h3 className="text-bl-muted text-sm font-medium">
-                                Avg Response Time
-                            </h3>
-                            <Clock className="w-5 h-5 text-bl-warning" />
-                        </div>
-                        <p className="text-3xl font-bold text-white">
-                            {data.performance.average.toFixed(0)}ms
-                        </p>
-                        <p className="text-sm text-bl-muted mt-1">
-                            Min: {data.performance.min.toFixed(0)}ms | Max:{' '}
-                            {data.performance.max.toFixed(0)}ms
-                        </p>
-                    </div>
-                </div>
-
-                {/* Charts Row 1 */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-                    {/* Top Events Bar Chart */}
-                    <div className="bg-bl-recessed rounded-lg p-6 border border-bl-border">
-                        <h3 className="text-lg font-semibold text-white mb-4">
-                            Top Events
-                        </h3>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <Section id="top-events" title="Top Events">
+                    <div className="bl-card p-4">
                         <ResponsiveContainer width="100%" height={300}>
                             <BarChart
                                 data={data.activity.topEvents.slice(0, 8)}
@@ -215,12 +217,10 @@ export default function MetricsDashboard() {
                             </BarChart>
                         </ResponsiveContainer>
                     </div>
+                </Section>
 
-                    {/* Feature Usage Pie Chart */}
-                    <div className="bg-bl-recessed rounded-lg p-6 border border-bl-border">
-                        <h3 className="text-lg font-semibold text-white mb-4">
-                            Feature Usage
-                        </h3>
+                <Section id="feature-usage" title="Feature Usage">
+                    <div className="bl-card p-4">
                         <ResponsiveContainer width="100%" height={300}>
                             <PieChart>
                                 <Pie
@@ -256,61 +256,48 @@ export default function MetricsDashboard() {
                             </PieChart>
                         </ResponsiveContainer>
                     </div>
-                </div>
-
-                {/* Feature Usage Table */}
-                <div className="bg-bl-recessed rounded-lg p-6 border border-bl-border">
-                    <h3 className="text-lg font-semibold text-white mb-4">
-                        Feature Details
-                    </h3>
-                    <div className="overflow-x-auto">
-                        <table className="w-full">
-                            <thead>
-                                <tr className="border-b border-bl-border">
-                                    <th className="text-left py-3 px-4 text-bl-muted font-medium">
-                                        Feature
-                                    </th>
-                                    <th className="text-right py-3 px-4 text-bl-muted font-medium">
-                                        Total Usage
-                                    </th>
-                                    <th className="text-right py-3 px-4 text-bl-muted font-medium">
-                                        Unique Users
-                                    </th>
-                                    <th className="text-right py-3 px-4 text-bl-muted font-medium">
-                                        Avg per User
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {data.features.map((feature, index) => (
-                                    <tr
-                                        key={index}
-                                        className="border-b border-bl-border hover:bg-bl-recessed transition-colors"
-                                    >
-                                        <td className="py-3 px-4 text-white">
-                                            {feature.featureName}
-                                        </td>
-                                        <td className="py-3 px-4 text-right text-white">
-                                            {feature.totalUsage.toLocaleString()}
-                                        </td>
-                                        <td className="py-3 px-4 text-right text-white">
-                                            {feature.uniqueUsers.toLocaleString()}
-                                        </td>
-                                        <td className="py-3 px-4 text-right text-bl-muted">
-                                            {feature.uniqueUsers > 0
-                                                ? (
-                                                      feature.totalUsage /
-                                                      feature.uniqueUsers
-                                                  ).toFixed(1)
-                                                : '0.0'}
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+                </Section>
             </div>
-        </div>
+
+            <Section id="feature-details" title="Feature Details">
+                <Table caption="Feature usage details">
+                    <thead>
+                        <tr>
+                            <th scope="col">Feature</th>
+                            <th scope="col" className="bl-cell-numeric">
+                                Total Usage
+                            </th>
+                            <th scope="col" className="bl-cell-numeric">
+                                Unique Users
+                            </th>
+                            <th scope="col" className="bl-cell-numeric">
+                                Avg per User
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {data.features.map((feature, index) => (
+                            <tr key={index}>
+                                <td>{feature.featureName}</td>
+                                <td className="bl-cell-numeric">
+                                    {feature.totalUsage.toLocaleString()}
+                                </td>
+                                <td className="bl-cell-numeric">
+                                    {feature.uniqueUsers.toLocaleString()}
+                                </td>
+                                <td className="bl-cell-numeric text-bl-muted">
+                                    {feature.uniqueUsers > 0
+                                        ? (
+                                              feature.totalUsage /
+                                              feature.uniqueUsers
+                                          ).toFixed(1)
+                                        : '0.0'}
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </Table>
+            </Section>
+        </Page>
     );
 }

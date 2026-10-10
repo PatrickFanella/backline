@@ -75,7 +75,7 @@ function HeatmapChart({ data, onChannelClick }: HeatmapChartProps) {
 
     if (chartData.length === 0) {
         return (
-            <div className="flex items-center justify-center h-64 text-bl-muted">
+            <div className="bl-empty flex items-center justify-center h-64">
                 No data available
             </div>
         );

@@ -41,7 +41,11 @@ export function PageHeader({
                     <p className="bl-page-description">{description}</p>
                 )}
             </div>
-            {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
+            {actions && (
+                <div className="flex flex-wrap items-center gap-2">
+                    {actions}
+                </div>
+            )}
         </header>
     );
 }

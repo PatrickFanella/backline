@@ -1,122 +1,93 @@
-import { motion } from 'framer-motion';
-import { LogIn, Shield, Activity, TrendingUp } from 'lucide-react';
+import { LogIn } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
 
+import { Badge } from '../components/ui/Badge';
 import { config } from '../config/env';
+import { useTheme } from '../contexts/ThemeContext';
+
+const abilities = [
+    { tag: 'Setup', text: 'Server setup and module configuration' },
+    { tag: 'Cases', text: 'Moderation cases and action history' },
+    { tag: 'Support', text: 'Welcome, roles, and private support' },
+];
 
 function Login() {
     const { t } = useTranslation();
+    const { effectiveTheme } = useTheme();
     const discordLoginUrl = `${config.apiUrl}/auth/discord/start`;
 
     return (
-        <div className="flex items-center justify-center min-h-[calc(100vh-100px)] bg-bl-canvas relative">
-            <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.5 }}
-                className="max-w-md w-full mx-4"
-                role="main"
-                aria-labelledby="login-heading"
-                id="main-content"
-            >
-                <div className="bl-card p-8">
-                    {/* Logo/Header */}
-                    <header className="text-center mb-8">
-                        <motion.div
-                            initial={{ y: -20, opacity: 0 }}
-                            animate={{ y: 0, opacity: 1 }}
-                            transition={{ delay: 0.2 }}
-                            className="inline-flex items-center justify-center w-16 h-16 bg-bl-action rounded mb-4"
-                            aria-hidden="true"
-                        >
+        <main
+            id="main-content"
+            className="bl-page flex items-center justify-center"
+            aria-labelledby="login-heading"
+        >
+            <div className="w-full max-w-md space-y-4">
+                <div className="bl-card p-8 space-y-6">
+                    <header className="space-y-3">
+                        <p className="bl-eyebrow-app">
+                            Private pilot · Sign in
+                        </p>
+                        <div className="flex items-center gap-3">
                             <img
-                                src="/brand/backline/mark-light.svg"
+                                src={`/brand/backline/mark${effectiveTheme === 'dark' ? '-light' : ''}.svg`}
                                 alt=""
-                                className="w-10 h-10"
+                                width={44}
+                                height={44}
                             />
-                        </motion.div>
-                        <motion.h1
-                            id="login-heading"
-                            initial={{ y: -20, opacity: 0 }}
-                            animate={{ y: 0, opacity: 1 }}
-                            transition={{ delay: 0.3 }}
-                            className="text-3xl font-bold text-bl-ink mb-2"
-                        >
-                            Backline
-                        </motion.h1>
-                        <motion.p
-                            initial={{ y: -20, opacity: 0 }}
-                            animate={{ y: 0, opacity: 1 }}
-                            transition={{ delay: 0.4 }}
-                            className="text-bl-muted"
-                        >
-                            Sign in to your pilot dashboard.
-                        </motion.p>
+                            <h1
+                                id="login-heading"
+                                className="text-4xl uppercase leading-none"
+                            >
+                                Backline
+                            </h1>
+                        </div>
+                        <p className="text-bl-muted">
+                            Sign in with Discord to manage the servers where you
+                            have Manage Server permission.
+                        </p>
                     </header>
 
-                    {/* Features */}
-                    <motion.ul
-                        initial={{ y: 20, opacity: 0 }}
-                        animate={{ y: 0, opacity: 1 }}
-                        transition={{ delay: 0.5 }}
-                        className="space-y-3 mb-8"
-                        aria-label="Features"
+                    <ul
+                        className="space-y-3"
+                        aria-label="What the dashboard covers"
                     >
-                        <li className="flex items-center gap-3 text-bl-muted">
-                            <Activity
-                                className="w-5 h-5 text-bl-success"
-                                aria-hidden="true"
-                            />
-                            <span className="text-sm">
-                                Server setup and module configuration
-                            </span>
-                        </li>
-                        <li className="flex items-center gap-3 text-bl-muted">
-                            <Shield
-                                className="w-5 h-5 text-bl-accent"
-                                aria-hidden="true"
-                            />
-                            <span className="text-sm">
-                                Moderation cases and action history
-                            </span>
-                        </li>
-                        <li className="flex items-center gap-3 text-bl-muted">
-                            <TrendingUp
-                                className="w-5 h-5 text-bl-accent"
-                                aria-hidden="true"
-                            />
-                            <span className="text-sm">
-                                Welcome, roles, and private support
-                            </span>
-                        </li>
-                    </motion.ul>
+                        {abilities.map((item) => (
+                            <li
+                                key={item.tag}
+                                className="flex items-center gap-3 text-sm"
+                            >
+                                <Badge tone="accent">{item.tag}</Badge>
+                                <span>{item.text}</span>
+                            </li>
+                        ))}
+                    </ul>
 
-                    {/* Login Button */}
-                    <motion.a
+                    <a
                         href={discordLoginUrl}
-                        initial={{ y: 20, opacity: 0 }}
-                        animate={{ y: 0, opacity: 1 }}
-                        transition={{ delay: 0.6 }}
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        className="flex items-center justify-center gap-3 w-full bg-bl-action hover:bg-bl-action/90 text-white px-6 py-3 rounded-lg text-lg font-semibold transition-colors shadow-lg focus:outline-none focus:ring-2 focus:ring-bl-accent focus:ring-offset-2"
+                        className="bl-button bl-button-primary w-full text-lg"
                         aria-label={t('auth.loginWithDiscord')}
                     >
                         <LogIn className="w-5 h-5" aria-hidden="true" />
                         {t('auth.loginWithDiscord')}
-                    </motion.a>
+                    </a>
 
-                    <motion.p
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 0.8 }}
-                        className="text-center text-xs text-bl-muted mt-6"
-                    >
+                    <p className="text-center text-xs text-bl-muted">
                         {t('auth.termsAgreement')}
-                    </motion.p>
+                    </p>
                 </div>
-            </motion.div>
-        </div>
+                <p className="text-center text-sm text-bl-muted">
+                    <Link to="/" className="text-bl-accent">
+                        About Backline
+                    </Link>
+                    {' · '}
+                    <Link to="/status" className="text-bl-accent">
+                        Service status
+                    </Link>
+                </p>
+            </div>
+        </main>
     );
 }
 

@@ -566,14 +566,16 @@
         border: 2px solid rgb(var(--bl-border));
         border-radius: 0.25rem;
     }
-    .bl-stat dt {
+    .bl-stat dt,
+    .bl-stat .bl-stat-label {
         font-family: 'Backline Mono', monospace;
         font-size: 0.6875rem;
         letter-spacing: 0.08em;
         text-transform: uppercase;
         color: rgb(var(--bl-muted));
     }
-    .bl-stat dd {
+    .bl-stat dd,
+    .bl-stat .bl-stat-value {
         margin: 0;
         font-family: 'Backline Oswald', sans-serif;
         font-size: 2rem;

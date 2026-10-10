@@ -34,8 +34,48 @@ Object.defineProperty(window, 'matchMedia', {
 });
 
 // Mock ResizeObserver for recharts
-(globalThis as typeof globalThis & { ResizeObserver: unknown }).ResizeObserver = class ResizeObserver {
-    observe() {}
-    unobserve() {}
-    disconnect() {}
-};
+(globalThis as typeof globalThis & { ResizeObserver: unknown }).ResizeObserver =
+    class ResizeObserver {
+        observe() {}
+        unobserve() {}
+        disconnect() {}
+    };
+
+// Node 26 defines a `localStorage` global that is undefined unless the
+// process runs with --localstorage-file, and that shadows jsdom's Storage.
+// Give tests a plain in-memory Storage so theme and consent code can run.
+function memoryStorage(): Storage {
+    const store = new Map<string, string>();
+    return {
+        get length() {
+            return store.size;
+        },
+        clear: () => store.clear(),
+        getItem: (key: string) => store.get(String(key)) ?? null,
+        key: (index: number) => Array.from(store.keys())[index] ?? null,
+        removeItem: (key: string) => {
+            store.delete(String(key));
+        },
+        setItem: (key: string, value: string) => {
+            store.set(String(key), String(value));
+        },
+    } as Storage;
+}
+for (const name of ['localStorage', 'sessionStorage'] as const) {
+    const scope = globalThis as unknown as Record<string, unknown>;
+    const current = scope[name] as Partial<Storage> | undefined;
+    if (!current || typeof current.getItem !== 'function') {
+        const storage = memoryStorage();
+        Object.defineProperty(globalThis, name, {
+            value: storage,
+            configurable: true,
+            writable: true,
+        });
+        if (typeof window !== 'undefined' && (window as unknown) !== globalThis)
+            Object.defineProperty(window, name, {
+                value: storage,
+                configurable: true,
+                writable: true,
+            });
+    }
+}
