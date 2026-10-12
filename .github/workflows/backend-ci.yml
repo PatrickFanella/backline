@@ -2,6 +2,7 @@ name: Backend CI
 
 on:
     push:
+        branches: [main]
         paths:
             - 'backend/**'
             - 'scripts/check-postgresql-baseline.mjs'

@@ -8,7 +8,7 @@ and browser E2E; frontend tests run once in Frontend CI. Coverage generation
 still fails on test failures and retains configured thresholds. Only diagnostic
 coverage and browser-report uploads are non-blocking, capped at two minutes;
 coverage artifacts contain LCOV and JSON summaries. The frontend build artifact
-remains required. Feature-branch push copies of these two workflows are removed.
+remains required. Feature-branch push copies of Tests, Frontend CI and Backend CI are removed.
 
 Backend CI's lint/type/schema/database/build checks, Docker qualification,
 security audits and verified-secret scanning remain separate. Deployment
