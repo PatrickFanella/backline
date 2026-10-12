@@ -2,6 +2,7 @@ name: Docker qualification
 
 on:
     push:
+        branches: [main]
         paths:
             - 'backend/**'
             - 'frontend/**'
@@ -28,9 +29,13 @@ env:
     CI_FRONTEND_IMAGE: backline-ci-dashboard:${{ github.run_id }}
     CI_DASHBOARD_CONTAINER: backline-ci-dashboard-${{ github.run_id }}
 
+permissions:
+  contents: read
+
 jobs:
     build-backend:
         name: Build and inspect backend image
+        timeout-minutes: 60
         runs-on: ubuntu-latest
 
         steps:
@@ -54,6 +59,7 @@ jobs:
 
     build-frontend:
         name: Build and serve dashboard image
+        timeout-minutes: 60
         runs-on: ubuntu-latest
 
         steps:
@@ -83,6 +89,7 @@ jobs:
 
     validate-compose:
         name: Validate Compose definitions
+        timeout-minutes: 30
         runs-on: ubuntu-latest
 
         steps:

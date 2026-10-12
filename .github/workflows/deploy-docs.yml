@@ -18,8 +18,12 @@ concurrency:
   group: "pages"
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
   build:
+    timeout-minutes: 30
     runs-on: ubuntu-latest
     
     steps:
@@ -49,6 +53,7 @@ jobs:
   deploy:
     if: github.server_url == 'https://github.com'
     needs: build
+    timeout-minutes: 30
     runs-on: ubuntu-latest
     
     permissions:

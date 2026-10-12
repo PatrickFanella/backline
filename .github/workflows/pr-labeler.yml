@@ -4,9 +4,13 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
 
+permissions:
+  contents: read
+
 jobs:
   label:
     name: Label PR
+    timeout-minutes: 10
     runs-on: ubuntu-latest
     permissions:
       contents: read
