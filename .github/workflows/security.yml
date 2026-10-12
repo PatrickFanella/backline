@@ -8,12 +8,16 @@ on:
     schedule:
         - cron: '0 2 * * *'
 
+permissions:
+  contents: read
+
 jobs:
     codeql-github-only:
         name: CodeQL analysis (GitHub only)
         # CodeQL uploads results to GitHub's Security API. Gitea has no compatible endpoint.
         # On Gitea this job is deliberately skipped; it is not a completed CodeQL scan.
         if: github.server_url == 'https://github.com'
+        timeout-minutes: 30
         runs-on: ubuntu-latest
         permissions:
             actions: read
@@ -40,6 +44,7 @@ jobs:
 
     dependency-audit-backend:
         name: Backend dependency audit
+        timeout-minutes: 30
         runs-on: ubuntu-latest
         defaults:
             run:
@@ -64,6 +69,7 @@ jobs:
 
     dependency-audit-frontend:
         name: Frontend dependency audit
+        timeout-minutes: 30
         runs-on: ubuntu-latest
         defaults:
             run:
@@ -88,6 +94,7 @@ jobs:
 
     secrets-scan:
         name: Verified secrets scan
+        timeout-minutes: 30
         runs-on: ubuntu-latest
 
         steps:
