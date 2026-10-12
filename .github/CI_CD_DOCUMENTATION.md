@@ -1,5 +1,19 @@
 # CI/CD Pipeline Documentation
 
+## Current Gitea test and frontend plan
+
+Frontend CI uses one all-PR/main job for one frozen install, ESLint, TypeScript,
+unit tests with coverage, and the production build. Tests owns backend coverage
+and browser E2E; frontend tests run once in Frontend CI. Coverage generation
+still fails on test failures and retains configured thresholds. Only diagnostic
+coverage and browser-report uploads are non-blocking, capped at two minutes;
+coverage artifacts contain LCOV and JSON summaries. The frontend build artifact
+remains required. Feature-branch push copies of these two workflows are removed.
+
+Backend CI's lint/type/schema/database/build checks, Docker qualification,
+security audits and verified-secret scanning remain separate. Deployment
+workflows are unchanged. Both changed workflows run on PRs and main pushes.
+
 This document describes the Continuous Integration and Continuous Deployment (CI/CD) pipeline for the Discord Spywatcher project.
 
 ## Overview
@@ -29,23 +43,14 @@ The CI/CD pipeline is implemented using GitHub Actions and consists of multiple 
 
 ### 2. Frontend CI (`frontend-ci.yml`)
 
-**Triggers:**
+Runs on all pull requests and main pushes. One **Frontend quality** job installs
+once, runs ESLint and TypeScript, runs the full frontend unit suite with coverage,
+and builds the production bundle. Failed validation prevents the build.
 
-- Push to `main` branch (when frontend files change)
-- Pull requests to `main` branch (when frontend files change)
-
-**Jobs:**
-
-- **Lint**: Runs ESLint checks
-- **TypeCheck**: Validates TypeScript compilation
-- **Test**: Runs test suite (placeholder until tests are implemented)
-- **Build**: Builds production bundle with Vite
-
-**Artifacts:**
-
-- `frontend-dist`: Production build output (retained for 7 days)
-
-**Note:** Some jobs use `continue-on-error: true` due to pre-existing code issues. These should be fixed in a separate PR.
+Artifacts: `frontend-dist` is retained for seven days and its upload is required.
+`frontend-coverage` contains LCOV and JSON summaries, retained for 14 days.
+Coverage upload is diagnostic, non-blocking and capped at two minutes; test and
+coverage-generation failures still fail the job.
 
 ### 3. Security Scan (`security.yml`)
 
