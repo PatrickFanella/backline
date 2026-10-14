@@ -8,7 +8,7 @@ import jsxA11y from 'eslint-plugin-jsx-a11y';
 import importPlugin from 'eslint-plugin-import';
 
 export default tseslint.config(
-    { ignores: ['dist', 'node_modules', '*.config.js'] },
+    { ignores: ['dist', 'dist-ssr', 'node_modules', '*.config.js'] },
     js.configs.recommended,
     ...tseslint.configs.recommended,
     jsxA11y.flatConfigs.recommended,

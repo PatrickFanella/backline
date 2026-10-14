@@ -49,6 +49,7 @@ export default defineConfig(({ command, mode }) => {
     return {
         plugins,
         build: {
+            cssCodeSplit: false,
             // Generate source maps for error tracking
             sourcemap: true,
         },
