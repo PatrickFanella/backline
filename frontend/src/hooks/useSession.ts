@@ -13,7 +13,7 @@ export function loadSession(force = false): Promise<void> {
     const revision = state.revision;
     useAuth.setState({ sessionStatus: 'loading', sessionError: null });
     const promise = api
-        .get<Session>('/auth/me')
+        .get<Session>('/auth/me', { timeout: 10000 })
         .then(({ data }) => {
             if (useAuth.getState().revision !== revision) return;
             useAuth.setState({

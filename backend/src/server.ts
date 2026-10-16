@@ -19,6 +19,8 @@ console.log('✅ express loaded');
 console.log('✅ cors loaded');
 
 const app = express();
+// The local reverse proxy supplies the client address. Never trust remote peers.
+app.set('trust proxy', 'loopback');
 const PORT = env.PORT || 3001;
 const allowedOrigins =
     env.CORS_ORIGINS && env.CORS_ORIGINS.length > 0

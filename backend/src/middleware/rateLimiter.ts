@@ -55,11 +55,11 @@ function createRateLimiter(options: {
 
 /**
  * Global rate limiter for all API endpoints
- * Default: 100 requests per 15 minutes per IP
+ * Default: 300 requests per minute per IP, allowing module dashboard bursts.
  */
 export const globalRateLimiter = createRateLimiter({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100,
+    windowMs: 60 * 1000,
+    max: 300,
     message: 'Too many requests. Please try again later.',
     prefix: 'global',
     skip: (req: Request) => {

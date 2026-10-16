@@ -45,7 +45,7 @@ describe('useSession hook', () => {
 
         expect(result.current.session).toEqual(mockSession);
         expect(result.current.error).toBeNull();
-        expect(api.get).toHaveBeenCalledWith('/auth/me');
+        expect(api.get).toHaveBeenCalledWith('/auth/me', { timeout: 10000 });
     });
 
     it('should handle fetch error', async () => {

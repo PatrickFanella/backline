@@ -61,7 +61,7 @@ describe('API session recovery', () => {
         expect(refresh).toHaveBeenCalledWith(
             'http://localhost:3001/api/auth/refresh',
             {},
-            { withCredentials: true }
+            { withCredentials: true, timeout: 10000 }
         );
         expect(useAuth.getState().accessToken).toBe('fresh');
     });

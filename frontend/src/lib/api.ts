@@ -40,7 +40,7 @@ function refreshSession(): Promise<string> {
                 .post(
                     `${config.apiUrl}/auth/refresh`,
                     {},
-                    { withCredentials: true }
+                    { withCredentials: true, timeout: 10000 }
                 )
                 .then((response) => {
                     if (useAuth.getState().revision !== revision)
@@ -67,6 +67,7 @@ function refreshSession(): Promise<string> {
             if (typeof navigator !== 'undefined' && navigator.locks)
                 return await navigator.locks.request(
                     'backline-session-refresh',
+                    { signal: AbortSignal.timeout(10000) },
                     refresh
                 );
             return await refresh();
