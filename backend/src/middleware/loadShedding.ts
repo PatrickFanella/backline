@@ -10,6 +10,29 @@ import { isHealthProbe } from './healthProbe';
 // Deliberate admission control is not an application/dependency failure.
 const shedResponses = new WeakSet<Response>();
 
+function isDashboardControlRequest(req: Request): boolean {
+    if (req.method === 'GET' || req.method === 'HEAD') {
+        return (
+            [
+                '/api/auth/me',
+                '/api/auth/discord/start',
+                '/api/auth/discord',
+                '/api/status',
+                '/api/status/incidents',
+                '/api/guilds',
+            ].includes(req.path) ||
+            /^\/api\/guilds\/[^/]+\/modules\/?$/.test(req.path)
+        );
+    }
+    if (req.method === 'POST') {
+        return ['/api/auth/refresh', '/api/auth/logout'].includes(req.path);
+    }
+    return (
+        req.method === 'PUT' &&
+        /^\/api\/guilds\/[^/]+\/modules\/[^/]+\/?$/.test(req.path)
+    );
+}
+
 /**
  * Load shedding middleware
  * Rejects non-critical requests when system is under heavy load
@@ -20,7 +43,13 @@ export const loadSheddingMiddleware = (
     next: NextFunction
 ): void => {
     // Skip if load shedding is disabled
-    if (!env.ENABLE_LOAD_SHEDDING || isHealthProbe(req)) {
+    // Keep recovery and basic configuration reachable. Their existing auth,
+    // server authorization, validation and rate limits still run downstream.
+    if (
+        !env.ENABLE_LOAD_SHEDDING ||
+        isHealthProbe(req) ||
+        isDashboardControlRequest(req)
+    ) {
         next();
         return;
     }
