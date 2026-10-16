@@ -134,6 +134,47 @@ describe('DDoS Protection Middleware', () => {
 
             expect(nextFunction).toHaveBeenCalled();
         });
+
+        it.each(['audio/wav', 'audio/x-wav', 'Audio/Wav; charset=binary'])(
+            'allows %s on the clip upload route',
+            (contentType) => {
+                mockRequest.method = 'POST';
+                mockRequest = {
+                    ...mockRequest,
+                    path: '/api/guilds/one/modules/audio/clips',
+                };
+                mockRequest.headers = { 'content-type': contentType };
+                requestValidationMiddleware(
+                    mockRequest as Request,
+                    mockResponse as Response,
+                    nextFunction
+                );
+                expect(nextFunction).toHaveBeenCalled();
+            }
+        );
+
+        it.each([
+            ['POST', '/api/test', 'audio/wav'],
+            ['PUT', '/api/guilds/one/modules/audio/clips', 'audio/wav'],
+            ['POST', '/api/guilds/one/modules/audio/clips/extra', 'audio/wav'],
+            ['POST', '/api/guilds/one/modules/audio/clips', 'audio/mpeg'],
+            [
+                'POST',
+                '/api/guilds/one/modules/audio/clips',
+                'audio/wav-invalid',
+            ],
+        ])('rejects %s %s with %s', (method, path, contentType) => {
+            mockRequest.method = method;
+            mockRequest = { ...mockRequest, path };
+            mockRequest.headers = { 'content-type': contentType };
+            requestValidationMiddleware(
+                mockRequest as Request,
+                mockResponse as Response,
+                nextFunction
+            );
+            expect(mockResponse.status).toHaveBeenCalledWith(415);
+            expect(nextFunction).not.toHaveBeenCalled();
+        });
     });
 
     describe('headerValidationMiddleware', () => {
