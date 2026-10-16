@@ -14,10 +14,10 @@ const redis = getRedisClient();
  * Helps defend against slowloris attacks
  */
 export const slowDownMiddleware = slowDown({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    delayAfter: 50, // Start delaying after 50 requests
-    delayMs: (hits) => hits * 500, // Add 500ms delay per request after limit
-    maxDelayMs: 20000, // Max 20 second delay
+    windowMs: 60 * 1000,
+    delayAfter: 120, // A module dashboard makes several dozen requests per visit.
+    delayMs: (hits) => Math.max(0, hits - 120) * 100,
+    maxDelayMs: 1000,
     skip: isHealthProbe, // Monitoring must not delay probes or consume user budgets.
 });
 
