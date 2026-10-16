@@ -3,6 +3,7 @@ import request from 'supertest';
 
 import { clipSelect, storeClip } from '../../../src/audio/clips';
 import { db } from '../../../src/db';
+import { requestValidationMiddleware } from '../../../src/middleware/ddosProtection';
 import guildModules from '../../../src/routes/guildModules';
 import { pcmWave } from '../../fixtures/pcmWave';
 
@@ -38,8 +39,9 @@ jest.mock('../../../src/db', () => ({
 }));
 describe('managed clip HTTP upload boundary', () => {
     const app = express();
+    app.use(requestValidationMiddleware);
     app.use(express.json());
-    app.use(guildModules);
+    app.use('/api', guildModules);
     beforeEach(() => {
         allowed = true;
         jest.clearAllMocks();
@@ -48,7 +50,7 @@ describe('managed clip HTTP upload boundary', () => {
         (storeClip as jest.Mock).mockResolvedValue({ id: 'clip' });
         const wave = pcmWave();
         const result = await request(app)
-            .post('/guilds/one/modules/audio/clips')
+            .post('/api/guilds/one/modules/audio/clips')
             .query({
                 title: 'Tone',
                 source: 'Own synth',
@@ -70,12 +72,13 @@ describe('managed clip HTTP upload boundary', () => {
     it('denies both metadata and bytes before storage when access is revoked', async () => {
         allowed = false;
         expect(
-            (await request(app).get('/guilds/two/modules/audio/clips')).status
+            (await request(app).get('/api/guilds/two/modules/audio/clips'))
+                .status
         ).toBe(403);
         expect(
             (
                 await request(app)
-                    .post('/guilds/two/modules/audio/clips')
+                    .post('/api/guilds/two/modules/audio/clips')
                     .set('Content-Type', 'audio/wav')
                     .send(pcmWave())
             ).status
@@ -86,7 +89,8 @@ describe('managed clip HTTP upload boundary', () => {
     it('returns only scoped clip metadata and rejects oversized upload bodies', async () => {
         (db.audioClip.findMany as jest.Mock).mockResolvedValue([]);
         expect(
-            (await request(app).get('/guilds/one/modules/audio/clips')).status
+            (await request(app).get('/api/guilds/one/modules/audio/clips'))
+                .status
         ).toBe(200);
         expect(db.audioClip.findMany).toHaveBeenCalledWith({
             where: { guildId: 'one' },
@@ -98,7 +102,7 @@ describe('managed clip HTTP upload boundary', () => {
         expect(
             (
                 await request(app)
-                    .post('/guilds/one/modules/audio/clips')
+                    .post('/api/guilds/one/modules/audio/clips')
                     .set('Content-Type', 'audio/wav')
                     .send(Buffer.alloc(3 * 1024 * 1024 + 1))
             ).status

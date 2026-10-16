@@ -76,8 +76,16 @@ export const requestValidationMiddleware = (
     // Validate Content-Type for POST/PUT/PATCH requests
     if (['POST', 'PUT', 'PATCH'].includes(req.method)) {
         const contentType = req.headers['content-type'];
+        // The authorized clip route owns raw parsing, WAV validation and quotas.
+        const isClipUpload =
+            req.method === 'POST' &&
+            /^\/api\/guilds\/[^/]+\/modules\/audio\/clips\/?$/.test(req.path) &&
+            ['audio/wav', 'audio/x-wav'].includes(
+                contentType?.split(';')[0].trim().toLowerCase() ?? ''
+            );
         if (
             contentType &&
+            !isClipUpload &&
             !contentType.includes('application/json') &&
             !contentType.includes('application/x-www-form-urlencoded') &&
             !contentType.includes('multipart/form-data')
