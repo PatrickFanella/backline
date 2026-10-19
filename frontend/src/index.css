@@ -22,6 +22,11 @@
     --bl-warning-solid: 133 77 14;
     --bl-danger-solid: 180 35 66;
     --bl-danger: 180 35 66;
+    --bl-field: 255 255 255;
+    --bl-field-border: 112 96 125;
+    --bl-control: 225 216 206;
+    --bl-control-hover: 210 199 188;
+    --bl-control-border: 112 96 125;
 }
 
 .dark {
@@ -41,6 +46,11 @@
     --bl-warning-solid: 133 77 14;
     --bl-danger-solid: 180 35 66;
     --bl-danger: 255 138 155;
+    --bl-field: 10 6 17;
+    --bl-field-border: 156 138 176;
+    --bl-control: 68 53 90;
+    --bl-control-hover: 86 68 112;
+    --bl-control-border: 156 138 176;
 }
 
 @layer base {
@@ -68,8 +78,107 @@
     select,
     textarea {
         color: rgb(var(--bl-ink));
-        background-color: rgb(var(--bl-panel));
         accent-color: rgb(var(--bl-action));
+    }
+    input:not([type='checkbox'], [type='radio']),
+    select,
+    textarea {
+        background-color: rgb(var(--bl-field));
+    }
+    input[type='checkbox'],
+    input[type='radio'] {
+        width: 1rem;
+        height: 1rem;
+    }
+    ::placeholder {
+        color: rgb(var(--bl-muted) / 0.8);
+    }
+    /*
+     * Preflight strips borders and backgrounds from form controls. Controls
+     * without a class (common in module settings) get a visible field and
+     * button treatment here; classed controls keep their own styles.
+     */
+    input:not([class]):not(
+            [type='checkbox'],
+            [type='radio'],
+            [type='range'],
+            [type='color'],
+            [type='file'],
+            [type='hidden'],
+            [type='submit'],
+            [type='button']
+        ),
+    select:not([class]),
+    textarea:not([class]) {
+        min-height: 2.5rem;
+        max-width: 100%;
+        padding: 0.4rem 0.65rem;
+        background: rgb(var(--bl-field));
+        border: 2px solid rgb(var(--bl-field-border));
+        border-radius: 0.25rem;
+        line-height: 1.4;
+    }
+    textarea:not([class]) {
+        display: block;
+        width: 100%;
+        min-height: 5.5rem;
+        resize: vertical;
+    }
+    input:not([class]):focus,
+    select:not([class]):focus,
+    textarea:not([class]):focus {
+        outline: 3px solid rgb(var(--bl-accent));
+        outline-offset: 2px;
+        border-color: rgb(var(--bl-accent));
+    }
+    input[type='file']:not([class]) {
+        max-width: 100%;
+    }
+    input[type='file']::file-selector-button {
+        margin-right: 0.75rem;
+        padding: 0.35rem 0.75rem;
+        border: 2px solid rgb(var(--bl-control-border));
+        border-radius: 0.25rem;
+        background: rgb(var(--bl-control));
+        color: rgb(var(--bl-ink));
+        font-weight: 600;
+        cursor: pointer;
+    }
+    button:not([class]),
+    input[type='submit']:not([class]),
+    input[type='button']:not([class]) {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        min-height: 2.25rem;
+        padding: 0.35rem 0.85rem;
+        border: 2px solid rgb(var(--bl-control-border));
+        border-radius: 0.25rem;
+        background: rgb(var(--bl-control));
+        color: rgb(var(--bl-ink));
+        font-size: 0.875rem;
+        font-weight: 600;
+        line-height: 1.2;
+        transition: background-color 150ms ease-out;
+    }
+    button:not([class]):hover:not(:disabled) {
+        background: rgb(var(--bl-control-hover));
+    }
+    button[type='submit']:not([class]) {
+        background: rgb(var(--bl-action));
+        border-color: rgb(var(--bl-action));
+        color: #fff;
+    }
+    button[type='submit']:not([class]):hover:not(:disabled) {
+        background: rgb(var(--bl-action) / 0.9);
+    }
+    button:not([class]):disabled,
+    input:not([class]):disabled,
+    select:not([class]):disabled,
+    textarea:not([class]):disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
     }
     :focus-visible {
         outline: 3px solid rgb(var(--bl-accent));
@@ -149,12 +258,12 @@
         background: rgb(var(--bl-action) / 0.9);
     }
     .bl-button-secondary {
-        background: rgb(var(--bl-surface));
-        border-color: rgb(var(--bl-border));
+        background: rgb(var(--bl-control));
+        border-color: rgb(var(--bl-control-border));
         color: rgb(var(--bl-ink));
     }
     .bl-button-secondary:hover:not(:disabled) {
-        background: rgb(var(--bl-recessed));
+        background: rgb(var(--bl-control-hover));
     }
     .bl-button-danger {
         background: rgb(var(--bl-danger-solid));
@@ -191,8 +300,8 @@
         width: 100%;
         min-height: 2.5rem;
         padding: 0.5rem 0.75rem;
-        background: rgb(var(--bl-panel));
-        border: 2px solid rgb(var(--bl-border));
+        background: rgb(var(--bl-field));
+        border: 2px solid rgb(var(--bl-field-border));
         border-radius: 0.25rem;
         color: rgb(var(--bl-ink));
         line-height: 1.4;
@@ -442,12 +551,15 @@
     }
     .bl-chip {
         padding: 0.25rem 0.75rem;
-        border: 2px solid rgb(var(--bl-border));
+        border: 2px solid rgb(var(--bl-control-border));
         border-radius: 999px;
         font-size: 0.8125rem;
         font-weight: 600;
-        background: rgb(var(--bl-panel));
+        background: rgb(var(--bl-control));
         color: rgb(var(--bl-ink));
+    }
+    .bl-chip:hover:not([aria-pressed='true']) {
+        background: rgb(var(--bl-control-hover));
     }
     .bl-chip[aria-pressed='true'] {
         background: rgb(var(--bl-action));
@@ -501,13 +613,13 @@
         display: grid;
         gap: 1rem;
         grid-template-columns: 1fr;
-        align-items: start;
+        grid-auto-rows: 1fr;
     }
     .bl-module-card {
-        position: relative;
         display: flex;
         flex-direction: column;
         gap: 0.75rem;
+        min-height: 12rem;
         padding: 1.25rem;
         background: rgb(var(--bl-panel));
         border: 2px solid rgb(var(--bl-border));
@@ -520,10 +632,126 @@
     .bl-module-card[data-state='blocked'] {
         border-left: 6px solid rgb(var(--bl-warning-solid));
     }
-    .bl-module-card h3 {
+    .bl-module-card-head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 0.75rem;
+    }
+    .bl-module-card-head h4 {
         font-size: 1.125rem;
+        line-height: 1.25;
         text-transform: uppercase;
     }
+    .bl-module-card-desc {
+        font-size: 0.875rem;
+        color: rgb(var(--bl-muted));
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+    .bl-module-card-foot {
+        margin-top: auto;
+        padding-top: 0.75rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        border-top: 1px solid rgb(var(--bl-border) / 0.4);
+    }
+
+    /* Module page */
+    .bl-breadcrumb ol {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        font-size: 0.875rem;
+        color: rgb(var(--bl-muted));
+    }
+    .bl-breadcrumb li + li::before {
+        content: '/';
+        margin-right: 0.5rem;
+        color: rgb(var(--bl-border));
+    }
+    .bl-breadcrumb a {
+        color: rgb(var(--bl-accent));
+    }
+    .bl-breadcrumb a:hover {
+        text-decoration: underline;
+    }
+    .bl-module-layout {
+        display: grid;
+        gap: 1.5rem;
+        grid-template-columns: 1fr;
+        align-items: start;
+    }
+    /* Each settings form or history panel from ModuleSettings becomes its own card. */
+    .bl-settings {
+        display: flex;
+        flex-direction: column;
+        gap: 1.25rem;
+    }
+    .bl-settings.bl-settings > * {
+        margin: 0;
+        padding: 1.25rem 1.5rem;
+        background: rgb(var(--bl-panel));
+        border: 2px solid rgb(var(--bl-border));
+        border-radius: 0.25rem;
+        box-shadow: 4px 4px 0 rgb(var(--bl-border) / 0.35);
+    }
+    .bl-settings fieldset {
+        min-width: 0;
+    }
+    .bl-settings.bl-settings > * > :is(h3, h4):first-child {
+        font-size: 1.25rem;
+        text-transform: uppercase;
+    }
+    .bl-settings .bl-input,
+    .bl-settings textarea:not([class]) {
+        max-width: 42rem;
+    }
+    .bl-settings .bl-legend {
+        font-size: 1.25rem;
+    }
+    .bl-module-nav {
+        display: flex;
+        flex-direction: column;
+        gap: 0.125rem;
+        margin: 0 -0.5rem;
+    }
+    .bl-module-nav a {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.5rem;
+        padding: 0.375rem 0.5rem;
+        border-radius: 0.25rem;
+        font-size: 0.875rem;
+    }
+    .bl-module-nav a:hover {
+        background: rgb(var(--bl-accent) / 0.08);
+    }
+    .bl-module-nav a[aria-current='page'] {
+        background: rgb(var(--bl-accent) / 0.14);
+        font-weight: 600;
+    }
+    .bl-state-dot {
+        flex-shrink: 0;
+        width: 0.625rem;
+        height: 0.625rem;
+        border-radius: 999px;
+        border: 2px solid rgb(var(--bl-border));
+    }
+    .bl-state-dot[data-state='enabled'] {
+        background: rgb(var(--bl-success));
+        border-color: rgb(var(--bl-success));
+    }
+    .bl-state-dot[data-state='blocked'] {
+        background: rgb(var(--bl-warning));
+        border-color: rgb(var(--bl-warning));
+    }
+
     .bl-details > summary {
         cursor: pointer;
         list-style: none;
@@ -556,6 +784,22 @@
     }
     .bl-details > :not(summary) {
         margin-top: 0.75rem;
+    }
+    .bl-stat-grid {
+        display: grid;
+        gap: 1rem;
+        grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+    }
+    .bl-overview-layout {
+        display: grid;
+        gap: 1.5rem;
+        grid-template-columns: 1fr;
+        align-items: start;
+    }
+    .bl-category-grid {
+        display: grid;
+        gap: 1rem;
+        grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
     }
     .bl-stat {
         display: flex;
@@ -633,5 +877,20 @@
 @media (min-width: 1024px) {
     .bl-module-grid {
         grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+    .bl-module-layout {
+        grid-template-columns: minmax(0, 1fr) 18rem;
+    }
+    .bl-module-layout > aside {
+        position: sticky;
+        top: 1.5rem;
+    }
+    .bl-overview-layout {
+        grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+    }
+}
+@media (min-width: 1280px) {
+    .bl-module-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
     }
 }

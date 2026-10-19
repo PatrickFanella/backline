@@ -323,7 +323,7 @@ export default function WorkflowsConfig({
                 {runs?.map((run) => (
                     <li
                         key={run.id}
-                        className="border border-bl-surface p-3 rounded break-words"
+                        className="border border-bl-border/60 p-3 rounded break-words"
                     >
                         {run.ruleId}: {run.state}; delivery{' '}
                         {run.delivery?.state ?? 'no job reserved'}

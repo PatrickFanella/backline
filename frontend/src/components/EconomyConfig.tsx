@@ -171,7 +171,7 @@ export default function EconomyConfig({
                 {entries?.map((entry) => (
                     <li
                         key={entry.id}
-                        className="border border-bl-surface p-3 rounded break-words"
+                        className="border border-bl-border/60 p-3 rounded break-words"
                     >
                         {entry.kind}: {entry.delta >= 0 ? '+' : ''}
                         {entry.delta}; balance {entry.balanceAfter}

@@ -216,7 +216,7 @@ export default function RecoveryConfig({
                 {snapshots?.map((snapshot) => (
                     <li
                         key={snapshot.id}
-                        className="border border-bl-surface p-3 rounded break-words"
+                        className="border border-bl-border/60 p-3 rounded break-words"
                     >
                         <p>
                             {snapshot.kind} ·{' '}

@@ -73,7 +73,7 @@ export default function ScheduledUtilitiesHistory({
                 {events.map((event) => (
                     <li
                         key={event.id}
-                        className="border border-bl-surface p-3 rounded break-words"
+                        className="border border-bl-border/60 p-3 rounded break-words"
                     >
                         <p>
                             {event.kind === 'REMINDER'

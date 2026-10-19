@@ -83,7 +83,9 @@ describe('overview', () => {
         await screen.findByRole('heading', { name: 'Server A' });
         await screen.findByText('1/3');
         expect(screen.getByText('Operational')).toBeInTheDocument();
-        expect(screen.getByText('Onboarding')).toHaveClass('bl-badge-success');
+        expect(
+            screen.getByRole('link', { name: /^Onboarding\s*On$/ })
+        ).toHaveAttribute('href', '/servers/modules/onboarding');
         expect(
             screen.getByText(/Audit log need Discord intents/)
         ).toBeInTheDocument();
