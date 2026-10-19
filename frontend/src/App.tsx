@@ -23,6 +23,7 @@ import {
 import BacklineLanding from './pages/BacklineLanding';
 import MetricsDashboard from './pages/MetricsDashboard';
 import Moderation from './pages/Moderation';
+import ModulePage from './pages/ModulePage';
 import Overview from './pages/Overview';
 import RuleEditor from './pages/RuleEditor';
 import Rules from './pages/Rules';
@@ -61,6 +62,10 @@ function AppContent() {
                 <Route element={<RequireAuth />}>
                     <Route path="/overview" element={<Overview />} />
                     <Route path="/servers" element={<Servers />} />
+                    <Route
+                        path="/servers/modules/:moduleId"
+                        element={<ModulePage />}
+                    />
                     <Route path="/moderation" element={<Moderation />} />
                     <Route path="/observed-activity" element={<Dashboard />} />
                     <Route path="/analytics" element={<Analytics />} />

@@ -1,21 +1,22 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 
-import ModuleSettings from '../components/ModuleSettings';
 import type { ModuleRecord } from '../components/ModuleSettings';
+import ModuleToggle from '../components/ModuleToggle';
 import ServerSwitcher from '../components/ServerSwitcher';
 import { Alert } from '../components/ui/Alert';
 import { Badge } from '../components/ui/Badge';
 import { EmptyState } from '../components/ui/EmptyState';
 import { Input } from '../components/ui/Field';
 import { Page, PageHeader } from '../components/ui/Page';
+import { useModules } from '../hooks/useModules';
 import { useServers } from '../hooks/useServers';
-import api from '../lib/api';
 import {
     hasModuleSettings,
     moduleCategories,
     moduleCategory,
     moduleName,
+    modulePath,
     moduleState,
     type ModuleState,
 } from '../lib/modules';
@@ -40,87 +41,43 @@ const stateBadge: Record<
 };
 
 function ModuleCard({
-    guildId,
     module,
     busy,
     onToggle,
-    onSaved,
-    onBusy,
 }: {
-    guildId: string;
     module: ModuleRecord;
     busy: string | null;
     onToggle: (module: ModuleRecord) => void;
-    onSaved: (notice?: string) => Promise<void>;
-    onBusy: (value: boolean) => void;
 }) {
     const state = moduleState(module.settings, module.operatorReady);
-    const [open, setOpen] = useState(false);
     const badge = stateBadge[state];
-    const settingsId = `module-${module.id}-settings`;
+    const headingId = `module-${module.id}`;
     return (
         <article
             className="bl-module-card"
             data-state={state}
-            aria-labelledby={`module-${module.id}`}
+            aria-labelledby={headingId}
         >
-            <div className="flex items-start justify-between gap-3">
-                <h3 id={`module-${module.id}`}>{moduleName(module.id)}</h3>
+            <div className="bl-module-card-head">
+                <h4 id={headingId}>{moduleName(module.id)}</h4>
                 <Badge tone={badge.tone}>{badge.label}</Badge>
             </div>
-            <p className="text-bl-muted text-sm">{module.description}</p>
+            <p className="bl-module-card-desc">{module.description}</p>
             {state === 'blocked' && (
                 <p className="text-sm text-bl-warning">
                     This module needs the operator to enable its Discord intents
                     and restart the bot.
                 </p>
             )}
-            {hasModuleSettings(module.id) && (
-                <details
-                    className="bl-details"
-                    open={open}
-                    onToggle={(event) =>
-                        setOpen((event.target as HTMLDetailsElement).open)
-                    }
+            <div className="bl-module-card-foot">
+                <Link
+                    to={modulePath(module.id)}
+                    className="bl-button bl-button-secondary bl-button-sm"
+                    aria-label={`${hasModuleSettings(module.id) ? 'Configure' : 'View'} ${moduleName(module.id)}`}
                 >
-                    <summary aria-controls={settingsId}>
-                        Settings and history
-                    </summary>
-                    <div id={settingsId} className="space-y-4">
-                        <ModuleSettings
-                            guildId={guildId}
-                            module={module}
-                            onSaved={onSaved}
-                            onBusy={onBusy}
-                        />
-                    </div>
-                </details>
-            )}
-            <div className="mt-auto pt-2 flex flex-wrap items-center justify-between gap-3 border-t border-bl-border/40">
-                <p className="text-xs text-bl-muted">
-                    Use /setup in Discord to check the bot’s required
-                    permissions.
-                </p>
-                <button
-                    type="button"
-                    aria-pressed={module.settings.enabled}
-                    disabled={
-                        busy !== null ||
-                        (!module.operatorReady && !module.settings.enabled)
-                    }
-                    onClick={() => onToggle(module)}
-                    className={
-                        module.settings.enabled
-                            ? 'bl-button bl-button-secondary bl-button-sm'
-                            : 'bl-button bl-button-primary bl-button-sm'
-                    }
-                >
-                    {busy === module.id
-                        ? 'Saving…'
-                        : module.settings.enabled
-                          ? 'Disable'
-                          : 'Enable'}
-                </button>
+                    {hasModuleSettings(module.id) ? 'Configure' : 'Details'}
+                </Link>
+                <ModuleToggle module={module} busy={busy} onToggle={onToggle} />
             </div>
         </article>
     );
@@ -132,67 +89,11 @@ export default function Servers() {
         loading: serversLoading,
         error: serversError,
     } = useServers('sync');
-    const [modules, setModules] = useState<ModuleRecord[]>([]);
-    const [loading, setLoading] = useState(false);
-    const [busy, setBusy] = useState<string | null>(null);
-    const [error, setError] = useState('');
-    const [notice, setNotice] = useState('');
+    const guildId = useGuild((state) => state.guildId);
+    const { modules, loading, busy, error, notice, toggle } =
+        useModules(guildId);
     const [query, setQuery] = useState('');
     const [filter, setFilter] = useState<Filter>('all');
-    const guildId = useGuild((state) => state.guildId);
-    const generation = useRef(0);
-    useEffect(() => {
-        const current = ++generation.current;
-        setModules([]);
-        setNotice('');
-        if (!guildId) return;
-        setLoading(true);
-        setError('');
-        api.get<ModuleRecord[]>(`/guilds/${guildId}/modules`)
-            .then((response) => {
-                if (current === generation.current) setModules(response.data);
-            })
-            .catch(() => {
-                if (current === generation.current)
-                    setError(
-                        'Server access or settings are unavailable. Refresh your login and check the bot installation.'
-                    );
-            })
-            .finally(() => {
-                if (current === generation.current) setLoading(false);
-            });
-        return () => {
-            generation.current = current + 1;
-        };
-    }, [guildId]);
-    async function reload(message?: string) {
-        const current = generation.current;
-        const response = await api.get<ModuleRecord[]>(
-            `/guilds/${guildId}/modules`
-        );
-        if (current === generation.current) {
-            setModules(response.data);
-            if (message) setNotice(message);
-        }
-    }
-    async function toggle(module: ModuleRecord) {
-        setBusy(module.id);
-        setError('');
-        setNotice('');
-        try {
-            await api.put(`/guilds/${guildId}/modules/${module.id}`, {
-                enabled: !module.settings.enabled,
-                config: module.settings.config,
-            });
-            await reload('Settings saved for this server.');
-        } catch {
-            setError(
-                'Settings were not saved. Check your server permissions and try again.'
-            );
-        } finally {
-            setBusy(null);
-        }
-    }
     const enabledCount = modules.filter(
         (module) => module.settings.enabled
     ).length;
@@ -218,25 +119,7 @@ export default function Servers() {
             <PageHeader
                 eyebrow="Backline · Server setup"
                 title="Set up your server"
-                description="Choose a server and enable the modules your community needs. Modules start disabled, and settings are shared with /settings in Discord."
-                actions={
-                    guildId ? (
-                        <>
-                            <Link
-                                to="/overview"
-                                className="bl-button bl-button-secondary bl-button-sm"
-                            >
-                                Overview
-                            </Link>
-                            <Link
-                                to="/moderation"
-                                className="bl-button bl-button-secondary bl-button-sm"
-                            >
-                                Moderation cases
-                            </Link>
-                        </>
-                    ) : undefined
-                }
+                description="Enable the modules your community needs, then open a module to configure it. Modules start disabled, settings are shared with /settings in Discord, and /setup checks the bot’s permissions."
             />
             {combinedError && (
                 <Alert tone="danger" role="alert">
@@ -341,18 +224,11 @@ export default function Servers() {
                                     {items.map((module) => (
                                         <ModuleCard
                                             key={`${guildId}:${module.id}`}
-                                            guildId={guildId}
                                             module={module}
                                             busy={busy}
                                             onToggle={(item) => {
                                                 void toggle(item);
                                             }}
-                                            onSaved={reload}
-                                            onBusy={(value) =>
-                                                setBusy(
-                                                    value ? module.id : null
-                                                )
-                                            }
                                         />
                                     ))}
                                 </div>

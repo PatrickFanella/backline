@@ -148,7 +148,7 @@ export default function EntertainmentConfig({
                     {templates?.map((template) => (
                         <fieldset
                             key={template.id}
-                            className="border border-bl-surface p-3 rounded"
+                            className="border border-bl-border/60 p-3 rounded"
                         >
                             <legend>{template.name}</legend>
                             <p>{template.description}</p>
@@ -239,7 +239,7 @@ export default function EntertainmentConfig({
                 {trades?.map((trade) => (
                     <li
                         key={trade.id}
-                        className="border border-bl-surface p-3 rounded break-words"
+                        className="border border-bl-border/60 p-3 rounded break-words"
                     >
                         {trade.id}: {trade.quantity} {trade.itemId} ·{' '}
                         {trade.price} points · {trade.state}

@@ -112,3 +112,8 @@ const withSettings = new Set([
 export function hasModuleSettings(id: string): boolean {
     return withSettings.has(id);
 }
+
+/** Dedicated settings page for one module. */
+export function modulePath(id: string): string {
+    return `/servers/modules/${encodeURIComponent(id)}`;
+}

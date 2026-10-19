@@ -10,7 +10,14 @@ import { Page, PageHeader, Section } from '../components/ui/Page';
 import { Stat } from '../components/ui/Stat';
 import { useServers } from '../hooks/useServers';
 import api from '../lib/api';
-import { moduleCategories, moduleCategory, moduleName } from '../lib/modules';
+import {
+    moduleCategories,
+    moduleCategory,
+    moduleName,
+    modulePath,
+    moduleState,
+    type ModuleState,
+} from '../lib/modules';
 import { useGuild } from '../store/guild';
 
 type Case = {
@@ -24,6 +31,17 @@ type Case = {
 type ApiStatus = {
     status: string;
     timestamp: string;
+};
+
+const stateTone: Record<ModuleState, 'success' | 'neutral' | 'warning'> = {
+    enabled: 'success',
+    disabled: 'neutral',
+    blocked: 'warning',
+};
+const stateLabel: Record<ModuleState, string> = {
+    enabled: 'On',
+    disabled: 'Off',
+    blocked: 'Blocked',
 };
 
 export default function Overview() {
@@ -87,28 +105,21 @@ export default function Overview() {
         cases?.filter(
             (item) => !['DELIVERED', 'FAILED', 'CANCELLED'].includes(item.state)
         ) ?? [];
+    const failed = cases?.filter((item) => item.state === 'FAILED') ?? [];
     const recent = cases?.slice(0, 5) ?? [];
     return (
         <Page>
             <PageHeader
                 eyebrow="Backline · Overview"
                 title={server ? server.name : 'Your servers'}
-                description="What is switched on for this server, what is waiting, and where to go next."
+                description="What is switched on for this server, what needs attention, and where to go next."
                 actions={
-                    <>
-                        <Link
-                            to="/servers"
-                            className="bl-button bl-button-primary bl-button-sm"
-                        >
-                            Server setup
-                        </Link>
-                        <Link
-                            to="/moderation"
-                            className="bl-button bl-button-secondary bl-button-sm"
-                        >
-                            Moderation cases
-                        </Link>
-                    </>
+                    <Link
+                        to="/servers"
+                        className="bl-button bl-button-primary bl-button-sm"
+                    >
+                        Server setup
+                    </Link>
                 }
             />
             {(error || serversError) && (
@@ -138,7 +149,7 @@ export default function Overview() {
             <ServerSwitcher servers={servers} />
             {guildId && (
                 <>
-                    <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                    <dl className="bl-stat-grid">
                         <Stat
                             label="Modules enabled"
                             value={
@@ -178,79 +189,107 @@ export default function Overview() {
                             }
                         />
                     </dl>
-                    <div className="grid gap-6 lg:grid-cols-5">
-                        <div className="lg:col-span-3">
-                            <Section
-                                id="enabled"
-                                title="Enabled modules"
-                                description="Grouped the same way as server setup."
-                                actions={
-                                    <Link
-                                        to="/servers"
-                                        className="text-bl-accent text-sm"
-                                    >
-                                        Manage modules
-                                    </Link>
-                                }
-                            >
-                                {modules === null && !error && (
-                                    <p className="text-bl-muted">
-                                        Loading modules…
-                                    </p>
-                                )}
-                                {modules && enabled.length === 0 && (
-                                    <EmptyState
-                                        as="h3"
-                                        title="Nothing enabled yet"
-                                        actions={
-                                            <Link
-                                                to="/servers"
-                                                className="bl-button bl-button-primary bl-button-sm"
+                    <div className="bl-overview-layout">
+                        <Section
+                            id="modules"
+                            title="Modules"
+                            description="Open a module to change its settings."
+                            actions={
+                                <Link
+                                    to="/servers"
+                                    className="text-bl-accent text-sm"
+                                >
+                                    All modules
+                                </Link>
+                            }
+                        >
+                            {modules === null && !error && (
+                                <p className="text-bl-muted">
+                                    Loading modules…
+                                </p>
+                            )}
+                            {modules && modules.length > 0 && (
+                                <div className="bl-category-grid">
+                                    {moduleCategories.map((category) => {
+                                        const items = modules.filter(
+                                            (module) =>
+                                                moduleCategory(module.id) ===
+                                                category.id
+                                        );
+                                        if (!items.length) return null;
+                                        const on = items.filter(
+                                            (module) => module.settings.enabled
+                                        ).length;
+                                        return (
+                                            <section
+                                                key={category.id}
+                                                className="bl-card p-4 flex flex-col gap-3"
+                                                aria-labelledby={`overview-${category.id}`}
                                             >
-                                                Choose modules
-                                            </Link>
-                                        }
-                                    >
-                                        <p>
-                                            Start with onboarding, moderation or
-                                            an audit log.
-                                        </p>
-                                    </EmptyState>
-                                )}
-                                {modules && enabled.length > 0 && (
-                                    <ul className="bl-card divide-y divide-bl-border/40">
-                                        {moduleCategories.map((category) => {
-                                            const items = enabled.filter(
-                                                (module) =>
-                                                    moduleCategory(
-                                                        module.id
-                                                    ) === category.id
-                                            );
-                                            if (!items.length) return null;
-                                            return (
-                                                <li
-                                                    key={category.id}
-                                                    className="p-4 space-y-2"
-                                                >
-                                                    <p className="bl-eyebrow-app">
+                                                <div className="flex items-baseline justify-between gap-3">
+                                                    <h3
+                                                        id={`overview-${category.id}`}
+                                                        className="bl-eyebrow-app"
+                                                    >
                                                         {category.title}
-                                                    </p>
-                                                    <ul className="flex flex-wrap gap-2">
-                                                        {items.map((module) => (
+                                                    </h3>
+                                                    <span className="text-xs text-bl-muted whitespace-nowrap">
+                                                        {on} of {items.length}{' '}
+                                                        on
+                                                    </span>
+                                                </div>
+                                                <ul className="bl-module-nav">
+                                                    {items.map((module) => {
+                                                        const state =
+                                                            moduleState(
+                                                                module.settings,
+                                                                module.operatorReady
+                                                            );
+                                                        return (
                                                             <li key={module.id}>
-                                                                <Badge tone="success">
-                                                                    {moduleName(
+                                                                <Link
+                                                                    to={modulePath(
                                                                         module.id
                                                                     )}
-                                                                </Badge>
+                                                                >
+                                                                    <span>
+                                                                        {moduleName(
+                                                                            module.id
+                                                                        )}
+                                                                    </span>
+                                                                    <Badge
+                                                                        tone={
+                                                                            stateTone[
+                                                                                state
+                                                                            ]
+                                                                        }
+                                                                    >
+                                                                        {
+                                                                            stateLabel[
+                                                                                state
+                                                                            ]
+                                                                        }
+                                                                    </Badge>
+                                                                </Link>
                                                             </li>
-                                                        ))}
-                                                    </ul>
-                                                </li>
-                                            );
-                                        })}
-                                    </ul>
-                                )}
+                                                        );
+                                                    })}
+                                                </ul>
+                                            </section>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </Section>
+                        <div className="space-y-6">
+                            <Section id="attention" title="Needs attention">
+                                {modules &&
+                                    !blocked.length &&
+                                    !failed.length && (
+                                        <p className="bl-card p-4 text-sm text-bl-muted">
+                                            Nothing needs attention right now.
+                                        </p>
+                                    )}
                                 {blocked.length > 0 && (
                                     <Alert
                                         tone="warning"
@@ -265,9 +304,21 @@ export default function Overview() {
                                         operator before they can be switched on.
                                     </Alert>
                                 )}
+                                {failed.length > 0 && (
+                                    <Alert tone="danger" title="Failed actions">
+                                        {failed.length === 1
+                                            ? 'One moderation action'
+                                            : `${failed.length} moderation actions`}{' '}
+                                        could not be delivered.{' '}
+                                        <Link
+                                            to="/moderation"
+                                            className="text-bl-accent underline"
+                                        >
+                                            Review cases
+                                        </Link>
+                                    </Alert>
+                                )}
                             </Section>
-                        </div>
-                        <div className="lg:col-span-2">
                             <Section
                                 id="recent-cases"
                                 title="Recent cases"

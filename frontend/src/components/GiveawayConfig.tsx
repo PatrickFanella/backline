@@ -318,7 +318,7 @@ export default function GiveawayConfig({
                 {history.map((giveaway) => (
                     <li
                         key={giveaway.id}
-                        className="border rounded p-3 space-y-2"
+                        className="border border-bl-border/60 rounded p-3 space-y-2"
                     >
                         <p>
                             {giveaway.prize} — {giveaway.state};{' '}

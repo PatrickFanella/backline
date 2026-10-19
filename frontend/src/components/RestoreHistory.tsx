@@ -192,7 +192,7 @@ export default function RestoreHistory({ guildId }: { guildId: string }) {
             </p>
             <form
                 onSubmit={preview}
-                className="space-y-2 border border-bl-surface rounded p-3"
+                className="space-y-2 border border-bl-border/60 rounded p-3"
             >
                 <fieldset className="space-y-2">
                     <legend>Create restore preview</legend>
@@ -298,7 +298,7 @@ export default function RestoreHistory({ guildId }: { guildId: string }) {
             </form>
             <form
                 onSubmit={map}
-                className="space-y-2 border border-bl-surface rounded p-3"
+                className="space-y-2 border border-bl-border/60 rounded p-3"
             >
                 <fieldset className="space-y-2">
                     <legend>Map verified resource</legend>
@@ -377,7 +377,7 @@ export default function RestoreHistory({ guildId }: { guildId: string }) {
                 {plans?.map((plan) => (
                     <li
                         key={plan.id}
-                        className="border border-bl-surface rounded p-3 break-words"
+                        className="border border-bl-border/60 rounded p-3 break-words"
                     >
                         <p>
                             Plan {plan.id}: {plan.state}
