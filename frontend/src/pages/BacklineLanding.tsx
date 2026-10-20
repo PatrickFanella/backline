@@ -447,6 +447,10 @@ export default function BacklineLanding() {
                 <p>
                     A tool from <a href="https://subcult.tv/">SUBCULT</a>.<br />
                     For the people behind the community.
+                    <br />
+                    <a href="https://subcult.tv/support">Support SUBCULT</a>.
+                    Membership does not grant pilot access or moderation
+                    services.
                 </p>
                 <a href="#bl-title">Back to the top ↑</a>
             </footer>
