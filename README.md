@@ -2,9 +2,7 @@
 
 **Keep your people together.** Backline is the toolkit behind a Discord community: a bot and a dashboard that welcome new members, keep moderation honest, give members a private place to ask for help, and let your server run its own events, levels, feeds and radio. Switch on only what your server needs. Everything else stays off.
 
-[![Backend CI](https://github.com/subculture-collective/discord-spywatcher/actions/workflows/backend-ci.yml/badge.svg)](https://github.com/subculture-collective/discord-spywatcher/actions/workflows/backend-ci.yml)
-[![Frontend CI](https://github.com/subculture-collective/discord-spywatcher/actions/workflows/frontend-ci.yml/badge.svg)](https://github.com/subculture-collective/discord-spywatcher/actions/workflows/frontend-ci.yml)
-[![Security Scan](https://github.com/subculture-collective/discord-spywatcher/actions/workflows/security.yml/badge.svg)](https://github.com/subculture-collective/discord-spywatcher/actions/workflows/security.yml)
+[CI on Gitea](https://git.subcult.tv/subculture-collective/backline/actions)
 
 Backline is a SUBCULT tool. It is a release candidate in a **private pilot** with the SUBCULT community. Public installation is not open yet; the pilot is where setup, permissions and real-server behavior get checked before a wider release. Source of record: [git.subcult.tv/subculture-collective/backline](https://git.subcult.tv/subculture-collective/backline).
 
