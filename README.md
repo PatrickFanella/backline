@@ -1,3 +1,5 @@
+<p align="center"><img src="brand/backline/social-banner.png" alt="Backline banner: the BL monogram beside the Backline wordmark and the line &quot;The tools behind your community.&quot; in ink on purple." width="100%"></p>
+
 # Backline
 
 **Keep your people together.** Backline is the toolkit behind a Discord community: a bot and a dashboard that welcome new members, keep moderation honest, give members a private place to ask for help, and let your server run its own events, levels, feeds and radio. Switch on only what your server needs. Everything else stays off.
