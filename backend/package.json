@@ -41,7 +41,7 @@
     "type": "commonjs",
     "dependencies": {
         "@discordjs/voice": "0.19.2",
-        "@prisma/client": "6.19.3",
+        "@prisma/client": "7.10.1",
         "@sentry/node": "^10.22.0",
         "@sentry/tracing": "^7.120.4",
         "@socket.io/redis-adapter": "^8.3.0",
