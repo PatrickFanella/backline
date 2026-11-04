@@ -62,7 +62,7 @@
         "lodash": "^4.17.21",
         "morgan": "^1.10.0",
         "opusscript": "0.0.8",
-        "prisma": "6.19.3",
+        "prisma": "7.10.1",
         "prom-client": "^15.1.3",
         "rate-limit-redis": "^4.2.3",
         "redoc-express": "^2.1.3",
