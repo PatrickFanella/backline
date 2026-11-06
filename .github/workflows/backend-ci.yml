@@ -7,12 +7,14 @@ on:
             - 'backend/**'
             - 'scripts/check-postgresql-baseline.mjs'
             - 'scripts/adopt-postgresql-baseline.mjs'
+            - 'scripts/ci/**'
             - '.github/workflows/**'
     pull_request:
         paths:
             - 'backend/**'
             - 'scripts/check-postgresql-baseline.mjs'
             - 'scripts/adopt-postgresql-baseline.mjs'
+            - 'scripts/ci/**'
             - '.github/workflows/**'
 
 permissions:
@@ -150,3 +152,46 @@ jobs:
             - name: Remove the disposable PostgreSQL container
               if: always()
               run: docker rm -f "$PG_CONTAINER"
+
+    native-runtime-candidate:
+        name: Native runtime dependency candidate
+        needs: [quality, database-integration]
+        timeout-minutes: 10
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout source
+              uses: actions/checkout@v5
+
+            - name: Test package integrity and source admission
+              run: python3 -m unittest discover -s scripts/ci -p 'test_*.py'
+
+            - name: Package exact lockfile dependencies
+              run: python3 scripts/ci/prepare-runtime-patch.py
+
+            - name: Qualify the immutable transport image
+              env:
+                  SOURCE_REVISION: ${{ github.sha }}
+              run: |
+                  image="local/backline-runtime-candidate:$SOURCE_REVISION"
+                  container="backline-runtime-candidate-${{ github.run_id }}"
+                  extracted="$(mktemp -d)"
+                  trap 'docker rm -f "$container" >/dev/null 2>&1; rm -rf "$extracted"' EXIT
+                  docker build -f scripts/ci/runtime-patch.Dockerfile \
+                    --build-arg SOURCE_REVISION="$SOURCE_REVISION" --tag "$image" .
+                  test "$(docker image inspect --format '{{index .Config.Labels "org.opencontainers.image.revision"}}' "$image")" = "$SOURCE_REVISION"
+                  docker create --name "$container" "$image" /candidate
+                  docker cp "$container:/payload/." "$extracted/"
+                  diff -r .ci-runtime-patch "$extracted"
+                  mkdir runtime-candidate-artifacts
+                  cp .ci-runtime-patch/manifest.json runtime-candidate-artifacts/
+                  docker save --output runtime-candidate-artifacts/image.tar "$image"
+                  sha256sum runtime-candidate-artifacts/image.tar
+
+            - name: Retain the source-bound dependency candidate
+              uses: https://gitea.com/actions/upload-artifact@c24449f33cd45d4826c6702db7e49f7cdb9b551d
+              timeout-minutes: 2
+              with:
+                  name: native-runtime-candidate-${{ github.sha }}
+                  path: runtime-candidate-artifacts/
+                  retention-days: 7
+                  if-no-files-found: error

@@ -103,6 +103,11 @@ grafana/data/
 
 # Python pilot utility bytecode
 scripts/pilot/__pycache__/
+scripts/ci/__pycache__/
+
+# Native runtime dependency candidate produced by CI
+.ci-runtime-patch/
+runtime-candidate-artifacts/
 
 # Isolated companion source checkouts
 .companion/
