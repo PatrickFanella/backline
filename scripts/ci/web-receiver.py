@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Expose first-adoption readiness through the dashboard's fixed SSH key."""
 import argparse
+import fcntl
 import hashlib
 import importlib.util
 import json
@@ -10,6 +11,7 @@ import sys
 
 
 def main():
+    os.umask(0o077)
     parser = argparse.ArgumentParser()
     parser.add_argument('--profile', type=Path, required=True)
     args = parser.parse_args()
@@ -24,14 +26,20 @@ def main():
     spec.loader.exec_module(rx)
     command = rx.parse_command(os.environ.get('SSH_ORIGINAL_COMMAND', ''), profile)
     if command == ['status']:
-        current = rx.inspect(profile['services']['web']['container'])
-        labels = current['Config'].get('Labels') or {}
-        ready = (labels.get('com.docker.compose.project') == 'backline-web-ci'
-                 and labels.get('com.docker.compose.service') == 'web'
-                 and current['State']['Running']
-                 and current['State'].get('Health', {}).get('Status') == 'healthy'
-                 and rx.runtime_guard(current) == profile['runtime_guards']['web'])
-        print(json.dumps({'image': current['Image'], 'running': current['State']['Running'], 'compose_ready': ready}))
+        with (Path(profile['state']) / 'deploy.lock').open('a') as lock:
+            try:
+                fcntl.flock(lock, fcntl.LOCK_SH | fcntl.LOCK_NB)
+            except BlockingIOError:
+                print(json.dumps({'compose_ready': False, 'busy': True}))
+                return
+            current = rx.inspect(profile['services']['web']['container'])
+            labels = current['Config'].get('Labels') or {}
+            ready = (labels.get('com.docker.compose.project') == 'backline-web-ci'
+                     and labels.get('com.docker.compose.service') == 'web'
+                     and current['State']['Running']
+                     and current['State'].get('Health', {}).get('Status') == 'healthy'
+                     and rx.runtime_guard(current) == profile['runtime_guards']['web'])
+            print(json.dumps({'image': current['Image'], 'running': current['State']['Running'], 'compose_ready': ready}))
     else:
         rx.main()
 

@@ -27,6 +27,7 @@ def main():
     reg = json.loads((state / 'registration.json').read_text())
     profile = json.loads(Path(reg['profile']).read_text())
     assert profile['name'] == 'backline-web' and profile['repository'] == 'subculture-collective/backline'
+    assert hashlib.sha256(Path(profile['compose_file']).read_bytes()).hexdigest() == reg['baseline_sha256']
     original = Path(reg['original_nginx_config'])
     assert hashlib.sha256(original.read_bytes()).hexdigest() == reg['original_nginx_sha256']
     assert Path(reg['marker_nginx_config']).read_text() == proxy_config(original.read_text())
@@ -36,6 +37,12 @@ def main():
     rx = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(rx)
     revision = rx.run(['git', 'ls-remote', '--exit-code', 'https://git.subcult.tv/subculture-collective/backline.git', 'refs/heads/main']).decode().split()[0]
+    candidate = rx.inspect(rx.image_tag(profile, 'web', revision), 'image')
+    for name, expected in reg['old_startup'].items():
+        actual = candidate['Config'].get(name)
+        if name == 'User':
+            actual, expected = actual or '', expected or ''
+        assert actual == expected, 'Dashboard startup changed; review the host baseline'
     marker = json.loads(rx.image_check_body(rx.image_tag(profile, 'web', revision), {'image_path': '/usr/share/nginx/html/build-info.json'}))
     assert marker['source_commit'] == revision and marker['repository'] == profile['repository']
     native_state = home / '.local/state/fleet-deploy/backline-native'
