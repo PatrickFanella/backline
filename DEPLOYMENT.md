@@ -129,3 +129,23 @@ Database rollback is destructive. Before restoring database data, define the rec
 `.github/workflows/deploy.yml` contains placeholder deployment steps. `.github/workflows/deploy-production.yml` describes an older GitHub Container Registry, AWS, and EKS path. Both workflows are manual-only legacy routes with no automatic push trigger. Do not dispatch either workflow unless its infrastructure is separately rebuilt and qualified. They do not authorize a Backline deployment.
 
 Gitea consumes the repository action workflows for CI. Build, image publication, deployment approval, and runtime verification remain separate operator steps until an audited Gitea release workflow exists.
+
+## Native Dozor dependency candidate
+
+The existing Dozor API and Discord bot run from separate native release trees.
+`Backend CI` now builds a source-bound dependency candidate after backend quality
+and PostgreSQL integration checks pass. It packages the seven reviewed JavaScript
+dependency updates from `backend/package-lock.json`, verifies their npm integrity
+hashes and package identities, and rejects install hooks, native builds, unsafe
+archive paths, links and oversized archives. Its manifest records the commit,
+runtime source, Prisma schema and migration hashes. CI extracts the transport
+image and compares every packaged byte before retaining it as an artifact.
+
+This candidate contains dependencies and a manifest, with no runtime credentials
+or service launcher. It does not activate either native service. Native admission
+must still compare both installed dependency graphs and source contracts, verify
+the existing restore receipt, and retain rollback graphs before replacing any
+package. The current bot launcher, private configuration and resume timer require
+separate activation and recovery checks. Keep these checks in the deployment
+path when automatic native activation is added; do not run the six-service
+Compose release over the existing native units.
