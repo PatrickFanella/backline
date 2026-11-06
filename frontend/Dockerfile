@@ -1,5 +1,5 @@
 # Build stage
-FROM node:22-alpine AS builder
+FROM node:22-alpine@sha256:0e1754758c2df4cfa3e68d59e2e1b7374bb7fd9ea6328eaaacf15cc934af8202 AS builder
 
 WORKDIR /app
 
@@ -22,11 +22,17 @@ ENV VITE_DISCORD_CLIENT_ID=$VITE_DISCORD_CLIENT_ID \
     VITE_ENVIRONMENT=$VITE_ENVIRONMENT \
     VITE_DISCORD_REDIRECT_URI=$VITE_DISCORD_REDIRECT_URI
 RUN npm run build
+ARG SOURCE_REVISION=development
+RUN node -e 'const fs = require("node:fs"); const r = process.argv[1]; if (r !== "development" && !/^[0-9a-f]{40}$/.test(r)) throw new Error("Invalid source revision"); fs.writeFileSync("dist/build-info.json", JSON.stringify({schema_version: 1, repository: "subculture-collective/backline", source_commit: r}) + "\n");' "$SOURCE_REVISION"
 
 # Production stage
-FROM nginx:alpine
+FROM nginx:alpine@sha256:b2f80f8f88146b0772fdcc7d92cea621aa8c2889fa8d07ed61d4884fcea53e09
+ARG SOURCE_REVISION=development
+LABEL org.opencontainers.image.revision="$SOURCE_REVISION" \
+      org.opencontainers.image.source="https://git.subcult.tv/subculture-collective/backline"
 
 # Copy built files from builder
+RUN rm -rf /usr/share/nginx/html
 COPY --from=builder /app/dist /usr/share/nginx/html
 
 # Copy nginx configuration

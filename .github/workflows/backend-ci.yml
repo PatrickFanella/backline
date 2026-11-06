@@ -5,6 +5,7 @@ on:
         branches: [main]
         paths:
             - 'backend/**'
+            - 'frontend/**'
             - 'scripts/check-postgresql-baseline.mjs'
             - 'scripts/adopt-postgresql-baseline.mjs'
             - 'scripts/ci/**'
@@ -12,6 +13,7 @@ on:
     pull_request:
         paths:
             - 'backend/**'
+            - 'frontend/**'
             - 'scripts/check-postgresql-baseline.mjs'
             - 'scripts/adopt-postgresql-baseline.mjs'
             - 'scripts/ci/**'
@@ -128,6 +130,66 @@ jobs:
                     docker save "fleet-deploy/backline-native/runtime:$SOURCE_REVISION" | \
                       ssh "${options[@]}" onnwee@10.0.0.57 "receive $SOURCE_REVISION runtime"
                   fi
+                  # shellcheck disable=SC2029
+                  ssh "${options[@]}" onnwee@10.0.0.57 "deploy $SOURCE_REVISION"
+
+    dashboard:
+        name: Dashboard image
+        needs: [native-runtime]
+        timeout-minutes: 20
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout source
+              uses: actions/checkout@v5
+            - name: Build the production-configured dashboard
+              env:
+                  SOURCE_REVISION: ${{ github.sha }}
+              run: |
+                  docker build --file frontend/Dockerfile \
+                    --build-arg SOURCE_REVISION="$SOURCE_REVISION" \
+                    --build-arg VITE_DISCORD_CLIENT_ID=1375864689577164911 \
+                    --build-arg VITE_API_URL=/api --build-arg VITE_ENVIRONMENT=production \
+                    --build-arg VITE_DISCORD_REDIRECT_URI=https://backline.subcult.tv/auth/callback \
+                    --tag "fleet-deploy/backline-web/web:$SOURCE_REVISION" frontend
+            - name: Verify image bytes, metadata and privacy
+              env:
+                  SOURCE_REVISION: ${{ github.sha }}
+              run: python3 scripts/ci/qualify-web.py "fleet-deploy/backline-web/web:$SOURCE_REVISION" "$SOURCE_REVISION"
+            - name: Promote the current main dashboard
+              if: github.event_name == 'push' && github.ref == 'refs/heads/main' && github.server_url == 'https://git.subcult.tv'
+              env:
+                  SOURCE_REVISION: ${{ github.sha }}
+                  DEPLOY_KEY: ${{ secrets.HOMELAB_WEB_DEPLOY_KEY }}
+                  KNOWN_HOSTS: ${{ secrets.HOMELAB_WEB_KNOWN_HOSTS }}
+              run: |
+                  umask 077
+                  [[ "$SOURCE_REVISION" =~ ^[0-9a-f]{40}$ ]]
+                  ssh_directory="$(mktemp -d)"
+                  trap 'rm -rf "$ssh_directory"' EXIT
+                  printf '%s\n' "$DEPLOY_KEY" > "$ssh_directory/key"
+                  printf '%s\n' "$KNOWN_HOSTS" > "$ssh_directory/known_hosts"
+                  options=(-i "$ssh_directory/key" -o BatchMode=yes -o IdentitiesOnly=yes \
+                    -o StrictHostKeyChecking=yes -o "UserKnownHostsFile=$ssh_directory/known_hosts")
+                  # Fixed verbs and the validated SHA expand on the client.
+                  # shellcheck disable=SC2029
+                  accepted="$(ssh "${options[@]}" onnwee@10.0.0.57 "artifact $SOURCE_REVISION web")"
+                  if ! python3 -c 'import json,sys; sys.exit(0 if json.loads(sys.argv[1])["available"] else 1)' "$accepted"; then
+                    # shellcheck disable=SC2029
+                    docker save "fleet-deploy/backline-web/web:$SOURCE_REVISION" | \
+                      ssh "${options[@]}" onnwee@10.0.0.57 "receive $SOURCE_REVISION web"
+                  fi
+                  ready=0
+                  for attempt in $(seq 1 60); do
+                    if status="$(ssh "${options[@]}" onnwee@10.0.0.57 status)"; then
+                      if python3 -c 'import json,sys; sys.exit(0 if json.loads(sys.argv[1])["compose_ready"] else 1)' "$status"; then
+                        ready=1
+                        break
+                      fi
+                    fi
+                    echo "Waiting for the registered dashboard Compose baseline ($attempt/60)."
+                    sleep 5
+                  done
+                  test "$ready" = 1
                   # shellcheck disable=SC2029
                   ssh "${options[@]}" onnwee@10.0.0.57 "deploy $SOURCE_REVISION"
 
