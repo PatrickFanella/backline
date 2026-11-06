@@ -128,7 +128,10 @@ Database rollback is destructive. Before restoring database data, define the rec
 
 `.github/workflows/deploy.yml` contains placeholder deployment steps. `.github/workflows/deploy-production.yml` describes an older GitHub Container Registry, AWS, and EKS path. Both workflows are manual-only legacy routes with no automatic push trigger. Do not dispatch either workflow unless its infrastructure is separately rebuilt and qualified. They do not authorize a Backline deployment.
 
-Gitea consumes the repository action workflows for CI. Build, image publication, deployment approval, and runtime verification remain separate operator steps until an audited Gitea release workflow exists.
+Gitea consumes the repository action workflows for CI. The full six-service
+Compose release still requires separate image selection, deployment admission
+and runtime verification. The native dependency workflow below updates the
+existing Dozor services within its narrower source and package contract.
 
 ## Native Dozor dependency candidate
 
@@ -147,5 +150,49 @@ must still compare both installed dependency graphs and source contracts, verify
 the existing restore receipt, and retain rollback graphs before replacing any
 package. The current bot launcher, private configuration and resume timer require
 separate activation and recovery checks. Keep these checks in the deployment
-path when automatic native activation is added; do not run the six-service
+path for automatic native activation; do not run the six-service
 Compose release over the existing native units.
+
+## Automatic native dependency updates
+
+`Qualify and deploy native dependencies` builds and compares the transport
+payload on pull requests. On Gitea pushes to `main`, it sends that image to Dozor
+through a restricted SSH key. The host accepts only the current main revision
+and the fixed `runtime` artifact. Before activation it requires all twelve main
+quality, test, audit, image and candidate checks to pass. It fetches main into its
+own source cache and compares the payload's lockfile, source contract and npm
+integrity hashes with that trusted source.
+
+The operator-owned host profile pins both native release trees, compiled files,
+launchers, private configuration hashes and systemd units. Source changes,
+unreviewed package changes, major upgrades and downgrades fail admission. The
+existing bot's four HTTP-server source differences are recorded explicitly;
+those files are outside its bot entry point. The API source must match main.
+The worker checks a verified native restore receipt no older than 26 hours and
+its dump checksum. It does not run migrations, create a new production stack or
+invoke backup retention.
+
+The worker copies each installed dependency graph and replaces only the seven
+reviewed packages. It keeps nested dependencies and verifies the copied graph
+before staging. The API's shared symlink target remains untouched. After a
+second freshness and configuration check, it pauses the bot resume timer, stops
+the two services, exchanges their graph entries atomically and replaces their
+lockfiles. It starts the same units and requires API readiness plus a fresh,
+ready Discord heartbeat before recording success and resuming the timer.
+
+Systemd owns the transaction after SSH disconnects. Its `ExecStopPost` restores
+an incomplete transaction after failure or process termination; the registered
+recovery service restores interrupted graph entries before the native units
+start at boot. Owned drop-ins make the API and bot require that
+recovery service to succeed; their original unit files stay unchanged. Previous
+graphs, symlink targets, locks and private receipts are
+retained. Failed readiness also restores the previous graphs and verifies the
+restarted services. A retained failed transaction requires inspection before a
+retry; CI does not discard recovery evidence.
+
+The host profile, pinned source installation and enabled recovery unit must be
+registered before main activation. CI uses only `HOMELAB_NATIVE_DEPLOY_KEY` and
+`HOMELAB_NATIVE_KNOWN_HOSTS`; application and provider credentials stay in their
+existing native files. This lane updates native dependencies. The dashboard
+needs its own image deployment lane, and full Discord actions, voice delivery
+and authenticated browser qualification remain separate checks.

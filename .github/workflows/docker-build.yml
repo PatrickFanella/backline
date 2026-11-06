@@ -11,7 +11,10 @@ on:
             - 'release-example.env'
             - 'release-runtime-example.env'
             - '**/Dockerfile*'
-            - '.github/workflows/docker-build.yml'
+            - 'scripts/ci/**'
+            - 'scripts/check-postgresql-baseline.mjs'
+            - 'scripts/adopt-postgresql-baseline.mjs'
+            - '.github/workflows/**'
     pull_request:
         paths:
             - 'backend/**'
@@ -21,7 +24,10 @@ on:
             - 'release-example.env'
             - 'release-runtime-example.env'
             - '**/Dockerfile*'
-            - '.github/workflows/docker-build.yml'
+            - 'scripts/ci/**'
+            - 'scripts/check-postgresql-baseline.mjs'
+            - 'scripts/adopt-postgresql-baseline.mjs'
+            - '.github/workflows/**'
 
 env:
     CI_DISCORD_CLIENT_ID: '1375864689577164911'

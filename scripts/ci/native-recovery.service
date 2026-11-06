@@ -1,0 +1,12 @@
+[Unit]
+Description=Recover interrupted Backline native dependency transactions
+Before=backline-api.service backline-bot.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/bin/python3 @WORKER@ recover-all --profile @PROFILE@
+TimeoutStartSec=300
+
+[Install]
+WantedBy=default.target

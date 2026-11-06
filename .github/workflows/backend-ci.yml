@@ -74,6 +74,63 @@ jobs:
                   retention-days: 7
                   if-no-files-found: error
 
+    native-runtime:
+        name: Qualify and deploy native dependencies
+        needs: [native-runtime-candidate]
+        timeout-minutes: 25
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout source
+              uses: actions/checkout@v5
+
+            - name: Set up Python
+              uses: actions/setup-python@v5
+              with:
+                  python-version: '3.13'
+
+            - name: Package the exact native dependencies
+              run: python3 scripts/ci/prepare-runtime-patch.py
+
+            - name: Build and compare the transport payload
+              env:
+                  SOURCE_REVISION: ${{ github.sha }}
+              run: |
+                  image="fleet-deploy/backline-native/runtime:$SOURCE_REVISION"
+                  container="backline-native-${{ github.run_id }}"
+                  extracted="$(mktemp -d)"
+                  trap 'docker rm -f "$container" >/dev/null 2>&1; rm -rf "$extracted"' EXIT
+                  docker build -f scripts/ci/runtime-patch.Dockerfile \
+                    --build-arg SOURCE_REVISION="$SOURCE_REVISION" --tag "$image" .
+                  docker create --name "$container" "$image" /candidate
+                  docker cp "$container:/payload/." "$extracted/"
+                  diff -r .ci-runtime-patch "$extracted"
+
+            - name: Admit and activate the native dependency update
+              if: github.event_name == 'push' && github.ref == 'refs/heads/main' && github.server_url == 'https://git.subcult.tv'
+              env:
+                  SOURCE_REVISION: ${{ github.sha }}
+                  DEPLOY_KEY: ${{ secrets.HOMELAB_NATIVE_DEPLOY_KEY }}
+                  KNOWN_HOSTS: ${{ secrets.HOMELAB_NATIVE_KNOWN_HOSTS }}
+              run: |
+                  umask 077
+                  [[ "$SOURCE_REVISION" =~ ^[0-9a-f]{40}$ ]]
+                  ssh_directory="$(mktemp -d)"
+                  trap 'rm -rf "$ssh_directory"' EXIT
+                  printf '%s\n' "$DEPLOY_KEY" > "$ssh_directory/key"
+                  printf '%s\n' "$KNOWN_HOSTS" > "$ssh_directory/known_hosts"
+                  options=(-i "$ssh_directory/key" -o BatchMode=yes -o IdentitiesOnly=yes \
+                    -o StrictHostKeyChecking=yes -o "UserKnownHostsFile=$ssh_directory/known_hosts")
+                  # The forced command accepts fixed verbs and this validated client-side SHA.
+                  # shellcheck disable=SC2029
+                  accepted="$(ssh "${options[@]}" onnwee@10.0.0.57 "artifact $SOURCE_REVISION runtime")"
+                  if ! python3 -c 'import json,sys; sys.exit(0 if json.loads(sys.argv[1])["available"] else 1)' "$accepted"; then
+                    # shellcheck disable=SC2029
+                    docker save "fleet-deploy/backline-native/runtime:$SOURCE_REVISION" | \
+                      ssh "${options[@]}" onnwee@10.0.0.57 "receive $SOURCE_REVISION runtime"
+                  fi
+                  # shellcheck disable=SC2029
+                  ssh "${options[@]}" onnwee@10.0.0.57 "deploy $SOURCE_REVISION"
+
     database-integration:
         name: PostgreSQL migrations and integration suite
         timeout-minutes: 30
@@ -161,6 +218,11 @@ jobs:
         steps:
             - name: Checkout source
               uses: actions/checkout@v5
+
+            - name: Set up Python
+              uses: actions/setup-python@v5
+              with:
+                  python-version: '3.13'
 
             - name: Test package integrity and source admission
               run: python3 -m unittest discover -s scripts/ci -p 'test_*.py'
