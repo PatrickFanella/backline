@@ -223,6 +223,24 @@ def ready(profile, started_ms):
     assert 0 <= time.time() * 1000 - heartbeat['updatedAt'] < 30000
 
 
+def start_services(profile):
+    # The native bot has an ExecStartPre curl gate. Type=simple only establishes
+    # an API process, so ordering the units is insufficient to open its listener.
+    run(['systemctl', '--user', 'reset-failed', *UNITS])
+    run(['systemctl', '--user', 'start', UNITS[0]])
+    deadline = time.monotonic() + 60
+    while True:
+        try:
+            with urllib.request.urlopen(profile['api_ready_url'], timeout=5) as response:
+                assert response.status == 200
+            break
+        except Exception:
+            if time.monotonic() >= deadline:
+                raise
+            time.sleep(0.5)
+    run(['systemctl', '--user', 'start', UNITS[1]])
+
+
 def rollback(journal, restart=True):
     if not journal.get('activation_started', True):
         if restart and journal['resume_timer_was_active']:
@@ -241,7 +259,7 @@ def rollback(journal, restart=True):
         replace_lock(backend / 'package-lock.json', Path(entry['previous_lock_file']).read_bytes())
     if restart:
         started_ms = time.time() * 1000
-        run(['systemctl', '--user', 'start', *UNITS])
+        start_services({'api_ready_url': journal['api_ready_url']})
         deadline = time.monotonic() + 60
         while True:
             try:
@@ -323,7 +341,7 @@ def activate(state, profile, payload, manifest, assert_current):
             exchange(backend / 'node_modules', Path(entry['swap']))
             replace_lock(backend / 'package-lock.json', (payload / 'package-lock.json').read_bytes())
         started_ms = time.time() * 1000
-        run(['systemctl', '--user', 'start', *UNITS])
+        start_services(profile)
         deadline = time.monotonic() + 60
         while True:
             try:

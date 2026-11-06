@@ -69,7 +69,7 @@ class NativeRecoveryTests(unittest.TestCase):
         self.assertEqual((self.root / 'api-old/original').read_text(), 'api')
 
     def recover(self):
-        with patch.object(native, 'run', return_value=b'') as commands, patch.object(native, 'ready'):
+        with patch.object(native, 'run', return_value=b'') as commands, patch.object(native, 'ready'), patch.object(native, 'start_services'):
             native.recover(self.receipt)
         return commands
 
@@ -172,7 +172,7 @@ os.kill(os.getpid(),signal.SIGKILL)
             real_exchange(left, right)
         with patch.object(native, 'validate_native'), patch.object(native, 'service_pids', return_value={'fixture': 1}), \
                 patch.object(native, 'check_backup', return_value={}), patch.object(native, 'stage_graph', side_effect=self.graphs), \
-                patch.object(native, 'run', return_value=b'backline-bot.service'), patch.object(native, 'ready'), \
+                patch.object(native, 'run', return_value=b'backline-bot.service'), patch.object(native, 'ready'), patch.object(native, 'start_services'), \
                 patch.object(native.subprocess, 'run') as active, patch.object(native, 'exchange', side_effect=failing_exchange):
             active.return_value.returncode = 0
             with self.assertRaises(OSError):
@@ -186,6 +186,7 @@ os.kill(os.getpid(),signal.SIGKILL)
         with patch.object(native, 'validate_native'), patch.object(native, 'service_pids', return_value={'fixture': 1}), \
                 patch.object(native, 'check_backup', return_value={}), patch.object(native, 'stage_graph', side_effect=self.graphs), \
                 patch.object(native, 'run', return_value=b'backline-bot.service'), \
+                patch.object(native, 'start_services'), \
                 patch.object(native, 'ready', side_effect=[None, RuntimeError('candidate not ready'), None]), \
                 patch.object(native.time, 'monotonic', side_effect=[0, 61, 62]), \
                 patch.object(native.subprocess, 'run') as active:
@@ -294,6 +295,38 @@ class BackupAdmissionTests(unittest.TestCase):
             self.write()
             with self.subTest(section=section, name=name), self.assertRaises(AssertionError):
                 native.check_backup(self.root)
+
+
+class StartupOrderingTests(unittest.TestCase):
+    def test_bot_start_waits_for_api_listener_and_readiness(self):
+        events = []
+        def command(args, timeout=120):
+            if args[:3] == ['systemctl', '--user', 'start']:
+                if args[-1] == native.UNITS[1]:
+                    self.assertIn('api-ready', events)
+                events.append(args[-1])
+            return b''
+        response = unittest.mock.MagicMock()
+        response.__enter__.return_value.status = 200
+        def health(*args, **kwargs):
+            if 'listener-warming' not in events:
+                events.append('listener-warming')
+                raise ConnectionRefusedError('fixture listener is not ready')
+            events.append('api-ready')
+            return response
+        with patch.object(native, 'run', side_effect=command), \
+                patch.object(native.urllib.request, 'urlopen', side_effect=health), \
+                patch.object(native.time, 'sleep'):
+            native.start_services({'api_ready_url': 'http://127.0.0.1:3001/health/ready'})
+        self.assertEqual(events, [native.UNITS[0], 'listener-warming', 'api-ready', native.UNITS[1]])
+
+    def test_bot_is_not_started_when_api_never_becomes_ready(self):
+        with patch.object(native, 'run') as commands, \
+                patch.object(native.urllib.request, 'urlopen', side_effect=ConnectionRefusedError('fixture')), \
+                patch.object(native.time, 'monotonic', side_effect=[0, 61]):
+            with self.assertRaises(ConnectionRefusedError):
+                native.start_services({'api_ready_url': 'http://127.0.0.1:3001/health/ready'})
+        self.assertFalse(any(c.args[0] == ['systemctl', '--user', 'start', native.UNITS[1]] for c in commands.call_args_list))
 
 
 if __name__ == '__main__':
