@@ -198,3 +198,39 @@ registered before main activation. CI uses only `HOMELAB_NATIVE_DEPLOY_KEY` and
 existing native files. This lane updates native dependencies. The dashboard
 needs its own image deployment lane, and full Discord actions, voice delivery
 and authenticated browser qualification remain separate checks.
+
+## Automatic dashboard deployment
+
+The dashboard image job follows native dependency admission. Frontend pushes
+therefore run the backend qualification gates too; unchanged native graphs are
+verified without restarting the API or bot. The dashboard build uses the four
+public production values already embedded in the live app: client ID
+`1375864689577164911`, API prefix `/api`, production mode and callback
+`https://backline.subcult.tv/auth/callback`. Node and nginx bases are pinned by
+registry digest. The image records its source revision, serves an uncached
+`/build-info.json`, and denies source maps.
+
+CI starts the actual image, compares every served file with its image bytes,
+checks metadata and private-route noindex headers, and requires source maps to
+return 404. A separate restricted key receives only the current main dashboard
+image. The host guard requires the native transaction for that same revision to
+have succeeded, verifies both native dependency locks and readiness, and checks
+the original nginx configuration plus its single marker-route addition.
+
+The existing Docker-run dashboard requires a one-time Compose baseline
+migration. Receive and qualify the main image before replacing that service.
+Retain the old container, static directory and configuration; the new baseline
+embeds the accepted static payload and references the reviewed native proxy
+configuration with the marker route added. Keep its host-network listener,
+proxy targets, startup, resources and logging settings. The native health URL is
+`/healthz` on its registered listener, so the baseline overrides the portable
+image's `/health` healthcheck. The app's API, bot and data services stay outside
+this Compose project.
+
+Main CI waits up to five minutes for the registered baseline's Compose labels,
+health and runtime guard. Once adopted, it promotes through the shared receiver
+and verifies the image-backed public marker. Later pushes use the same lane
+without another migration. CI uses `HOMELAB_WEB_DEPLOY_KEY` and
+`HOMELAB_WEB_KNOWN_HOSTS`; application secrets are absent from the dashboard
+image and its CI inputs. Independent public/source byte comparison and the
+native health/data-boundary checks complete the rollout.
