@@ -14,11 +14,21 @@ MARKER_LOCATION = '''    location = /build-info.json {
 
 '''
 
+PRIVATE_FALLBACK = '        try_files /app.html =404;'
+PRIVATE_HEADERS = '''        add_header X-Content-Type-Options nosniff always;
+        add_header X-Frame-Options SAMEORIGIN always;
+        add_header Referrer-Policy no-referrer always;
+        add_header X-Robots-Tag "noindex, nofollow" always;
+        add_header Cache-Control "no-store" always;
+'''
+
 
 def proxy_config(original):
     anchor = '    location / {'
     assert original.count(anchor) == 1 and '/build-info.json' not in original
-    return original.replace(anchor, MARKER_LOCATION + anchor, 1)
+    assert original.count(PRIVATE_FALLBACK) == 1, 'Review the native private route fallback'
+    derived = original.replace(PRIVATE_FALLBACK, PRIVATE_HEADERS + PRIVATE_FALLBACK, 1)
+    return derived.replace(anchor, MARKER_LOCATION + anchor, 1)
 
 
 def main():
@@ -66,7 +76,7 @@ def main():
     status = json.loads(subprocess.check_output(['tea', 'api', '--login', 'subcult-agent', '/repos/subculture-collective/backline/commits/' + revision + '/status']))
     contexts = {s['context']: s['status'] for s in status['statuses']}
     assert contexts.get('Backend CI / Qualify and deploy native dependencies (push)') == 'success'
-    print(json.dumps({'result': 'PASS', 'source_commit': revision, 'native_dependencies_and_readiness': 'PASS', 'native_proxy_preserved_with_marker': True}))
+    print(json.dumps({'result': 'PASS', 'source_commit': revision, 'native_dependencies_and_readiness': 'PASS', 'native_proxy_with_marker_and_private_headers': True}))
 
 
 if __name__ == '__main__':

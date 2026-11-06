@@ -13,13 +13,22 @@ class ProxyConfigurationTests(unittest.TestCase):
     listen 127.0.0.1:3082;
     location /api/ { proxy_pass http://127.0.0.1:3001; }
     location ~ \\.map$ { return 404; }
+    location ~ ^/(?:login|overview)$ {
+        try_files /app.html =404;
+    }
     location = /app.html { add_header X-Robots-Tag "noindex, nofollow" always; }
     location / { try_files $uri =404; }
 }
 '''
         derived = proxy.proxy_config(original)
-        self.assertEqual(derived.replace(proxy.MARKER_LOCATION, '', 1), original)
+        self.assertEqual(derived.replace(proxy.MARKER_LOCATION, '', 1).replace(proxy.PRIVATE_HEADERS, '', 1), original)
         self.assertIn('Cache-Control "no-store" always', derived)
+        self.assertIn(proxy.PRIVATE_HEADERS + proxy.PRIVATE_FALLBACK, derived)
+
+    def test_missing_or_duplicate_private_fallback_requires_review(self):
+        for text in ['    location / {', '    location / {\n' + proxy.PRIVATE_FALLBACK * 2]:
+            with self.subTest(text=text), self.assertRaises(AssertionError):
+                proxy.proxy_config(text)
 
     def test_missing_duplicate_or_existing_marker_requires_review(self):
         for text in ['', '    location / {\n    location / {', '    location / { # /build-info.json']:

@@ -215,13 +215,17 @@ checks metadata and private-route noindex headers, and requires source maps to
 return 404. A separate restricted key receives only the current main dashboard
 image. The host guard requires the native transaction for that same revision to
 have succeeded, verifies both native dependency locks and readiness, and checks
-the original nginx configuration plus its single marker-route addition.
+the original nginx configuration plus the marker route and private-route headers.
+The private route fallback serves `app.html` in its own nginx location, so it
+sets `X-Robots-Tag: noindex, nofollow` and `Cache-Control: no-store` there while
+retaining the existing security headers. CI exercises this fallback in an actual
+nginx container as well as checking the image's default proxy configuration.
 
 The existing Docker-run dashboard requires a one-time Compose baseline
 migration. Receive and qualify the main image before replacing that service.
 Retain the old container, static directory and configuration; the new baseline
 embeds the accepted static payload and references the reviewed native proxy
-configuration with the marker route added. Keep its host-network listener,
+configuration with the marker route and private-route headers added. Keep its host-network listener,
 proxy targets, startup, resources and logging settings. The native health URL is
 `/healthz` on its registered listener, so the baseline overrides the portable
 image's `/health` healthcheck. The app's API, bot and data services stay outside
