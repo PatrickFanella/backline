@@ -177,7 +177,9 @@ reviewed packages. It keeps nested dependencies and verifies the copied graph
 before staging. The API's shared symlink target remains untouched. After a
 second freshness and configuration check, it pauses the bot resume timer, stops
 the two services, exchanges their graph entries atomically and replaces their
-lockfiles. It starts the same units and requires API readiness plus a fresh,
+lockfiles. It starts the API, waits for its HTTP readiness endpoint, and then
+starts the bot, whose native pre-start check needs that API listener. It requires
+API readiness plus a fresh,
 ready Discord heartbeat before recording success and resuming the timer.
 
 Systemd owns the transaction after SSH disconnects. Its `ExecStopPost` restores
@@ -187,7 +189,7 @@ start at boot. Owned drop-ins make the API and bot require that
 recovery service to succeed; their original unit files stay unchanged. Previous
 graphs, symlink targets, locks and private receipts are
 retained. Failed readiness also restores the previous graphs and verifies the
-restarted services. A retained failed transaction requires inspection before a
+restarted services, using the same API-ready-before-bot sequence. A retained failed transaction requires inspection before a
 retry; CI does not discard recovery evidence.
 
 The host profile, pinned source installation and enabled recovery unit must be
