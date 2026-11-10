@@ -1,11 +1,14 @@
 name: Frontend CI
 
-# This job owns frontend tests formerly duplicated in tests.yml, so retain
-# their all-PR/main applicability rather than narrow coverage by path.
+# This job owns frontend tests formerly duplicated in tests.yml, so it keeps
+# the same main-push applicability as tests.yml. Pull requests are verified by
+# .github/workflows/mirror-ci.yml on the GitHub mirror.
 on:
     push:
         branches: [main]
-    pull_request:
+        paths-ignore:
+            - 'docs/**'
+            - '*.md'
 
 permissions:
   contents: read

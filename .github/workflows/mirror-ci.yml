@@ -1,0 +1,375 @@
+name: Mirror CI
+run-name: Mirror CI ${{ github.sha }}
+
+# Pull request verification for the Gitea source. Gitea pushes every branch to
+# this GitHub copy; a bridge reports the "Mirror CI gate" result for the exact
+# PR head back to Gitea. main is verified and deployed by .gitea/workflows.
+'on':
+  push:
+    branches-ignore: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend quality, tests, audit and PostgreSQL
+    if: github.repository == 'subculture-collective/backline'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      PG_CONTAINER: backline-ci-postgres-${{ github.run_id }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: backend
+        run: npm ci
+
+      - name: Run lint
+        working-directory: backend
+        run: npm run lint
+
+      - name: Run TypeScript check
+        working-directory: backend
+        run: npm run type-check
+
+      - name: Validate Prisma schema
+        working-directory: backend
+        run: npm run prisma:validate
+        env:
+          DATABASE_URL: 'postgresql://spywatcher:test_password@localhost:5432/spywatcher_test'
+
+      - name: Generate Prisma client
+        working-directory: backend
+        run: npm run prisma:generate
+        env:
+          DATABASE_URL: 'postgresql://spywatcher:test_password@localhost:5432/spywatcher_test'
+
+      - name: Build
+        working-directory: backend
+        run: npm run build
+
+      - name: Run backend tests with coverage
+        working-directory: backend
+        run: npm run test:coverage -- --coverageReporters=text --coverageReporters=json-summary --coverageReporters=lcovonly
+        env:
+          JWT_SECRET: test-jwt-secret-key-12345678
+          JWT_REFRESH_SECRET: test-jwt-refresh-secret-key-12345678
+          DISCORD_CLIENT_ID: test-client-id
+          DISCORD_CLIENT_SECRET: test-client-secret
+          DISCORD_REDIRECT_URI: http://localhost:3000/auth/callback
+          DISCORD_BOT_TOKEN: test-bot-token
+          DISCORD_GUILD_ID: test-guild-id
+          ADMIN_DISCORD_IDS: 123456789,987654321
+          FRONTEND_URL: http://localhost:5173
+
+      - name: Fail on high or critical production dependency vulnerabilities
+        working-directory: backend
+        run: npm audit --omit=dev --audit-level=high
+
+      - name: Start an isolated PostgreSQL container
+        run: |
+          # Hosted runners reach the published port on loopback.
+          docker run -d --name "$PG_CONTAINER" -p 127.0.0.1::5432 \
+            -e POSTGRES_USER=spywatcher -e POSTGRES_PASSWORD=test_password \
+            -e POSTGRES_DB=spywatcher_test postgres:16
+          for _ in $(seq 1 30); do
+            if docker exec "$PG_CONTAINER" pg_isready -h 127.0.0.1 -U spywatcher; then
+              break
+            fi
+            sleep 1
+          done
+          docker exec "$PG_CONTAINER" pg_isready -h 127.0.0.1 -U spywatcher
+          binding="$(docker port "$PG_CONTAINER" 5432/tcp | head -n 1)"
+          pg_port="${binding##*:}"
+          [[ "$pg_port" =~ ^[0-9]+$ ]]
+          {
+            echo "BASELINE_FRESH_DATABASE_URL=postgresql://spywatcher:test_password@127.0.0.1:$pg_port/spywatcher_test"
+            echo "BASELINE_EXISTING_DATABASE_URL=postgresql://spywatcher:test_password@127.0.0.1:$pg_port/spywatcher_existing"
+            echo "DATABASE_URL=postgresql://spywatcher:test_password@127.0.0.1:$pg_port/spywatcher_integration"
+          } >> "$GITHUB_ENV"
+
+      - name: Check fresh and existing PostgreSQL baselines
+        run: |
+          docker exec "$PG_CONTAINER" createdb -U spywatcher spywatcher_existing
+          node scripts/check-postgresql-baseline.mjs
+
+      - name: Create a fresh integration database
+        run: docker exec "$PG_CONTAINER" createdb -U spywatcher spywatcher_integration
+
+      - name: Apply every migration to the integration database
+        working-directory: backend
+        run: npm run prisma:migrate
+
+      - name: Run every PostgreSQL integration suite
+        working-directory: backend
+        env:
+          RUN_DATABASE_TESTS: 'true'
+        run: npm test -- --runInBand __tests__/integration/database
+
+      - name: Remove the disposable PostgreSQL container
+        if: always()
+        run: docker rm -f "$PG_CONTAINER" || true
+
+  frontend:
+    name: Frontend quality, E2E, audit and docs
+    if: github.repository == 'subculture-collective/backline'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+          # VitePress reads Git history for last-updated metadata.
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: |
+            frontend/package-lock.json
+            package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Run ESLint
+        working-directory: frontend
+        run: npm run lint
+
+      - name: Run TypeScript check
+        working-directory: frontend
+        run: npm run type-check
+
+      - name: Run frontend tests with coverage
+        working-directory: frontend
+        run: npm run test:coverage -- --coverage.reporter=text --coverage.reporter=json-summary --coverage.reporter=lcov
+
+      - name: Build
+        working-directory: frontend
+        run: npm run build
+        env:
+          VITE_DISCORD_CLIENT_ID: '123456789012345678'
+
+      - name: Fail on high or critical production dependency vulnerabilities
+        working-directory: frontend
+        run: npm audit --omit=dev --audit-level=high
+
+      - name: Install Playwright browsers
+        working-directory: frontend
+        run: npx playwright install --with-deps chromium
+
+      - name: Run E2E tests
+        working-directory: frontend
+        run: npm run test:e2e
+        env:
+          VITE_API_URL: http://localhost:3001/api
+          VITE_DISCORD_CLIENT_ID: '1375864689577164911'
+
+      - name: Install documentation dependencies
+        run: npm ci
+
+      - name: Build documentation
+        run: npm run docs:build
+
+  images:
+    name: Images, native runtime, Compose and secrets scan
+    if: github.repository == 'subculture-collective/backline'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      SOURCE_REVISION: ${{ github.sha }}
+      CI_DISCORD_CLIENT_ID: '1375864689577164911'
+      CI_BACKEND_IMAGE: backline-ci-backend:${{ github.run_id }}
+      CI_FRONTEND_IMAGE: backline-ci-dashboard:${{ github.run_id }}
+      CI_DASHBOARD_CONTAINER: backline-ci-dashboard-${{ github.run_id }}
+    steps:
+      - name: Checkout complete history
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.13'
+
+      - name: Test package integrity and source admission
+        run: python3 -m unittest discover -s scripts/ci -p 'test_*.py'
+
+      - name: Package exact lockfile dependencies
+        run: python3 scripts/ci/prepare-runtime-patch.py
+
+      - name: Qualify the immutable native runtime transport image
+        run: |
+          image="local/backline-runtime-candidate:$SOURCE_REVISION"
+          container="backline-runtime-candidate-${{ github.run_id }}"
+          extracted="$(mktemp -d)"
+          saved="$(mktemp -d)"
+          trap 'docker rm -f "$container" >/dev/null 2>&1; rm -rf "$extracted" "$saved"' EXIT
+          docker build -f scripts/ci/runtime-patch.Dockerfile \
+            --build-arg SOURCE_REVISION="$SOURCE_REVISION" --tag "$image" .
+          test "$(docker image inspect --format '{{index .Config.Labels "org.opencontainers.image.revision"}}' "$image")" = "$SOURCE_REVISION"
+          docker create --name "$container" "$image" /candidate
+          docker cp "$container:/payload/." "$extracted/"
+          diff -r .ci-runtime-patch "$extracted"
+          test -s .ci-runtime-patch/manifest.json
+          docker save --output "$saved/image.tar" "$image"
+          sha256sum "$saved/image.tar"
+
+      - name: Build the production-configured dashboard
+        run: |
+          docker build --file frontend/Dockerfile \
+            --build-arg SOURCE_REVISION="$SOURCE_REVISION" \
+            --build-arg VITE_DISCORD_CLIENT_ID=1375864689577164911 \
+            --build-arg VITE_API_URL=/api --build-arg VITE_ENVIRONMENT=production \
+            --build-arg VITE_DISCORD_REDIRECT_URI=https://backline.subcult.tv/auth/callback \
+            --tag "fleet-deploy/backline-web/web:$SOURCE_REVISION" frontend
+
+      - name: Verify dashboard image bytes, metadata and privacy
+        run: python3 scripts/ci/qualify-web.py "fleet-deploy/backline-web/web:$SOURCE_REVISION" "$SOURCE_REVISION"
+
+      - name: Build backend image locally
+        run: docker build -t "$CI_BACKEND_IMAGE" ./backend
+
+      - name: Verify packaged backend entrypoints and native dependencies
+        run: |
+          docker run --rm --entrypoint sh "$CI_BACKEND_IMAGE" -ec '
+            test -f dist/src/server.js
+            test -f dist/src/index.js
+            test -f scripts/migrate.cjs
+            test -x node_modules/.bin/prisma
+            node --version
+            ffmpeg -version
+            node -e "const sharp = require(\"sharp\"); console.log(sharp.versions.vips)"
+          '
+
+      - name: Build dashboard image locally
+        run: |
+          docker build \
+            --build-arg VITE_DISCORD_CLIENT_ID="$CI_DISCORD_CLIENT_ID" \
+            -t "$CI_FRONTEND_IMAGE" \
+            ./frontend
+
+      - name: Verify dashboard static health endpoint
+        run: |
+          # This standalone probe supplies the release-time upstream name only.
+          # The API proxy is qualified by compose.release.yml, not this static health check.
+          docker run --rm -d --add-host api:127.0.0.1 --name "$CI_DASHBOARD_CONTAINER" "$CI_FRONTEND_IMAGE"
+          trap 'docker logs "$CI_DASHBOARD_CONTAINER"; docker rm -f "$CI_DASHBOARD_CONTAINER"' EXIT
+          for _ in 1 2 3 4 5; do
+            if docker exec "$CI_DASHBOARD_CONTAINER" wget -q -O - http://127.0.0.1/health; then
+              exit 0
+            fi
+            sleep 1
+          done
+          exit 1
+
+      - name: Validate existing Compose files without printing interpolated values
+        run: |
+          legacy_env="$(mktemp)"
+          trap 'rm -f "$legacy_env"' EXIT
+          cat > "$legacy_env" <<'EOF'
+          DB_PASSWORD=ci-placeholder-db-password
+          PGBOUNCER_ADMIN_PASSWORD=ci-placeholder-pgbouncer-password
+          ADMIN_DISCORD_IDS=000000000000000001
+          BOT_GUILD_IDS=000000000000000002
+          DISCORD_BOT_TOKEN=ci-placeholder-not-a-real-discord-token
+          DISCORD_CLIENT_ID=000000000000000000
+          DISCORD_CLIENT_SECRET=ci-placeholder-not-a-real-client-secret
+          DISCORD_GUILD_ID=000000000000000003
+          DISCORD_REDIRECT_URI=https://backline.example.invalid/auth/callback
+          JWT_SECRET=ci-placeholder-jwt-secret-at-least-32-characters
+          JWT_REFRESH_SECRET=ci-placeholder-refresh-secret-at-least-32-characters
+          DATABASE_URL_DIRECT=postgresql://spywatcher:ci-placeholder-db-password@postgres:5432/spywatcher
+          VITE_API_URL=https://backline.example.invalid/api
+          VITE_DISCORD_CLIENT_ID=000000000000000000
+          EOF
+          docker compose --env-file "$legacy_env" -f docker-compose.dev.yml config --quiet
+          docker compose --env-file "$legacy_env" -f docker-compose.prod.yml config --quiet
+          docker compose --env-file "$legacy_env" -f docker-compose.test.yml config --quiet
+
+      - name: Validate release Compose with generated placeholders
+        run: |
+          release_env="$(mktemp)"
+          runtime_env="$(mktemp)"
+          trap 'rm -f "$release_env" "$runtime_env"' EXIT
+          cat > "$runtime_env" <<'EOF'
+          DISCORD_BOT_TOKEN=ci-placeholder-not-a-real-discord-token
+          DISCORD_CLIENT_ID=000000000000000000
+          DISCORD_CLIENT_SECRET=ci-placeholder-not-a-real-client-secret
+          DISCORD_REDIRECT_URI=https://backline.example.invalid/auth/callback
+          JWT_SECRET=ci-placeholder-jwt-secret-at-least-32-characters
+          JWT_REFRESH_SECRET=ci-placeholder-refresh-secret-at-least-32-characters
+          CORS_ORIGINS=https://backline.example.invalid
+          EOF
+          cat > "$release_env" <<EOF
+          BACKLINE_BACKEND_IMAGE=registry.example.invalid/backline/backend@sha256:0000000000000000000000000000000000000000000000000000000000000000
+          BACKLINE_FRONTEND_IMAGE=registry.example.invalid/backline/dashboard@sha256:0000000000000000000000000000000000000000000000000000000000000000
+          BACKLINE_ENV_FILE=$runtime_env
+          POSTGRES_PASSWORD=ci-placeholder-postgres-password
+          BACKLINE_BIND_ADDRESS=127.0.0.1
+          BACKLINE_PORT=8080
+          EOF
+          docker compose --env-file "$release_env" -f compose.release.yml config --quiet
+
+      - name: Scan checked-out history for verified secrets
+        run: |
+          scan_container="backline-ci-secrets-${{ github.run_id }}"
+          scan_log="$(mktemp)"
+          trap 'docker rm -f "$scan_container" >/dev/null 2>&1; rm -f "$scan_log"' EXIT
+          docker create --name "$scan_container" \
+            ghcr.io/trufflesecurity/trufflehog@sha256:52e67fef4d054ecff5c2ce4b4ae376626d1ef54aa0898b53cac19c25e92e14db \
+            git file:///scan --only-verified --fail --no-update --json
+          docker cp . "$scan_container:/scan"
+          if docker start --attach "$scan_container" > "$scan_log" 2>&1; then
+            echo "Verified-secrets scan completed without findings."
+          else
+            status=$?
+            echo "Verified-secrets scan failed (exit $status); raw output withheld to avoid exposing findings."
+            exit "$status"
+          fi
+
+  mirror-gate:
+    name: Mirror CI gate
+    if: always() && github.repository == 'subculture-collective/backline'
+    needs:
+      - backend
+      - frontend
+      - images
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Require every verification job
+        env:
+          RESULTS: ${{ toJSON(needs) }}
+        run: |
+          python3 - <<'PY'
+          import json, os
+          results = json.loads(os.environ["RESULTS"])
+          expected = {'backend', 'frontend', 'images'}
+          assert set(results) == expected, results
+          for name, result in results.items():
+              assert result["result"] == "success", name + " did not pass"
+          PY

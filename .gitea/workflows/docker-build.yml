@@ -14,20 +14,7 @@ on:
             - 'scripts/ci/**'
             - 'scripts/check-postgresql-baseline.mjs'
             - 'scripts/adopt-postgresql-baseline.mjs'
-            - '.github/workflows/**'
-    pull_request:
-        paths:
-            - 'backend/**'
-            - 'frontend/**'
-            - 'compose.release.yml'
-            - 'docker-compose*.yml'
-            - 'release-example.env'
-            - 'release-runtime-example.env'
-            - '**/Dockerfile*'
-            - 'scripts/ci/**'
-            - 'scripts/check-postgresql-baseline.mjs'
-            - 'scripts/adopt-postgresql-baseline.mjs'
-            - '.github/workflows/**'
+            - '.gitea/workflows/**'
 
 env:
     CI_DISCORD_CLIENT_ID: '1375864689577164911'

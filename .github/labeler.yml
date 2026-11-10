@@ -9,6 +9,7 @@ frontend:
 ci/cd:
   - changed-files:
     - any-glob-to-any-file: '.github/workflows/**'
+    - any-glob-to-any-file: '.gitea/workflows/**'
     - any-glob-to-any-file: '.github/dependabot.yml'
 
 dependencies:

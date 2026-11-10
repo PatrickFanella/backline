@@ -1,9 +1,12 @@
 name: Tests
 
+# Pull requests are verified by .github/workflows/mirror-ci.yml on the GitHub mirror.
 on:
     push:
         branches: [main]
-    pull_request:
+        paths-ignore:
+            - 'docs/**'
+            - '*.md'
 
 permissions:
   contents: read
