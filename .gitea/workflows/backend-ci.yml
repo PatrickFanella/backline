@@ -76,7 +76,8 @@ jobs:
         name: Qualify and deploy native dependencies
         needs: [native-runtime-candidate]
         timeout-minutes: 25
-        runs-on: ubuntu-latest
+        # Homelab deploy keys accept only Kvant's address (Kvant and its Kuznya VM); the kvant label keeps this job off Buran.
+        runs-on: [ubuntu-latest, kvant]
         steps:
             - name: Checkout source
               uses: actions/checkout@v5
@@ -133,7 +134,8 @@ jobs:
         name: Dashboard image
         needs: [native-runtime]
         timeout-minutes: 20
-        runs-on: ubuntu-latest
+        # Homelab deploy keys accept only Kvant's address (Kvant and its Kuznya VM); the kvant label keeps this job off Buran.
+        runs-on: [ubuntu-latest, kvant]
         steps:
             - name: Checkout source
               uses: actions/checkout@v5
