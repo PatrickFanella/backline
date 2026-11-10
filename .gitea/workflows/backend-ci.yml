@@ -9,15 +9,7 @@ on:
             - 'scripts/check-postgresql-baseline.mjs'
             - 'scripts/adopt-postgresql-baseline.mjs'
             - 'scripts/ci/**'
-            - '.github/workflows/**'
-    pull_request:
-        paths:
-            - 'backend/**'
-            - 'frontend/**'
-            - 'scripts/check-postgresql-baseline.mjs'
-            - 'scripts/adopt-postgresql-baseline.mjs'
-            - 'scripts/ci/**'
-            - '.github/workflows/**'
+            - '.gitea/workflows/**'
 
 permissions:
   contents: read

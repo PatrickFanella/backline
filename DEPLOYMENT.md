@@ -126,9 +126,12 @@ Database rollback is destructive. Before restoring database data, define the rec
 
 `docker-compose.prod.yml` is a legacy source-build stack. It does not define the Backline migration barrier, one-bot release topology, immutable image selection, or Vite build-time release configuration. Do not use it for this release path.
 
-`.github/workflows/deploy.yml` contains placeholder deployment steps. `.github/workflows/deploy-production.yml` describes an older GitHub Container Registry, AWS, and EKS path. Both workflows are manual-only legacy routes with no automatic push trigger. Do not dispatch either workflow unless its infrastructure is separately rebuilt and qualified. They do not authorize a Backline deployment.
+`.gitea/workflows/deploy.yml` contains placeholder deployment steps. `.gitea/workflows/deploy-production.yml` describes an older GitHub Container Registry, AWS, and EKS path. Both workflows are manual-only legacy routes with no automatic push trigger. Do not dispatch either workflow unless its infrastructure is separately rebuilt and qualified. They do not authorize a Backline deployment.
 
-Gitea consumes the repository action workflows for CI. The full six-service
+Gitea runs the workflows in `.gitea/workflows` for main-branch CI and
+deployment. Pull requests are verified on the GitHub mirror by
+`.github/workflows/mirror-ci.yml`, whose `Mirror CI gate` result is reported
+back to Gitea as `GitHub CI / Mirror CI gate`. The full six-service
 Compose release still requires separate image selection, deployment admission
 and runtime verification. The native dependency workflow below updates the
 existing Dozor services within its narrower source and package contract.
